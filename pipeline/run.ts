@@ -89,8 +89,8 @@ console.log(
   `data/risk-metrics.json: as of ${risk.asOf}, max drawdown ${risk.drawdown.maxDrawdownPct}% (${risk.drawdown.peakDate} -> ${risk.drawdown.troughDate})`,
 );
 
-// BTC's leg uses the deep-history series so early-window correlations have
-// full 90d of pre-window returns; benchmarks carry their own 400d buffers.
+// BTC's leg uses the deep-history series and benchmarks keep a 460d trailing
+// window, so every pair has a full 90d of pre-window returns at displayFrom.
 const toPoints = (rows: { date: string; close: number }[]) =>
   rows.map(({ date, close }) => ({ date, value: close }));
 const correlations = correlationDatasetSchema.parse(

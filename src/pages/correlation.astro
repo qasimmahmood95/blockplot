@@ -4,7 +4,14 @@ import Base from '../layouts/Base.astro';
 import { correlations } from '../lib/data';
 import { formatRatio } from '../lib/format';
 
-const { pairs, windowDays, minObs, asOf } = correlations;
+const { pairs, windowDays, minObs } = correlations;
+
+// The honest freshness label: the last shared trading day any pair reaches
+// (correlations lag the BTC calendar over weekends and holidays).
+const lastCorrDate = pairs.reduce((max, p) => {
+  const last = p.series.at(-1)?.date ?? '';
+  return last > max ? last : max;
+}, '');
 
 const assetLabels: Record<string, string> = {
   btc: 'BTC',
@@ -52,8 +59,8 @@ const btcPairs = [
     }
     <div class="stat">
       <dt>As of</dt>
-      <dd class="num">{asOf}</dd>
-      <dd class="sub num">refreshed 6-hourly</dd>
+      <dd class="num">{lastCorrDate || '—'}</dd>
+      <dd class="sub num">last shared trading day</dd>
     </div>
   </dl>
 

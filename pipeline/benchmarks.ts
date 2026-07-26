@@ -18,8 +18,12 @@ export const DXY_YAHOO_TICKERS = ['DX-Y.NYB', 'DX=F'];
 const FRED_CSV_URL = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${SP500_FRED_SERIES}`;
 const YAHOO_CHART_API = 'https://query1.finance.yahoo.com/v8/finance/chart';
 
-/** Trailing calendar days of benchmark history kept on disk — covers the 365-day BTC window with margin. */
-export const BENCHMARK_KEEP_DAYS = 400;
+/**
+ * Trailing calendar days of benchmark history kept on disk: the 365-day BTC
+ * display window plus a full 90-day correlation warmup and a small margin,
+ * so rolling windows are already full at the first display date.
+ */
+export const BENCHMARK_KEEP_DAYS = 460;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 

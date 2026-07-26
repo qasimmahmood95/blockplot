@@ -29,7 +29,8 @@ export interface AlignedReturn {
 /**
  * Pairwise-aligned daily log returns: intersect the two calendars, then take
  * returns between consecutive shared dates (a gap in either series makes one
- * multi-day return, dated at its end).
+ * multi-day return, dated at its end). Inputs must be date-ascending, as all
+ * pipeline series are.
  */
 export function alignReturns(a: SeriesPoint[], b: SeriesPoint[]): AlignedReturn[] {
   const bByDate = new Map(b.map((p) => [p.date, p.value]));
