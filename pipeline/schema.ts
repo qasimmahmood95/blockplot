@@ -287,8 +287,11 @@ export const networkDatasetSchema = z.object({
   /** Trailing calendar days kept per series. */
   keepDays: z.number().int().positive(),
   hashRate: z.object({
-    /** Exahashes per second, converted from the source's GH/s. */
+    /** Exahashes per second, converted from the source's TH/s. */
     unit: z.literal('EH/s'),
+    /** Trailing 7-entry mean, 1 dp — the headline level, since daily estimates swing ~8%. */
+    average7d: z.number().positive().nullable(),
+    /** Trailing 7-entry mean vs the 7-entry mean 30 days back, %, 2 dp. */
     change30dPct: z.number().nullable(),
     series: z.array(networkPointSchema).min(2).superRefine(refineAscendingDates),
   }),
@@ -296,6 +299,7 @@ export const networkDatasetSchema = z.object({
     unit: z.literal('tx/day'),
     /** Mean of the trailing 30 entries, whole transactions. */
     average30d: z.number().positive().nullable(),
+    /** Trailing 7-entry mean vs the 7-entry mean 30 days back, %, 2 dp. */
     change30dPct: z.number().nullable(),
     series: z.array(networkPointSchema).min(2).superRefine(refineAscendingDates),
   }),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { changeOverDaysPct, toExahashes, trailingAverage } from './network';
+import { changeOverDaysPct, smoothedChangePct, toExahashes, trailingAverage } from './network';
 import { mempoolFeesSchema, networkDatasetSchema } from './schema';
 
 const series = [
@@ -23,9 +23,34 @@ describe('toExahashes', () => {
     ]);
   });
 
-  it('fails loudly if the source silently changes units', () => {
-    // GH/s values would convert to a nonsensically small EH/s figure.
-    expect(() => toExahashes([{ date: '2026-07-25', value: 8.7e5 }])).toThrow('implausibly low');
+  it('fails loudly if the source changes units in either direction', () => {
+    // PH/s at source would read as ~0.87 EH/s: below the band.
+    expect(() => toExahashes([{ date: '2026-07-25', value: 8.7e5 }])).toThrow('plausible');
+    // GH/s at source would read as ~872,300 EH/s: above the band. This is the
+    // direction the milestone's first live run actually got wrong.
+    expect(() => toExahashes([{ date: '2026-07-25', value: 8.7e11 }])).toThrow('plausible');
+  });
+});
+
+describe('smoothedChangePct', () => {
+  it('compares trailing means at both ends rather than endpoints', () => {
+    // Base window (2 entries ending 2026-06-25): mean 200.
+    // Last window (2 entries): mean 600. (600/200 − 1) × 100 = +200%.
+    const noisy = [
+      { date: '2026-06-24', value: 100 },
+      { date: '2026-06-25', value: 300 },
+      { date: '2026-07-24', value: 500 },
+      { date: '2026-07-25', value: 700 },
+    ];
+    expect(smoothedChangePct(noisy, 30, 2)).toBe(200);
+    // The endpoint method on the same data is dominated by the spiky base.
+    expect(changeOverDaysPct(noisy, 30)).toBe(133.33);
+  });
+
+  it('is null for an empty series, a zero window, and an unreachable base', () => {
+    expect(smoothedChangePct([], 30, 7)).toBeNull();
+    expect(smoothedChangePct(series, 30, 0)).toBeNull();
+    expect(smoothedChangePct(series, 3650, 7)).toBeNull();
   });
 });
 
@@ -50,6 +75,13 @@ describe('trailingAverage', () => {
     // Window longer than the series averages everything present.
     expect(trailingAverage(series, 99)).toBe(568); // (500+520+600+650)/4 = 567.5 -> 568
     expect(trailingAverage([], 30)).toBeNull();
+  });
+
+  it('honours a decimal precision and rejects a non-positive window', () => {
+    expect(trailingAverage(series, 2, 1)).toBe(625);
+    expect(trailingAverage([{ date: '2026-07-26', value: 1 }, ...series], 3, 2)).toBe(590);
+    // slice(-0) would silently average the whole series.
+    expect(trailingAverage(series, 0)).toBeNull();
   });
 });
 
@@ -76,6 +108,7 @@ describe('networkDatasetSchema', () => {
     keepDays: 730,
     hashRate: {
       unit: 'EH/s',
+      average7d: 625.5,
       change30dPct: 25,
       series: [
         { date: '2026-07-25', value: 600 },

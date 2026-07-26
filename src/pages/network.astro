@@ -6,7 +6,6 @@ import { network } from '../lib/data';
 import { formatPct } from '../lib/format';
 
 const { hashRate, txCount, asOf, keepDays } = network;
-const latestHash = hashRate.series.at(-1)?.value ?? null;
 const latestTx = txCount.series.at(-1)?.value ?? null;
 const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
 ---
@@ -20,15 +19,17 @@ const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFra
   <dl class="stat-grid">
     <div class="stat">
       <dt>Hash rate</dt>
-      <dd class="num">{latestHash === null ? '—' : `${compact.format(latestHash)} EH/s`}</dd>
-      <dd class="sub num">{asOf}</dd>
+      <dd class="num">{hashRate.average7d === null ? '—' : `${compact.format(hashRate.average7d)} EH/s`}</dd>
+      <dd class="sub num">7d mean · {asOf}</dd>
     </div>
     <div class="stat">
       <dt>Hash rate, 30d</dt>
-      <dd class={`num ${(hashRate.change30dPct ?? 0) < 0 ? 'down' : 'up'}`}>
+      <dd
+        class={`num ${hashRate.change30dPct === null ? '' : hashRate.change30dPct < 0 ? 'down' : 'up'}`}
+      >
         {hashRate.change30dPct === null ? '—' : formatPct(hashRate.change30dPct)}
       </dd>
-      <dd class="sub num">change</dd>
+      <dd class="sub num">7d mean vs 30d ago</dd>
     </div>
     <div class="stat">
       <dt>Transactions</dt>
@@ -59,10 +60,13 @@ const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFra
     <NetworkCharts />
     <p class="method-note">
       Network hash rate (exahashes per second, converted in the pipeline from blockchain.com's
-      GH/s) and confirmed transactions per day, both from blockchain.com's keyless charts API —
-      the same source and payload shape as the price history, so parsing is shared. Change and
-      average figures compare against the closest entry at or before 30 days back and are computed
-      in the pipeline by fixture-tested pure functions.
+      TH/s) and confirmed transactions per day, both from blockchain.com's keyless charts API —
+      the same source and payload shape as the price history, so parsing is shared. Hash rate is
+      estimated from block timing rather than measured, so its daily value swings several percent
+      on chance alone: the headline figure and the 30d change both use trailing 7-day means, which
+      is why the tiles can differ from the last point on the chart. blockchain.com publishes
+      complete UTC days, so this page lags the price pages by a day. All figures are computed in
+      the pipeline by fixture-tested pure functions.
     </p>
   </section>
 </Base>

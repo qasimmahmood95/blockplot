@@ -42,8 +42,10 @@ and never gitignored.
   committed snapshot renders and the island upgrades it, falling back on
   failure — the same pattern as the ticker).
 - The site builds purely from `/data` (pipeline-committed, zod-validated,
-  versioned JSON). The only runtime fetch is the header ticker island
-  (CoinGecko spot price).
+  versioned JSON). Exactly two runtime fetches are sanctioned, both of which
+  render a committed value first and upgrade it on success: the header ticker
+  (CoinGecko spot price) and the network page's fee tiers (mempool.space).
+  Adding a third requires amending this list in the same PR.
 - Every metric calculation is a pure function under `pipeline/` with unit
   tests against fixed fixtures asserting exact expected outputs. No metric
   maths in UI components.

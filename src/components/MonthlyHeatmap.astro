@@ -33,7 +33,7 @@ const intensity = (value: number): string => {
       <tr>
         <th scope="col">Year</th>
         {MONTH_LABELS.map((label) => <th scope="col" class="num">{label}</th>)}
-        <th scope="col" class="num total">Year</th>
+        <th scope="col" class="num total">Total</th>
       </tr>
     </thead>
     <tbody>
@@ -47,7 +47,7 @@ const intensity = (value: number): string => {
                 return value === undefined ? (
                   <td class="num empty" aria-label={`${label} ${year}: no data`}>·</td>
                 ) : (
-                  <td class={`num heat heat-${intensity(value)}`}>{formatPct(value)}</td>
+                  <td class={`num heat-${intensity(value)}`}>{formatPct(value)}</td>
                 );
               })
             }

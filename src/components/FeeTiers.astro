@@ -11,7 +11,7 @@ const rows = [
 ];
 ---
 
-<div class="fee-tiers" id="fee-tiers" aria-live="polite">
+<div class="fee-tiers" id="fee-tiers">
   {
     rows.map(({ key, label, value }) => (
       <div class="fee-tier">
@@ -32,6 +32,14 @@ const rows = [
   // CLAUDE.md) and keep the committed values on any failure.
   const KEYS = ['fastestFee', 'halfHourFee', 'hourFee', 'economyFee', 'minimumFee'] as const;
   const status = document.getElementById('fee-status');
+  const committedLabel = status?.textContent ?? '';
+
+  function markStale(): void {
+    // A later failure must not leave a stale "live" claim on screen.
+    if (!status) return;
+    status.textContent = committedLabel;
+    status.classList.remove('fee-live');
+  }
 
   async function refreshFees(): Promise<void> {
     if (document.hidden) return;
@@ -39,9 +47,15 @@ const rows = [
       const res = await fetch('https://mempool.space/api/v1/fees/recommended', {
         headers: { accept: 'application/json' },
       });
-      if (!res.ok) return;
+      if (!res.ok) return markStale();
       const payload = (await res.json()) as Partial<Record<(typeof KEYS)[number], number>>;
-      if (KEYS.some((k) => typeof payload[k] !== 'number' || !(payload[k]! > 0))) return;
+      // Validate every tier before touching the DOM, so a partial or garbage
+      // payload can never produce a half-updated grid.
+      const valid = KEYS.every((k) => {
+        const v = payload[k];
+        return typeof v === 'number' && Number.isFinite(v) && v > 0;
+      });
+      if (!valid) return markStale();
       for (const key of KEYS) {
         const el = document.querySelector(`[data-fee="${key}"]`);
         if (el) el.textContent = String(payload[key]);
@@ -52,6 +66,7 @@ const rows = [
       }
     } catch {
       // keep the committed snapshot
+      markStale();
     }
   }
 

@@ -14,11 +14,12 @@ import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
 import { buildMonthlyDataset } from './monthly';
 import {
-  changeOverDaysPct,
   fetchFeeTiers,
   fetchHashRate,
   fetchTxCount,
   NETWORK_KEEP_DAYS,
+  readExistingFees,
+  smoothedChangePct,
   trailingAverage,
 } from './network';
 import { computeStats, toDailySeries } from './prices';
@@ -109,31 +110,6 @@ if (stablecoins) {
   await writeJson('data/stablecoins.json', stablecoinDataset);
   console.log(
     `data/stablecoins.json: ${stablecoins.length} days, latest $${stablecoins.at(-1)?.totalUsd}`,
-  );
-}
-
-if (hashRate && txCount && feeTiers) {
-  const network = networkDatasetSchema.parse({
-    schemaVersion: 1,
-    fetchedAt,
-    asOf: hashRate.at(-1)?.date ?? txCount.at(-1)?.date,
-    keepDays: NETWORK_KEEP_DAYS,
-    hashRate: {
-      unit: 'EH/s',
-      change30dPct: changeOverDaysPct(hashRate, 30),
-      series: hashRate,
-    },
-    txCount: {
-      unit: 'tx/day',
-      average30d: trailingAverage(txCount, 30),
-      change30dPct: changeOverDaysPct(txCount, 30),
-      series: txCount,
-    },
-    fees: { source: 'mempool.space', tiers: feeTiers },
-  });
-  await writeJson('data/network.json', network);
-  console.log(
-    `data/network.json: hash rate ${hashRate.at(-1)?.value} EH/s, ${txCount.at(-1)?.value} tx on ${network.asOf}, fastest fee ${feeTiers.fastestFee} sat/vB`,
   );
 }
 
@@ -235,6 +211,45 @@ if (series && sp500 && goldFetch && history) {
     await writeJson('data/correlations.json', correlations);
     console.log(
       `data/correlations.json: ${correlations.pairs.map((p) => `${p.pair}=${p.series.length}`).join(' ')}`,
+    );
+  }
+}
+
+// Network writes LAST: it is the newest block, so a bug here must not cost
+// any earlier dataset its refresh (the same reasoning that puts the accreted
+// dominance series first).
+if (hashRate && txCount) {
+  // Fees tolerate staleness by design — the page's island refreshes them —
+  // so a mempool.space outage falls back to the committed tiers rather than
+  // freezing the hash-rate and transaction series for six hours.
+  const tiers = feeTiers ?? (await readExistingFees('data/network.json'));
+  if (!tiers) {
+    console.warn('warning: no fee tiers available and no committed fallback — skipping network.json');
+  } else {
+    const network = networkDatasetSchema.parse({
+      schemaVersion: 1,
+      fetchedAt,
+      // The two series can end on different days; label the dataset with the
+      // earlier one so no figure claims to be fresher than it is.
+      asOf: [hashRate.at(-1)?.date, txCount.at(-1)?.date].filter(Boolean).sort()[0],
+      keepDays: NETWORK_KEEP_DAYS,
+      hashRate: {
+        unit: 'EH/s',
+        average7d: trailingAverage(hashRate, 7, 1),
+        change30dPct: smoothedChangePct(hashRate, 30, 7),
+        series: hashRate,
+      },
+      txCount: {
+        unit: 'tx/day',
+        average30d: trailingAverage(txCount, 30),
+        change30dPct: smoothedChangePct(txCount, 30, 7),
+        series: txCount,
+      },
+      fees: { source: 'mempool.space', tiers },
+    });
+    await writeJson('data/network.json', network);
+    console.log(
+      `data/network.json: hash rate ${network.hashRate.average7d} EH/s (7d mean), ${txCount.at(-1)?.value} tx on ${network.asOf}, fastest fee ${tiers.fastestFee} sat/vB${feeTiers ? '' : ' (committed fallback)'}`,
     );
   }
 }

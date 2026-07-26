@@ -295,10 +295,17 @@ code {
 
 /* Monthly heatmap: fixed-threshold diverging steps on the pos/neg tokens, so
    a colour always means the same magnitude regardless of the year in view. */
+/* Tight cells so all 14 columns — including the Total, a headline figure —
+   fit the 60rem body width without horizontal scrolling on desktop. */
 .heatmap th,
 .heatmap td {
-  padding: 0.4rem 0.6rem;
-  font-size: 0.78rem;
+  padding: 0.4rem 0.32rem;
+  font-size: 0.72rem;
+}
+
+.heatmap tbody th,
+.heatmap td.total {
+  padding-inline: 0.5rem;
 }
 
 .heatmap td.empty {
