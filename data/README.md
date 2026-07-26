@@ -11,5 +11,5 @@ commit; every refresh since is bot-authored.
 | File | Contents |
 | ---- | -------- |
 | `btc-price-daily.json` | BTC/USD daily closes (CoinGecko, past 365 days) plus headline stats |
-| `benchmarks-daily.json` | S&P 500 (FRED `SP500`) and gold XAU/USD (Yahoo Finance) daily closes, trailing 400 days |
+| `benchmarks-daily.json` | S&P 500 (FRED `SP500`) and gold (Yahoo Finance, spot or front-month futures — see `sourceSeries`) daily closes, trailing 400 days |
 | `risk-metrics.json` | Derived risk metrics: rolling 30/90/365d realized vol, drawdown curve, Sharpe/Sortino comparison vs S&P 500 and gold |

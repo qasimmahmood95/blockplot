@@ -2,7 +2,7 @@
 import DrawdownChart from '../components/DrawdownChart.astro';
 import VolChart from '../components/VolChart.astro';
 import Base from '../layouts/Base.astro';
-import { riskMetrics } from '../lib/data';
+import { benchmarksDaily, riskMetrics } from '../lib/data';
 import { formatPct, formatRatio, formatUnsignedPct } from '../lib/format';
 
 const { rollingVol, drawdown, comparison, windowDays, asOf } = riskMetrics;
@@ -13,10 +13,13 @@ const vol30 = latestVol(30);
 const vol90 = latestVol(90);
 const btc = comparison.find((c) => c.asset === 'btc');
 
+// Gold's label carries whichever Yahoo series actually served the data
+// (XAU/USD spot preferred, COMEX front-month futures as fallback).
+const goldSeries = benchmarksDaily.benchmarks.find((b) => b.asset === 'gold')?.sourceSeries;
 const assetLabels: Record<string, string> = {
   btc: 'Bitcoin',
   sp500: 'S&P 500',
-  gold: 'Gold (XAU/USD)',
+  gold: goldSeries ? `Gold (${goldSeries})` : 'Gold',
 };
 ---
 
@@ -103,10 +106,11 @@ const assetLabels: Record<string, string> = {
       </table>
     </div>
     <p class="method-note">
-      Daily closes: BTC from CoinGecko, S&amp;P 500 from FRED's keyless CSV export, gold spot
-      (XAU/USD) from Yahoo Finance's chart API — FRED's LBMA gold series were discontinued in 2022.
-      Each asset keeps its own trading calendar inside BTC's {windowDays}-day window; returns are
-      daily log returns.
+      Daily closes: BTC from CoinGecko, S&amp;P 500 from FRED's keyless CSV export, gold from
+      Yahoo Finance's chart API (XAU/USD spot when available, COMEX front-month futures otherwise;
+      this dataset carries {goldSeries ?? 'no gold series'}) — FRED's LBMA gold series were
+      discontinued in 2022. Each asset keeps its own trading calendar inside BTC's {windowDays}-day
+      window; returns are daily log returns.
       Sharpe uses a 0% risk-free rate; Sortino uses target downside deviation below 0% over all
       observations. Both annualize by √365 for BTC and √252 for market-hours assets, so figures are
       indicative rather than strictly like-for-like. All metrics are computed in the pipeline by
