@@ -1,0 +1,27 @@
+---
+import DcaSimulator from '../components/DcaSimulator.astro';
+import Base from '../layouts/Base.astro';
+import { halvingCycles } from '../lib/data';
+---
+
+<Base
+  title="blockplot · DCA simulator"
+  description="Simulate weekly or monthly BTC dollar-cost averaging vs an equal lump sum from any start date, fees included."
+>
+  <h1 class="visually-hidden">DCA simulator</h1>
+
+  <section class="chart-section">
+    <h2>DCA vs lump sum · fully client-side</h2>
+    <DcaSimulator />
+    <p class="method-note">
+      Each scheduled buy spends the fixed amount, less the per-buy fee, at that day's close (a
+      schedule date missing from the data buys on the next available day; month-end schedules
+      clamp, e.g. Jan 31 → Feb 29). The lump sum invests the same total budget on the start date
+      with the same fee rate applied once. Undeployed DCA cash counts toward wealth, so both
+      strategies start from the same budget and the comparison is like-for-like. Prices are
+      blockchain.com daily closes through {halvingCycles.asOf}; the simulation runs entirely in
+      the browser on the committed dataset with the same fixture-tested functions as the pipeline,
+      and ignores taxes, slippage, and yield on idle cash.
+    </p>
+  </section>
+</Base>
