@@ -28,7 +28,7 @@ and never gitignored.
 ## Workflow
 
 - Conventional commit messages throughout.
-- One PR per milestone (M1–M6 in PLAN.md), in order. PR descriptions follow
+- One PR per milestone (M1 onward, per PLAN.md), in order. PR descriptions follow
   `.github/pull_request_template.md`: scope, approach, and what the tests pin
   down. Human review happens at PR boundaries.
 - Process artifacts are committed, not hidden.
