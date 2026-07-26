@@ -4,6 +4,14 @@ on:
   schedule:
     - cron: '0 */6 * * *'
   workflow_dispatch:
+  # A push that changes pipeline code refreshes /data for that branch, so a
+  # milestone introducing new datasets gets them seeded on its own branch by
+  # the bot — hand-seeding by the developer would break commit-authorship
+  # rules (see CLAUDE.md). GITHUB_TOKEN pushes never re-fire this trigger.
+  push:
+    paths:
+      - 'pipeline/**'
+      - '.github/workflows/pipeline.yml'
 
 concurrency:
   group: pipeline
@@ -38,7 +46,7 @@ jobs:
       # Pushes made with GITHUB_TOKEN do not fire push-triggered workflows,
       # so a data refresh has to dispatch the deploy explicitly.
       - name: Trigger deploy
-        if: env.PUSHED == '1'
+        if: env.PUSHED == '1' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy.yml --ref main

@@ -9,6 +9,10 @@
   --ink-muted: #6e665e;
   --line: #e2dbd1;
   --accent: #bf4a08;
+  /* Lighter step of the accent's ordinal ramp, for the shorter window in
+     multi-window charts (30d light -> 90d full accent). Both ramps validated:
+     monotone lightness, step gap >= 0.06 L, light end >= 2:1 on surface. */
+  --accent-soft: #e08a4e;
   --pos: #1a7a4f;
   --neg: #b3383b;
 
@@ -25,6 +29,7 @@
     --ink-muted: #968c80;
     --line: #322c25;
     --accent: #e97328;
+    --accent-soft: #9c4d13; /* on dark the ramp anchors flip: dim step 30d, bright accent 90d */
     --pos: #4fae7f;
     --neg: #d96a6c;
   }

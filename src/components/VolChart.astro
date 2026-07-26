@@ -1,0 +1,103 @@
+<figure class="chart-frame">
+  <div id="vol-chart-legend" class="chart-legend" aria-hidden="true"></div>
+  <div
+    id="vol-chart"
+    role="img"
+    aria-label="Line chart of annualized BTC realized volatility over rolling 30 and 90 day windows"
+  >
+  </div>
+</figure>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import dataset from '../../data/risk-metrics.json';
+  import { cssVar, responsiveChart } from '../lib/charts';
+
+  const container = document.getElementById('vol-chart');
+  const legend = document.getElementById('vol-chart-legend');
+
+  // Ordinal ramp: shorter window -> lighter accent step. 365d stays empty
+  // until pre-window history arrives (M2); only populated windows render.
+  const RAMP: Record<string, string> = { '30d': '--accent-soft', '90d': '--accent' };
+  const windows = dataset.rollingVol.filter((w) => w.series.length > 0);
+  const points = windows.flatMap((w) =>
+    w.series.map((p) => ({
+      window: `${w.windowDays}d`,
+      date: new Date(p.date),
+      volPct: p.volPct,
+    })),
+  );
+  const lineEnds = windows.flatMap((w) => {
+    const last = w.series[w.series.length - 1];
+    return last
+      ? [{ window: `${w.windowDays}d`, date: new Date(last.date), volPct: last.volPct }]
+      : [];
+  });
+  const domain = windows.map((w) => `${w.windowDays}d`);
+
+  function render(): void {
+    if (!container) return;
+    const range = domain.map((w) => cssVar(RAMP[w] ?? '--ink'));
+    if (legend) {
+      legend.replaceChildren(
+        ...domain.map((w, i) => {
+          const item = document.createElement('span');
+          item.className = 'legend-item';
+          const swatch = document.createElement('span');
+          swatch.className = 'legend-swatch';
+          swatch.style.background = range[i] ?? '';
+          item.append(swatch, w);
+          return item;
+        }),
+      );
+    }
+    container.replaceChildren(
+      Plot.plot({
+        width: container.clientWidth || 720,
+        height: 300,
+        marginLeft: 48,
+        marginRight: 44,
+        x: { label: null },
+        y: {
+          label: null,
+          grid: true,
+          tickFormat: (value: number) => `${value}%`,
+        },
+        color: { domain, range },
+        marks: [
+          Plot.lineY(points, {
+            x: 'date',
+            y: 'volPct',
+            stroke: 'window',
+            strokeWidth: 1.75,
+          }),
+          Plot.text(lineEnds, {
+            x: 'date',
+            y: 'volPct',
+            text: 'window',
+            dx: 20,
+            fill: cssVar('--ink'),
+            fontSize: 11,
+          }),
+          Plot.tip(
+            points,
+            Plot.pointerX({
+              x: 'date',
+              y: 'volPct',
+              title: (d: { window: string; date: Date; volPct: number }) =>
+                `${d.date.toISOString().slice(0, 10)}\n${d.window} vol ${d.volPct.toFixed(1)}%`,
+            }),
+          ),
+        ],
+        style: {
+          background: 'transparent',
+          color: cssVar('--ink-muted'),
+          fontFamily: cssVar('--font-mono'),
+          fontSize: '11px',
+        },
+      }),
+    );
+  }
+
+  responsiveChart(render);
+</script>

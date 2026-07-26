@@ -1,0 +1,60 @@
+<figure class="chart-frame">
+  <div
+    id="drawdown-chart"
+    role="img"
+    aria-label="Area chart of BTC decline from its running peak, per day"
+  >
+  </div>
+</figure>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import dataset from '../../data/risk-metrics.json';
+  import { cssVar, responsiveChart } from '../lib/charts';
+
+  const container = document.getElementById('drawdown-chart');
+  const points = dataset.drawdown.series.map((p) => ({
+    date: new Date(p.date),
+    drawdownPct: p.drawdownPct,
+  }));
+
+  function render(): void {
+    if (!container) return;
+    const neg = cssVar('--neg');
+    container.replaceChildren(
+      Plot.plot({
+        width: container.clientWidth || 720,
+        height: 260,
+        marginLeft: 48,
+        x: { label: null },
+        y: {
+          label: null,
+          grid: true,
+          tickFormat: (value: number) => `${value}%`,
+        },
+        marks: [
+          Plot.areaY(points, { x: 'date', y: 'drawdownPct', fill: neg, fillOpacity: 0.12 }),
+          Plot.lineY(points, { x: 'date', y: 'drawdownPct', stroke: neg, strokeWidth: 1.5 }),
+          Plot.ruleY([0], { stroke: cssVar('--line') }),
+          Plot.tip(
+            points,
+            Plot.pointerX({
+              x: 'date',
+              y: 'drawdownPct',
+              title: (d: { date: Date; drawdownPct: number }) =>
+                `${d.date.toISOString().slice(0, 10)}\ndrawdown ${d.drawdownPct.toFixed(1)}%`,
+            }),
+          ),
+        ],
+        style: {
+          background: 'transparent',
+          color: cssVar('--ink-muted'),
+          fontFamily: cssVar('--font-mono'),
+          fontSize: '11px',
+        },
+      }),
+    );
+  }
+
+  responsiveChart(render);
+</script>

@@ -1,0 +1,18 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": { "symbol": "XAUUSD=X", "currency": "USD" },
+        "timestamp": [1709251200, 1709510400, 1709596800, 1709856000, 1709900000],
+        "indicators": {
+          "quote": [
+            {
+              "close": [2050, 2080, null, 2044.16, 2046]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}
