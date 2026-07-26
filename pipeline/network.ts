@@ -27,17 +27,32 @@ async function fetchChart(slug: string): Promise<NetworkPoint[]> {
   return trimToLastDays(series, NETWORK_KEEP_DAYS);
 }
 
+/** blockchain.com reports hash rate in TH/s; the site displays EH/s. */
+export const TH_PER_EH = 1e6;
+
 /**
- * Network hash rate. blockchain.com reports it in GH/s (giga-hashes per
- * second); the site displays EH/s, so convert once here — 1 EH/s = 1e9 GH/s —
- * and keep the on-disk unit explicit.
+ * Sanity floor on the converted series: the network passed 100 EH/s in 2021
+ * and only climbs, so anything below this means the source changed units and
+ * must fail loudly rather than render a plausible-looking wrong number.
  */
-export async function fetchHashRate(): Promise<NetworkPoint[]> {
-  const series = await fetchChart('hash-rate');
-  return series.map(({ date, value }) => ({
+const MIN_PLAUSIBLE_EH = 100;
+
+export function toExahashes(series: NetworkPoint[]): NetworkPoint[] {
+  const converted = series.map(({ date, value }) => ({
     date,
-    value: Math.round((value / 1e9) * 100) / 100,
+    value: Math.round((value / TH_PER_EH) * 100) / 100,
   }));
+  const latest = converted.at(-1);
+  if (latest && latest.value < MIN_PLAUSIBLE_EH) {
+    throw new Error(
+      `toExahashes: latest ${latest.value} EH/s is implausibly low — source units likely changed`,
+    );
+  }
+  return converted;
+}
+
+export async function fetchHashRate(): Promise<NetworkPoint[]> {
+  return toExahashes(await fetchChart('hash-rate'));
 }
 
 /** Confirmed transactions per day. */

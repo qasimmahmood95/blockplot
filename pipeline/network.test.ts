@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { changeOverDaysPct, trailingAverage } from './network';
+import { changeOverDaysPct, toExahashes, trailingAverage } from './network';
 import { mempoolFeesSchema, networkDatasetSchema } from './schema';
 
 const series = [
@@ -8,6 +8,26 @@ const series = [
   { date: '2026-07-20', value: 600 },
   { date: '2026-07-26', value: 650 },
 ];
+
+describe('toExahashes', () => {
+  it('converts the source TH/s to EH/s at 2 dp', () => {
+    // 8.7e8 TH/s is ~870 EH/s, the 2026 order of magnitude.
+    expect(
+      toExahashes([
+        { date: '2026-07-24', value: 8.5e8 },
+        { date: '2026-07-25', value: 8.7e8 },
+      ]),
+    ).toEqual([
+      { date: '2026-07-24', value: 850 },
+      { date: '2026-07-25', value: 870 },
+    ]);
+  });
+
+  it('fails loudly if the source silently changes units', () => {
+    // GH/s values would convert to a nonsensically small EH/s figure.
+    expect(() => toExahashes([{ date: '2026-07-25', value: 8.7e5 }])).toThrow('implausibly low');
+  });
+});
 
 describe('changeOverDaysPct', () => {
   it('compares against the closest entry at or before the target date', () => {
