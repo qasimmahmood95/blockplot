@@ -1,10 +1,4 @@
-import {
-  BENCHMARK_KEEP_DAYS,
-  fetchGold,
-  fetchSp500,
-  GOLD_STOOQ_SERIES,
-  SP500_FRED_SERIES,
-} from './benchmarks';
+import { BENCHMARK_KEEP_DAYS, fetchGold, fetchSp500, SP500_FRED_SERIES } from './benchmarks';
 import { fetchBtcMarketChart, PRICE_RANGE_DAYS } from './coingecko';
 import { writeJson } from './io';
 import { computeStats, toDailySeries } from './prices';
@@ -17,7 +11,12 @@ import {
 } from './schema';
 
 const fetchedAt = new Date().toISOString();
-const [raw, sp500, gold] = await Promise.all([fetchBtcMarketChart(), fetchSp500(), fetchGold()]);
+const [raw, sp500, goldFetch] = await Promise.all([
+  fetchBtcMarketChart(),
+  fetchSp500(),
+  fetchGold(),
+]);
+const gold = goldFetch.series;
 
 const series = toDailySeries(raw.prices);
 const prices: PriceDataset = {
@@ -39,11 +38,13 @@ const benchmarks: BenchmarkDataset = benchmarkDatasetSchema.parse({
   keepDays: BENCHMARK_KEEP_DAYS,
   benchmarks: [
     { asset: 'sp500', source: 'fred', sourceSeries: SP500_FRED_SERIES, series: sp500 },
-    { asset: 'gold', source: 'stooq', sourceSeries: GOLD_STOOQ_SERIES, series: gold },
+    { asset: 'gold', source: 'yahoo', sourceSeries: goldFetch.ticker, series: gold },
   ],
 });
 await writeJson('data/benchmarks-daily.json', benchmarks);
-console.log(`data/benchmarks-daily.json: sp500 ${sp500.length} days, gold ${gold.length} days`);
+console.log(
+  `data/benchmarks-daily.json: sp500 ${sp500.length} days, gold ${gold.length} days (${goldFetch.ticker})`,
+);
 
 const risk = riskDatasetSchema.parse(buildRiskDataset(series, { sp500, gold }, { fetchedAt }));
 await writeJson('data/risk-metrics.json', risk);

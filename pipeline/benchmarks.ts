@@ -1,18 +1,20 @@
-import { getText } from './http';
-import type { BenchmarkDay } from './schema';
+import { getJson, getText } from './http';
+import { yahooChartSchema, type BenchmarkDay } from './schema';
 
 /**
  * Benchmark sources. S&P 500 comes from FRED's keyless fredgraph.csv export
  * (the JSON API needs an account key; the CSV export does not). Gold cannot
  * come from FRED — its LBMA series were discontinued in 2022 when IBA pulled
- * redistribution rights — so it comes from stooq's keyless daily-CSV export
- * of XAU/USD instead.
+ * redistribution rights — and stooq's CSV export sits behind a JavaScript
+ * bot-check for CI runner IPs (confirmed 2026-07-26), so gold comes from
+ * Yahoo Finance's keyless chart API: XAU/USD spot first, COMEX front-month
+ * futures as fallback.
  */
 export const SP500_FRED_SERIES = 'SP500';
-export const GOLD_STOOQ_SERIES = 'XAUUSD';
+export const GOLD_YAHOO_TICKERS = ['XAUUSD=X', 'GC=F'];
 
 const FRED_CSV_URL = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${SP500_FRED_SERIES}`;
-const STOOQ_CSV_URL = `https://stooq.com/q/d/l/?s=${GOLD_STOOQ_SERIES.toLowerCase()}&i=d`;
+const YAHOO_CHART_API = 'https://query1.finance.yahoo.com/v8/finance/chart';
 
 /** Trailing calendar days of benchmark history kept on disk — covers the 365-day BTC window with margin. */
 export const BENCHMARK_KEEP_DAYS = 400;
@@ -56,27 +58,33 @@ export function parseFredCsv(csv: string, seriesId: string): BenchmarkDay[] {
 }
 
 /**
- * Parse a stooq daily-CSV export (`Date,Open,High,Low,Close,Volume`). The
- * strict header check doubles as the guard against stooq's plain-text
- * rate-limit responses.
+ * Collapse a Yahoo chart payload into one close per UTC day. Null closes
+ * (market holidays / missing bars) are skipped; when two bars share a UTC
+ * day the chronologically last one wins, mirroring toDailySeries.
  */
-export function parseStooqCsv(csv: string): BenchmarkDay[] {
-  const lines = csv.trim().split(/\r?\n/);
-  if ((lines[0] ?? '').trim() !== 'Date,Open,High,Low,Close,Volume') {
-    throw new Error(`parseStooqCsv: unexpected header "${lines[0] ?? ''}"`);
+export function parseYahooChart(payload: unknown): BenchmarkDay[] {
+  const result = yahooChartSchema.parse(payload).chart.result[0];
+  if (!result) throw new Error('parseYahooChart: empty result');
+  const closes = result.indicators.quote[0]?.close ?? [];
+  if (closes.length !== result.timestamp.length) {
+    throw new Error('parseYahooChart: timestamp/close length mismatch');
   }
-  const out: BenchmarkDay[] = [];
-  for (const line of lines.slice(1)) {
-    const cells = line.split(',').map((cell) => cell.trim());
-    const date = cells[0];
-    if (cells.length < 5 || !date || !DATE_RE.test(date)) {
-      throw new Error(`parseStooqCsv: bad row "${line}"`);
-    }
-    const close = Number(cells[4]);
-    if (!Number.isFinite(close) || close <= 0) throw new Error(`parseStooqCsv: bad close "${line}"`);
-    out.push({ date, close });
-  }
-  return assertAscending(out, 'parseStooqCsv');
+  const byDate = new Map<string, number>();
+  [...result.timestamp.keys()]
+    .sort((a, b) => (result.timestamp[a] ?? 0) - (result.timestamp[b] ?? 0))
+    .forEach((i) => {
+      const ts = result.timestamp[i];
+      const close = closes[i];
+      if (ts === undefined || close === null || close === undefined) return;
+      if (!Number.isFinite(close) || close <= 0) {
+        throw new Error(`parseYahooChart: bad close ${close}`);
+      }
+      byDate.set(new Date(ts * 1000).toISOString().slice(0, 10), close);
+    });
+  const out = [...byDate.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([date, close]) => ({ date, close }));
+  return assertAscending(out, 'parseYahooChart');
 }
 
 /** Keep only entries within `days` calendar days of the series' last entry. */
@@ -93,6 +101,21 @@ export async function fetchSp500(): Promise<BenchmarkDay[]> {
   return trimToLastDays(parseFredCsv(await getText(FRED_CSV_URL), SP500_FRED_SERIES), BENCHMARK_KEEP_DAYS);
 }
 
-export async function fetchGold(): Promise<BenchmarkDay[]> {
-  return trimToLastDays(parseStooqCsv(await getText(STOOQ_CSV_URL)), BENCHMARK_KEEP_DAYS);
+export interface GoldFetch {
+  /** The Yahoo ticker that actually served the data. */
+  ticker: string;
+  series: BenchmarkDay[];
+}
+
+export async function fetchGold(): Promise<GoldFetch> {
+  let lastError: unknown;
+  for (const ticker of GOLD_YAHOO_TICKERS) {
+    const url = `${YAHOO_CHART_API}/${encodeURIComponent(ticker)}?range=2y&interval=1d`;
+    try {
+      return { ticker, series: trimToLastDays(parseYahooChart(await getJson(url)), BENCHMARK_KEEP_DAYS) };
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('fetchGold: all tickers failed');
 }

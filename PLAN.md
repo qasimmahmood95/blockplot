@@ -69,7 +69,9 @@ what its tests pin down.
   full-window figure stands in); it populates once M2 lands deeper history.
 - FRED works keylessly via its `fredgraph.csv` export (the JSON API needs an
   account key), which serves the S&P 500 (`SP500`). FRED's LBMA gold series
-  were discontinued in 2022 when IBA pulled redistribution, so gold spot
-  (XAU/USD) comes from stooq's keyless daily CSV instead (decided in the M1
-  PR). DXY sourcing is decided in the M3 PR.
+  were discontinued in 2022 when IBA pulled redistribution, and stooq's CSV
+  export sits behind a JavaScript bot-check for CI runner IPs (confirmed
+  2026-07-26), so gold comes from Yahoo Finance's keyless chart API —
+  XAU/USD spot, falling back to COMEX front-month futures (`GC=F`) — decided
+  in the M1 PR. DXY sourcing is decided in the M3 PR.
 - M5 exchange netflow ships only if a free source exists; otherwise dropped.

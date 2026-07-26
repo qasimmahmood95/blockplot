@@ -104,8 +104,9 @@ const assetLabels: Record<string, string> = {
     </div>
     <p class="method-note">
       Daily closes: BTC from CoinGecko, S&amp;P 500 from FRED's keyless CSV export, gold spot
-      (XAU/USD) from stooq — FRED's LBMA gold series were discontinued in 2022. Each asset keeps its
-      own trading calendar inside BTC's {windowDays}-day window; returns are daily log returns.
+      (XAU/USD) from Yahoo Finance's chart API — FRED's LBMA gold series were discontinued in 2022.
+      Each asset keeps its own trading calendar inside BTC's {windowDays}-day window; returns are
+      daily log returns.
       Sharpe uses a 0% risk-free rate; Sortino uses target downside deviation below 0% over all
       observations. Both annualize by √365 for BTC and √252 for market-hours assets, so figures are
       indicative rather than strictly like-for-like. All metrics are computed in the pipeline by

@@ -37,6 +37,22 @@ export interface PriceDataset {
   series: DailyPrice[];
 }
 
+/** Raw response shape of Yahoo Finance `/v8/finance/chart/{ticker}` (the parts we read). */
+export const yahooChartSchema = z.object({
+  chart: z.object({
+    result: z
+      .array(
+        z.object({
+          timestamp: z.array(z.number()),
+          indicators: z.object({
+            quote: z.array(z.object({ close: z.array(z.number().nullable()) })),
+          }),
+        }),
+      )
+      .min(1),
+  }),
+});
+
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 /** One daily close of a benchmark series. */
@@ -57,7 +73,7 @@ export const benchmarkDatasetSchema = z.object({
   benchmarks: z.array(
     z.object({
       asset: z.enum(['sp500', 'gold']),
-      source: z.enum(['fred', 'stooq']),
+      source: z.enum(['fred', 'yahoo']),
       /** Identifier of the series at its source, e.g. the FRED series id. */
       sourceSeries: z.string().min(1),
       series: z.array(benchmarkDaySchema).min(2),

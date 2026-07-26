@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseFredCsv, parseStooqCsv, trimToLastDays } from './benchmarks';
+import { parseFredCsv, parseYahooChart, trimToLastDays } from './benchmarks';
 
 const fredCsv = readFileSync(new URL('./fixtures/fred-sp500.csv', import.meta.url), 'utf8');
-const stooqCsv = readFileSync(new URL('./fixtures/stooq-xauusd.csv', import.meta.url), 'utf8');
+const yahooGold = JSON.parse(
+  readFileSync(new URL('./fixtures/yahoo-gold.json', import.meta.url), 'utf8'),
+) as unknown;
 
 describe('parseFredCsv', () => {
   it('parses rows and skips "." market-holiday values', () => {
@@ -40,24 +42,41 @@ describe('parseFredCsv', () => {
   });
 });
 
-describe('parseStooqCsv', () => {
-  it('parses date and close from the OHLCV export', () => {
-    expect(parseStooqCsv(stooqCsv)).toEqual([
-      { date: '2024-02-29', close: 2100 },
+describe('parseYahooChart', () => {
+  it('collapses bars to one close per UTC day, skipping null closes, last bar wins', () => {
+    // Timestamps: 2024-03-01, 03-04, 03-05 (null close -> skipped), and two
+    // bars on 03-08 (00:00 and 12:13 UTC) where the later one wins.
+    expect(parseYahooChart(yahooGold)).toEqual([
       { date: '2024-03-01', close: 2050 },
-      { date: '2024-03-05', close: 2080 },
-      { date: '2024-03-08', close: 2044.16 },
+      { date: '2024-03-04', close: 2080 },
+      { date: '2024-03-08', close: 2046 },
     ]);
   });
 
-  it('rejects rate-limit text bodies via the strict header check', () => {
-    expect(() => parseStooqCsv('Exceeded the daily hits limit')).toThrow('unexpected header');
-  });
-
-  it('rejects short and malformed rows', () => {
-    const header = 'Date,Open,High,Low,Close,Volume\n';
-    expect(() => parseStooqCsv(`${header}2024-03-01,2048,2055\n`)).toThrow('bad row');
-    expect(() => parseStooqCsv(`${header}2024-03-01,2048,2055,2040,zero,\n`)).toThrow('bad close');
+  it('rejects error payloads, length mismatches, and non-positive closes', () => {
+    expect(() => parseYahooChart({ chart: { result: null, error: { code: 'Not Found' } } })).toThrow();
+    expect(() => parseYahooChart({ chart: { result: [], error: null } })).toThrow();
+    expect(() =>
+      parseYahooChart({
+        chart: {
+          result: [
+            { timestamp: [1709251200, 1709510400], indicators: { quote: [{ close: [2050] }] } },
+          ],
+        },
+      }),
+    ).toThrow('length mismatch');
+    expect(() =>
+      parseYahooChart({
+        chart: {
+          result: [{ timestamp: [1709251200], indicators: { quote: [{ close: [-1] }] } }],
+        },
+      }),
+    ).toThrow('bad close');
+    expect(() =>
+      parseYahooChart({
+        chart: { result: [{ timestamp: [], indicators: { quote: [{ close: [] }] } }] },
+      }),
+    ).toThrow('no data rows');
   });
 });
 
