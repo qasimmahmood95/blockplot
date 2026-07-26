@@ -53,7 +53,58 @@ export const yahooChartSchema = z.object({
   }),
 });
 
+/** Raw response shape of blockchain.com `/charts/market-price` (the parts we read). */
+export const blockchainChartSchema = z.object({
+  values: z.array(z.object({ x: z.number(), y: z.number() })).min(1),
+});
+
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+const dailyPriceSchema = z.object({ date: isoDate, priceUsd: z.number().positive() });
+
+/** Versioned on-disk format of data/btc-price-history.json (full daily history). */
+export const historyDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  source: z.literal('blockchain.info'),
+  /** ISO 8601 instant of the pipeline run that produced this file. */
+  fetchedAt: z.string(),
+  series: z.array(dailyPriceSchema).min(1000),
+});
+
+export type HistoryDataset = z.infer<typeof historyDatasetSchema>;
+
+const cyclePointSchema = z.object({
+  /** Calendar days since the halving. */
+  day: z.number().int().nonnegative(),
+  /** Price as a multiple of the halving-day close, 4 dp. */
+  multiple: z.number().positive(),
+});
+
+export type CyclePoint = z.infer<typeof cyclePointSchema>;
+
+const halvingCycleSchema = z.object({
+  cycle: z.number().int().positive(),
+  halvingDate: isoDate,
+  /** Next halving date, or null for the open current cycle. */
+  endDate: isoDate.nullable(),
+  basePriceUsd: z.number().positive(),
+  series: z.array(cyclePointSchema).min(1),
+});
+
+export type HalvingCycle = z.infer<typeof halvingCycleSchema>;
+
+/** Versioned on-disk format of data/halving-cycles.json. */
+export const halvingDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  source: z.literal('blockchain.info'),
+  /** ISO 8601 instant of the pipeline run that produced this file. */
+  fetchedAt: z.string(),
+  /** Last history date the cycles run up to. */
+  asOf: isoDate,
+  cycles: z.array(halvingCycleSchema).min(1),
+});
+
+export type HalvingDataset = z.infer<typeof halvingDatasetSchema>;
 
 /** One daily close of a benchmark series. */
 export const benchmarkDaySchema = z.object({
@@ -120,13 +171,15 @@ export type RiskAssetStats = z.infer<typeof riskAssetStatsSchema>;
 
 /** Versioned on-disk format of data/risk-metrics.json. */
 export const riskDatasetSchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.literal(2),
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
   /** Latest BTC date all metrics run up to. */
   asOf: isoDate,
   /** Calendar days in the BTC window the metrics are computed over. */
   windowDays: z.number().int().min(3),
+  /** Price series the rolling-vol curves derive from (deep history enables the 365d window). */
+  rollingVolSource: z.enum(['coingecko', 'blockchain.info']),
   rollingVol: z.array(
     z.object({
       windowDays: z.number().int().min(2),

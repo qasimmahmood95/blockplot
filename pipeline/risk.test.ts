@@ -173,8 +173,39 @@ describe('buildRiskDataset', () => {
     expect(() => riskDatasetSchema.parse(dataset)).not.toThrow();
   });
 
+  it('derives rolling vol from deep history when provided, clipped to the window', () => {
+    // Three pre-window days let the 3d window populate from 03-01; the first
+    // three windows hold the same return multiset, so their vol is equal.
+    const history = [
+      { date: '2024-02-27', priceUsd: 100 },
+      { date: '2024-02-28', priceUsd: 105 },
+      { date: '2024-02-29', priceUsd: 94.5 },
+      ...btc,
+    ];
+    const withHistory = buildRiskDataset(btc, { sp500, gold }, {
+      fetchedAt: '2024-03-08T12:00:00.000Z',
+      rollingWindows: [3],
+      history,
+    });
+    expect(withHistory.rollingVolSource).toBe('blockchain.info');
+    expect(withHistory.rollingVol[0]?.series).toEqual([
+      { date: '2024-03-01', volPct: 174.48 },
+      { date: '2024-03-02', volPct: 174.48 },
+      { date: '2024-03-03', volPct: 174.48 },
+      { date: '2024-03-04', volPct: 200.67 },
+      { date: '2024-03-05', volPct: 191.77 },
+      { date: '2024-03-06', volPct: 105.13 },
+      { date: '2024-03-07', volPct: 170.82 },
+      { date: '2024-03-08', volPct: 197.1 },
+    ]);
+    // Drawdown and comparison stay on the spot series.
+    expect(withHistory.drawdown).toEqual(dataset.drawdown);
+    expect(withHistory.comparison).toEqual(dataset.comparison);
+  });
+
   it('carries window metadata and the BTC drawdown curve', () => {
-    expect(dataset.schemaVersion).toBe(1);
+    expect(dataset.schemaVersion).toBe(2);
+    expect(dataset.rollingVolSource).toBe('coingecko');
     expect(dataset.asOf).toBe('2024-03-08');
     expect(dataset.windowDays).toBe(8);
     expect(dataset.rollingVol.map((w) => [w.windowDays, w.series.length])).toEqual([
