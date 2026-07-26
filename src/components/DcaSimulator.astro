@@ -1,0 +1,199 @@
+<form class="sim-form" id="dca-form">
+  <label>
+    <span>Start date</span>
+    <input type="date" name="startDate" required />
+  </label>
+  <label>
+    <span>Frequency</span>
+    <select name="frequency">
+      <option value="weekly" selected>weekly</option>
+      <option value="monthly">monthly</option>
+    </select>
+  </label>
+  <label>
+    <span>Amount / buy ($)</span>
+    <input type="number" name="amountUsd" min="1" step="1" value="100" required />
+  </label>
+  <label>
+    <span>Fee / buy (%)</span>
+    <input type="number" name="feePct" min="0" max="5" step="0.1" value="0.5" required />
+  </label>
+</form>
+
+<dl class="stat-grid" id="dca-stats" aria-live="polite"></dl>
+
+<figure class="chart-frame">
+  <div id="dca-legend" class="chart-legend" aria-hidden="true"></div>
+  <div
+    id="dca-chart"
+    role="img"
+    aria-label="Line chart comparing DCA and lump-sum portfolio wealth over time"
+  >
+  </div>
+</figure>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import history from '../../data/btc-price-history.json';
+  import { compareDcaVsLumpSum, type DcaFrequency } from '../../pipeline/dca';
+  import { cssVar, responsiveChart } from '../lib/charts';
+
+  const series = history.series;
+  const firstDate = series[0]?.date ?? '';
+  const lastDate = series.at(-1)?.date ?? '';
+
+  const form = document.getElementById('dca-form') as HTMLFormElement | null;
+  const stats = document.getElementById('dca-stats');
+  const legend = document.getElementById('dca-legend');
+  const container = document.getElementById('dca-chart');
+
+  const dateInput = form?.elements.namedItem('startDate') as HTMLInputElement | null;
+  if (dateInput) {
+    dateInput.min = firstDate;
+    dateInput.max = lastDate;
+    // Default: three years back via UTC arithmetic (a Feb 29 asOf rolls to
+    // Mar 1 instead of producing an invalid date), clamped to history.
+    const last = new Date(`${lastDate}T00:00:00Z`);
+    const threeYearsBack = new Date(
+      Date.UTC(last.getUTCFullYear() - 3, last.getUTCMonth(), last.getUTCDate()),
+    )
+      .toISOString()
+      .slice(0, 10);
+    dateInput.value = threeYearsBack >= firstDate ? threeYearsBack : firstDate;
+  }
+
+  const usd = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  });
+  const signedPct = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+
+  function readOptions() {
+    if (!form) return null;
+    const data = new FormData(form);
+    const startDate = String(data.get('startDate') ?? '');
+    const amountUsd = Number(data.get('amountUsd'));
+    const feePct = Number(data.get('feePct'));
+    const frequency = (data.get('frequency') === 'monthly' ? 'monthly' : 'weekly') as DcaFrequency;
+    if (!startDate || startDate > lastDate || !(amountUsd > 0) || !(feePct >= 0 && feePct < 100)) {
+      return null;
+    }
+    return { startDate, amountUsd, feePct, frequency };
+  }
+
+  function tile(label: string, value: string, sub: string, tone = ''): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'stat';
+    const dt = document.createElement('dt');
+    dt.textContent = label;
+    const dd = document.createElement('dd');
+    dd.className = `num ${tone}`.trim();
+    dd.textContent = value;
+    const ddSub = document.createElement('dd');
+    ddSub.className = 'sub num';
+    ddSub.textContent = sub;
+    wrap.append(dt, dd, ddSub);
+    return wrap;
+  }
+
+  function render(): void {
+    if (!container || !stats) return;
+    const opts = readOptions();
+    if (!opts) return;
+    let cmp;
+    try {
+      cmp = compareDcaVsLumpSum(series, opts);
+    } catch {
+      stats.replaceChildren(tile('No purchases', '—', 'pick an earlier start date'));
+      container.replaceChildren();
+      legend?.replaceChildren();
+      return;
+    }
+    const { dca, lumpSum, deltaUsd } = cmp;
+
+    const buys = dca.purchases.length;
+    const deltaLabel =
+      Math.abs(deltaUsd) < 0.005
+        ? 'even with DCA'
+        : `${deltaUsd > 0 ? 'leads' : 'trails'} by ${usd.format(Math.abs(deltaUsd))}`;
+    stats.replaceChildren(
+      tile('Invested', usd.format(dca.totalInvestedUsd), `${buys} ${buys === 1 ? 'buy' : 'buys'} · fees ${usd.format(dca.totalFeesUsd)}`),
+      tile('BTC accumulated', dca.btcAccumulated.toFixed(4), 'BTC'),
+      tile('DCA value now', usd.format(dca.finalValueUsd), signedPct(dca.returnPct), dca.returnPct < 0 ? 'down' : 'up'),
+      tile(
+        'Lump sum now',
+        usd.format(lumpSum.finalValueUsd),
+        `${signedPct(lumpSum.returnPct)} · ${deltaLabel}`,
+        lumpSum.returnPct < 0 ? 'down' : 'up',
+      ),
+    );
+
+    const accent = cssVar('--accent');
+    const muted = cssVar('--ink-muted');
+    if (legend) {
+      legend.replaceChildren(
+        ...[
+          ['DCA', accent, ''],
+          ['lump sum', muted, 'dashed'],
+        ].map(([label, color, dash]) => {
+          const item = document.createElement('span');
+          item.className = 'legend-item';
+          const swatch = document.createElement('span');
+          swatch.className = 'legend-swatch';
+          if (dash) {
+            swatch.style.background = `repeating-linear-gradient(90deg, ${color} 0 3px, transparent 3px 6px)`;
+          } else {
+            swatch.style.background = color ?? '';
+          }
+          item.append(swatch, label ?? '');
+          return item;
+        }),
+      );
+    }
+
+    const dcaPoints = dca.series.map((p) => ({ date: new Date(p.date), wealth: p.wealthUsd }));
+    const lumpPoints = lumpSum.series.map((p) => ({ date: new Date(p.date), wealth: p.wealthUsd }));
+    container.replaceChildren(
+      Plot.plot({
+        width: container.clientWidth || 720,
+        height: 320,
+        marginLeft: 64,
+        x: { label: null },
+        y: {
+          label: null,
+          grid: true,
+          tickFormat: (value: number) => usd.format(value),
+        },
+        marks: [
+          Plot.lineY(lumpPoints, {
+            x: 'date',
+            y: 'wealth',
+            stroke: muted,
+            strokeWidth: 1.25,
+            strokeDasharray: '3,3',
+          }),
+          Plot.lineY(dcaPoints, { x: 'date', y: 'wealth', stroke: accent, strokeWidth: 1.75 }),
+          Plot.tip(
+            dcaPoints,
+            Plot.pointerX({
+              x: 'date',
+              y: 'wealth',
+              title: (d: { date: Date; wealth: number }) =>
+                `${d.date.toISOString().slice(0, 10)}\nDCA ${usd.format(d.wealth)}`,
+            }),
+          ),
+        ],
+        style: {
+          background: 'transparent',
+          color: cssVar('--ink-muted'),
+          fontFamily: cssVar('--font-mono'),
+          fontSize: '11px',
+        },
+      }),
+    );
+  }
+
+  form?.addEventListener('input', render);
+  responsiveChart(render);
+</script>

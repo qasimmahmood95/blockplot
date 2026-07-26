@@ -268,6 +268,47 @@ code {
   background: color-mix(in srgb, var(--neg) 10%, transparent);
 }
 
+.sim-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin-bottom: 1.5rem;
+}
+
+.sim-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: var(--surface);
+  padding: 0.7rem 0.9rem;
+}
+
+.sim-form label span {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+
+.sim-form input,
+.sim-form select {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  padding: 0.15rem 0;
+}
+
+.sim-form input:focus,
+.sim-form select:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+
 .method-note {
   font-size: 0.8rem;
   color: var(--ink-muted);

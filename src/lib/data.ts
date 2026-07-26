@@ -1,5 +1,6 @@
 import benchmarkDataset from '../../data/benchmarks-daily.json';
 import priceDataset from '../../data/btc-price-daily.json';
+import historyDataset from '../../data/btc-price-history.json';
 import correlationDataset from '../../data/correlations.json';
 import halvingDataset from '../../data/halving-cycles.json';
 import riskDataset from '../../data/risk-metrics.json';
@@ -7,6 +8,7 @@ import type {
   BenchmarkDataset,
   CorrelationDataset,
   HalvingDataset,
+  HistoryDataset,
   PriceDataset,
   RiskDataset,
 } from '../../pipeline/schema';
@@ -17,3 +19,4 @@ export const benchmarksDaily = benchmarkDataset as BenchmarkDataset;
 export const riskMetrics = riskDataset as RiskDataset;
 export const halvingCycles = halvingDataset as HalvingDataset;
 export const correlations = correlationDataset as CorrelationDataset;
+export const btcHistory = historyDataset as HistoryDataset;
