@@ -1,0 +1,97 @@
+---
+import CorrelationChart from '../components/CorrelationChart.astro';
+import Base from '../layouts/Base.astro';
+import { correlations } from '../lib/data';
+import { formatRatio } from '../lib/format';
+
+const { pairs, windowDays, minObs, asOf } = correlations;
+
+const assetLabels: Record<string, string> = {
+  btc: 'BTC',
+  sp500: 'S&P 500',
+  gold: 'Gold',
+  dxy: 'DXY',
+};
+const assets = ['btc', 'sp500', 'gold', 'dxy'];
+
+const latest = new Map<string, number | null>(
+  pairs.map((p) => [p.pair, p.series.at(-1)?.corr ?? null]),
+);
+const corrOf = (a: string, b: string): number | null =>
+  a === b ? 1 : (latest.get(`${a}-${b}`) ?? latest.get(`${b}-${a}`) ?? null);
+
+const cellClass = (a: string, b: string): string => {
+  if (a === b) return 'num diag';
+  const value = corrOf(a, b);
+  if (value === null || value === 0) return 'num';
+  return value > 0 ? 'num corr-pos' : 'num corr-neg';
+};
+
+const btcPairs = [
+  { label: 'BTC – S&P 500', value: corrOf('btc', 'sp500') },
+  { label: 'BTC – Gold', value: corrOf('btc', 'gold') },
+  { label: 'BTC – DXY', value: corrOf('btc', 'dxy') },
+];
+---
+
+<Base
+  title="blockplot · correlation"
+  description="Rolling 90-day correlation of BTC daily returns with the S&P 500, gold, and the dollar index."
+>
+  <h1 class="visually-hidden">Correlation</h1>
+
+  <dl class="stat-grid">
+    {
+      btcPairs.map(({ label, value }) => (
+        <div class="stat">
+          <dt>{label}</dt>
+          <dd class="num">{formatRatio(value)}</dd>
+          <dd class="sub num">{windowDays}d window</dd>
+        </div>
+      ))
+    }
+    <div class="stat">
+      <dt>As of</dt>
+      <dd class="num">{asOf}</dd>
+      <dd class="sub num">refreshed 6-hourly</dd>
+    </div>
+  </dl>
+
+  <section class="chart-section">
+    <h2>Correlation matrix · trailing {windowDays}d</h2>
+    <div class="table-scroll">
+      <table class="risk-table corr-matrix">
+        <thead>
+          <tr>
+            <th scope="col"><span class="visually-hidden">Asset</span></th>
+            {assets.map((a) => <th scope="col" class="num">{assetLabels[a]}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {
+            assets.map((a) => (
+              <tr>
+                <th scope="row">{assetLabels[a]}</th>
+                {assets.map((b) => <td class={cellClass(a, b)}>{formatRatio(corrOf(a, b))}</td>)}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="chart-section">
+    <h2>Rolling {windowDays}d correlation · by pair</h2>
+    <CorrelationChart />
+    <p class="method-note">
+      Pearson correlation of daily log returns over a trailing {windowDays}-calendar-day window,
+      computed on each pair's shared trading days (a holiday or weekend in either series becomes
+      one multi-day return); windows holding fewer than {minObs} shared returns are omitted. BTC
+      uses blockchain.com's daily series, the S&amp;P 500 FRED's, and gold and the dollar index
+      Yahoo Finance's (DXY falls back to front-month futures when the index itself is
+      unavailable). All values are computed in the pipeline by fixture-tested pure functions and
+      committed to <code>/data</code>.
+    </p>
+  </section>
+</Base>

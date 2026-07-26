@@ -5,7 +5,7 @@ pipeline fetches market data, validates it with zod, derives every metric in
 tested pure TypeScript, and commits versioned JSON to `/data`; Astro builds
 the site from that dataset alone, charted with Observable Plot.
 
-**Status:** M2 (halving cycles). [PLAN.md](PLAN.md) holds the milestone plan,
+**Status:** M3 (correlation). [PLAN.md](PLAN.md) holds the milestone plan,
 [CLAUDE.md](CLAUDE.md) the development rules. The repo doubles as a public
 showcase of AI-assisted development — process artifacts are committed, not
 hidden.

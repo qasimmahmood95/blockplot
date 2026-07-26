@@ -15,3 +15,4 @@ commit; every refresh since is bot-authored.
 | `risk-metrics.json` | Derived risk metrics: rolling 30/90/365d realized vol, drawdown curve, Sharpe/Sortino comparison vs S&P 500 and gold |
 | `btc-price-history.json` | Full BTC/USD daily history from 2010 (blockchain.com charts API) |
 | `halving-cycles.json` | Per-halving-epoch price series normalised to the halving-day close, for the cycle overlay |
+| `correlations.json` | Rolling 90d Pearson correlations of aligned daily log returns for all pairs of BTC, S&P 500, gold, DXY |
