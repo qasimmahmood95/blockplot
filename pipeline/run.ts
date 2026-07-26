@@ -12,6 +12,16 @@ import {
 import { buildHalvingDataset } from './halvings';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
+import { buildMonthlyDataset } from './monthly';
+import {
+  fetchFeeTiers,
+  fetchHashRate,
+  fetchTxCount,
+  NETWORK_KEEP_DAYS,
+  readExistingFees,
+  smoothedChangePct,
+  trailingAverage,
+} from './network';
 import { computeStats, toDailySeries } from './prices';
 import { buildRiskDataset } from './risk';
 import {
@@ -20,6 +30,8 @@ import {
   dominanceDatasetSchema,
   halvingDatasetSchema,
   historyDatasetSchema,
+  monthlyDatasetSchema,
+  networkDatasetSchema,
   priceDatasetSchema,
   riskDatasetSchema,
   stablecoinDatasetSchema,
@@ -44,16 +56,29 @@ async function attempt<T>(label: string, task: Promise<T>): Promise<T | null> {
   }
 }
 
-const [raw, sp500, goldFetch, dxyFetch, history, dominanceSnapshot, stablecoins] =
-  await Promise.all([
-    attempt('coingecko market chart', fetchBtcMarketChart()),
-    attempt('fred sp500', fetchSp500()),
-    attempt('yahoo gold', fetchGold()),
-    attempt('yahoo dxy', fetchDxy()),
-    attempt('blockchain.com history', fetchBtcHistory()),
-    attempt('coingecko global', fetchDominanceSnapshot(now)),
-    attempt('defillama stablecoins', fetchStablecoins()),
-  ]);
+const [
+  raw,
+  sp500,
+  goldFetch,
+  dxyFetch,
+  history,
+  dominanceSnapshot,
+  stablecoins,
+  hashRate,
+  txCount,
+  feeTiers,
+] = await Promise.all([
+  attempt('coingecko market chart', fetchBtcMarketChart()),
+  attempt('fred sp500', fetchSp500()),
+  attempt('yahoo gold', fetchGold()),
+  attempt('yahoo dxy', fetchDxy()),
+  attempt('blockchain.com history', fetchBtcHistory()),
+  attempt('coingecko global', fetchDominanceSnapshot(now)),
+  attempt('defillama stablecoins', fetchStablecoins()),
+  attempt('blockchain.com hash-rate', fetchHashRate()),
+  attempt('blockchain.com n-transactions', fetchTxCount()),
+  attempt('mempool.space fees', fetchFeeTiers()),
+]);
 
 const series = raw ? toDailySeries(raw.prices) : null;
 
@@ -137,6 +162,12 @@ if (history) {
   console.log(
     `data/halving-cycles.json: ${halvings.cycles.map((c) => `c${c.cycle}=${c.series.length}`).join(' ')}`,
   );
+
+  const monthly = monthlyDatasetSchema.parse(buildMonthlyDataset(history, { fetchedAt }));
+  await writeJson('data/monthly-returns.json', monthly);
+  console.log(
+    `data/monthly-returns.json: ${monthly.months.length} months over ${monthly.years.length} years`,
+  );
 }
 
 // The clip only bounds the vol curves; if the history source lags the spot
@@ -180,6 +211,45 @@ if (series && sp500 && goldFetch && history) {
     await writeJson('data/correlations.json', correlations);
     console.log(
       `data/correlations.json: ${correlations.pairs.map((p) => `${p.pair}=${p.series.length}`).join(' ')}`,
+    );
+  }
+}
+
+// Network writes LAST: it is the newest block, so a bug here must not cost
+// any earlier dataset its refresh (the same reasoning that puts the accreted
+// dominance series first).
+if (hashRate && txCount) {
+  // Fees tolerate staleness by design — the page's island refreshes them —
+  // so a mempool.space outage falls back to the committed tiers rather than
+  // freezing the hash-rate and transaction series for six hours.
+  const tiers = feeTiers ?? (await readExistingFees('data/network.json'));
+  if (!tiers) {
+    console.warn('warning: no fee tiers available and no committed fallback — skipping network.json');
+  } else {
+    const network = networkDatasetSchema.parse({
+      schemaVersion: 1,
+      fetchedAt,
+      // The two series can end on different days; label the dataset with the
+      // earlier one so no figure claims to be fresher than it is.
+      asOf: [hashRate.at(-1)?.date, txCount.at(-1)?.date].filter(Boolean).sort()[0],
+      keepDays: NETWORK_KEEP_DAYS,
+      hashRate: {
+        unit: 'EH/s',
+        average7d: trailingAverage(hashRate, 7, 1),
+        change30dPct: smoothedChangePct(hashRate, 30, 7),
+        series: hashRate,
+      },
+      txCount: {
+        unit: 'tx/day',
+        average30d: trailingAverage(txCount, 30),
+        change30dPct: smoothedChangePct(txCount, 30, 7),
+        series: txCount,
+      },
+      fees: { source: 'mempool.space', tiers },
+    });
+    await writeJson('data/network.json', network);
+    console.log(
+      `data/network.json: hash rate ${network.hashRate.average7d} EH/s (7d mean), ${txCount.at(-1)?.value} tx on ${network.asOf}, fastest fee ${tiers.fastestFee} sat/vB${feeTiers ? '' : ' (committed fallback)'}`,
     );
   }
 }

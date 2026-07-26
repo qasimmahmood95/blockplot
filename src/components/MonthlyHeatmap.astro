@@ -1,0 +1,69 @@
+---
+import { monthlyReturns } from '../lib/data';
+import { formatPct } from '../lib/format';
+
+const { months, years } = monthlyReturns;
+
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const byYear = new Map<number, Map<number, number>>();
+for (const { year, month, returnPct } of months) {
+  if (!byYear.has(year)) byYear.set(year, new Map());
+  byYear.get(year)?.set(month, returnPct);
+}
+const yearTotals = new Map(years.map((y) => [y.year, y.returnPct]));
+// Newest year first: the rows a reader wants are at the top.
+const rows = [...byYear.keys()].sort((a, b) => b - a);
+
+/**
+ * Four-step diverging intensity per sign. Thresholds are fixed (not
+ * data-relative) so the same colour always means the same magnitude, and
+ * BTC's ±40% months don't wash out ordinary ones.
+ */
+const intensity = (value: number): string => {
+  const magnitude = Math.abs(value);
+  const step = magnitude >= 30 ? 4 : magnitude >= 15 ? 3 : magnitude >= 5 ? 2 : 1;
+  return `${value < 0 ? 'neg' : 'pos'}-${step}`;
+};
+---
+
+<div class="table-scroll">
+  <table class="risk-table heatmap">
+    <thead>
+      <tr>
+        <th scope="col">Year</th>
+        {MONTH_LABELS.map((label) => <th scope="col" class="num">{label}</th>)}
+        <th scope="col" class="num total">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((year) => (
+          <tr>
+            <th scope="row" class="num">{year}</th>
+            {
+              MONTH_LABELS.map((label, i) => {
+                const value = byYear.get(year)?.get(i + 1);
+                return value === undefined ? (
+                  <td class="num empty" aria-label={`${label} ${year}: no data`}>·</td>
+                ) : (
+                  <td class={`num heat-${intensity(value)}`}>{formatPct(value)}</td>
+                );
+              })
+            }
+            {
+              (() => {
+                const total = yearTotals.get(year);
+                return total === undefined ? (
+                  <td class="num total">—</td>
+                ) : (
+                  <td class={`num total ${total < 0 ? 'down' : 'up'}`}>{formatPct(total)}</td>
+                );
+              })()
+            }
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>

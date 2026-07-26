@@ -260,6 +260,88 @@ export const stablecoinDatasetSchema = z.object({
 
 export type StablecoinDataset = z.infer<typeof stablecoinDatasetSchema>;
 
+/** Raw response shape of mempool.space `/api/v1/fees/recommended`. */
+export const mempoolFeesSchema = z.object({
+  fastestFee: z.number().positive(),
+  halfHourFee: z.number().positive(),
+  hourFee: z.number().positive(),
+  economyFee: z.number().positive(),
+  minimumFee: z.number().positive(),
+});
+
+/** Recommended fee tiers, sat/vB. */
+export const feeTiersSchema = mempoolFeesSchema;
+
+export type FeeTiers = z.infer<typeof feeTiersSchema>;
+
+const networkPointSchema = z.object({ date: isoDate, value: z.number().positive() });
+
+export type NetworkPoint = z.infer<typeof networkPointSchema>;
+
+/** Versioned on-disk format of data/network.json. */
+export const networkDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  /** ISO 8601 instant of the pipeline run that produced this file. */
+  fetchedAt: z.string(),
+  asOf: isoDate,
+  /** Trailing calendar days kept per series. */
+  keepDays: z.number().int().positive(),
+  hashRate: z.object({
+    /** Exahashes per second, converted from the source's TH/s. */
+    unit: z.literal('EH/s'),
+    /** Trailing 7-entry mean, 1 dp — the headline level, since daily estimates swing ~8%. */
+    average7d: z.number().positive().nullable(),
+    /** Trailing 7-entry mean vs the 7-entry mean 30 days back, %, 2 dp. */
+    change30dPct: z.number().nullable(),
+    series: z.array(networkPointSchema).min(2).superRefine(refineAscendingDates),
+  }),
+  txCount: z.object({
+    unit: z.literal('tx/day'),
+    /** Mean of the trailing 30 entries, whole transactions. */
+    average30d: z.number().positive().nullable(),
+    /** Trailing 7-entry mean vs the 7-entry mean 30 days back, %, 2 dp. */
+    change30dPct: z.number().nullable(),
+    series: z.array(networkPointSchema).min(2).superRefine(refineAscendingDates),
+  }),
+  /**
+   * Fee tiers move on a ~10-minute timescale, so this committed snapshot is a
+   * floor that the network page's island refreshes live and falls back to.
+   */
+  fees: z.object({ source: z.literal('mempool.space'), tiers: feeTiersSchema }),
+});
+
+export type NetworkDataset = z.infer<typeof networkDatasetSchema>;
+
+const monthlyReturnSchema = z.object({
+  year: z.number().int().min(2009),
+  month: z.number().int().min(1).max(12),
+  /** Close-over-previous-month-close, %, 2 dp; the newest entry is month-to-date. */
+  returnPct: z.number(),
+});
+
+export type MonthlyReturn = z.infer<typeof monthlyReturnSchema>;
+
+const yearlyReturnSchema = z.object({
+  year: z.number().int().min(2009),
+  /** Compounded product of that year's available monthly returns, %, 2 dp. */
+  returnPct: z.number(),
+});
+
+export type YearlyReturn = z.infer<typeof yearlyReturnSchema>;
+
+/** Versioned on-disk format of data/monthly-returns.json. */
+export const monthlyDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  source: z.literal('blockchain.info'),
+  /** ISO 8601 instant of the pipeline run that produced this file. */
+  fetchedAt: z.string(),
+  asOf: isoDate,
+  months: z.array(monthlyReturnSchema).min(1),
+  years: z.array(yearlyReturnSchema).min(1),
+});
+
+export type MonthlyDataset = z.infer<typeof monthlyDatasetSchema>;
+
 const corrPointSchema = z.object({
   date: isoDate,
   /** Pearson correlation of aligned daily log returns, 2 dp, in [-1, 1]. */

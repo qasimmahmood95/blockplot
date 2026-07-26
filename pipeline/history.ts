@@ -14,20 +14,31 @@ const HISTORY_URL =
 const MIN_HISTORY_DAYS = 3650;
 
 /**
- * Collapse chart values into one price per UTC day: zero prices (pre-market
- * days at the series start) are dropped, and when two points share a day the
- * chronologically last wins, mirroring toDailySeries.
+ * Collapse any blockchain.com chart's values into one value per UTC day —
+ * shared by price history (M2) and the network metrics (M8), which use the
+ * same payload shape. Non-positive values (the pre-market days at the price
+ * series' start, and any zero-valued sample) are dropped, and when two points
+ * share a day the chronologically last wins, mirroring toDailySeries.
  */
-export function parseBlockchainChart(payload: unknown): DailyPrice[] {
+export function parseBlockchainSeries(payload: unknown): { date: string; value: number }[] {
   const { values } = blockchainChartSchema.parse(payload);
   const byDate = new Map<string, number>();
   for (const { x, y } of [...values].sort((a, b) => a.x - b.x)) {
     // Defense-in-depth behind zod (which already rejects non-finite numbers):
     // finiteness first, so -Infinity fails loud instead of being zero-dropped.
-    if (!Number.isFinite(y)) throw new Error(`parseBlockchainChart: bad price ${y}`);
+    if (!Number.isFinite(y)) throw new Error(`parseBlockchainSeries: bad value ${y}`);
     if (y <= 0) continue;
     byDate.set(new Date(x * 1000).toISOString().slice(0, 10), y);
   }
+  return [...byDate.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([date, value]) => ({ date, value }));
+}
+
+export function parseBlockchainChart(payload: unknown): DailyPrice[] {
+  const byDate = new Map<string, number>(
+    parseBlockchainSeries(payload).map(({ date, value }) => [date, value]),
+  );
   const out = [...byDate.entries()]
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([date, priceUsd]) => ({ date, priceUsd }));

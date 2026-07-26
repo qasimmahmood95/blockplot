@@ -1,7 +1,8 @@
 ---
+import MonthlyHeatmap from '../components/MonthlyHeatmap.astro';
 import PriceChart from '../components/PriceChart.astro';
 import Base from '../layouts/Base.astro';
-import { btcDaily } from '../lib/data';
+import { btcDaily, monthlyReturns } from '../lib/data';
 import { formatPct, formatUsd } from '../lib/format';
 
 const { stats, rangeDays } = btcDaily;
@@ -46,6 +47,32 @@ const changes = [
       on the keyless tier; the newest point is the price at the last pipeline run). The site is
       fully static: a scheduled GitHub Actions job validates and commits the dataset
       to <code>/data</code>, and every figure above is derived from it by tested pure functions.
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>Monthly returns · {monthlyReturns.years[0]?.year}–{monthlyReturns.asOf.slice(0, 4)}</h2>
+    <MonthlyHeatmap />
+    <p class="heat-legend" aria-hidden="true">
+      <span>−30%+</span>
+      <span class="swatch heat-neg-4"></span>
+      <span class="swatch heat-neg-3"></span>
+      <span class="swatch heat-neg-2"></span>
+      <span class="swatch heat-neg-1"></span>
+      <span class="swatch heat-pos-1"></span>
+      <span class="swatch heat-pos-2"></span>
+      <span class="swatch heat-pos-3"></span>
+      <span class="swatch heat-pos-4"></span>
+      <span>+30%+</span>
+    </p>
+    <p class="method-note">
+      Each cell is that month's last close over the previous month's, in percent; a month missing
+      from the data makes the next month's figure span the gap, and the newest cell is
+      month-to-date ({monthlyReturns.asOf}). The Year column compounds that year's available
+      months, so a partial year is a partial figure. Shading uses fixed magnitude bands (5/15/30%)
+      rather than data-relative scaling, so a colour means the same thing in every row; figures are
+      printed in every cell, so colour is never the only signal. Computed in the pipeline from
+      blockchain.com's full daily history by fixture-tested pure functions.
     </p>
   </section>
 </Base>

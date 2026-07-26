@@ -293,6 +293,134 @@ code {
   background: color-mix(in srgb, var(--neg) 10%, transparent);
 }
 
+/* Monthly heatmap: fixed-threshold diverging steps on the pos/neg tokens, so
+   a colour always means the same magnitude regardless of the year in view. */
+/* Tight cells so all 14 columns — including the Total, a headline figure —
+   fit the 60rem body width without horizontal scrolling on desktop. */
+.heatmap th,
+.heatmap td {
+  padding: 0.4rem 0.32rem;
+  font-size: 0.72rem;
+}
+
+.heatmap tbody th,
+.heatmap td.total {
+  padding-inline: 0.5rem;
+}
+
+.heatmap td.empty {
+  color: var(--line);
+}
+
+.heatmap td.total {
+  border-left: 1px solid var(--line);
+  font-weight: 500;
+}
+
+/* Shared by heatmap cells and the legend swatches, so both stay in step. */
+.heat-pos-1 {
+  background: color-mix(in srgb, var(--pos) 8%, transparent);
+}
+
+.heat-pos-2 {
+  background: color-mix(in srgb, var(--pos) 18%, transparent);
+}
+
+.heat-pos-3 {
+  background: color-mix(in srgb, var(--pos) 30%, transparent);
+}
+
+.heat-pos-4 {
+  background: color-mix(in srgb, var(--pos) 45%, transparent);
+}
+
+.heat-neg-1 {
+  background: color-mix(in srgb, var(--neg) 8%, transparent);
+}
+
+.heat-neg-2 {
+  background: color-mix(in srgb, var(--neg) 18%, transparent);
+}
+
+.heat-neg-3 {
+  background: color-mix(in srgb, var(--neg) 30%, transparent);
+}
+
+.heat-neg-4 {
+  background: color-mix(in srgb, var(--neg) 45%, transparent);
+}
+
+.heat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.5rem;
+  margin: 0.6rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.chart-frame-stacked {
+  margin-top: 1rem;
+}
+
+.chart-caption {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  margin-bottom: 0.35rem;
+}
+
+.fee-tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.fee-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: var(--surface);
+  padding: 0.7rem 0.9rem;
+}
+
+.fee-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+
+.fee-value {
+  font-size: 1.35rem;
+  color: var(--accent);
+}
+
+.fee-unit {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.fee-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.fee-status.fee-live {
+  color: var(--pos);
+}
+
+.heat-legend .swatch {
+  display: inline-block;
+  width: 1.6rem;
+  height: 0.7rem;
+  border: 1px solid var(--line);
+}
+
 .notfound-code {
   font-size: 4.5rem;
   margin: 2rem 0 0;
