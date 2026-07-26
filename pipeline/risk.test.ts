@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { riskDatasetSchema } from './schema';
 import {
   annualizedVolPct,
   assetRiskStats,
@@ -82,6 +83,28 @@ describe('drawdownCurve', () => {
     });
   });
 
+  it('resolves equal-depth troughs to the earliest one', () => {
+    // Three exact -20% troughs (80/100, 80/100, 96/120); the first must win.
+    const points = [100, 80, 90, 80, 120, 96].map((value, i) => ({
+      date: `2024-04-0${i + 1}`,
+      value,
+    }));
+    const curve = drawdownCurve(points);
+    expect(curve.maxDrawdownPct).toBe(-20);
+    expect(curve.peakDate).toBe('2024-04-01');
+    expect(curve.troughDate).toBe('2024-04-02');
+    expect(curve.series.map((p) => p.drawdownPct)).toEqual([0, -20, -10, -20, 0, -20]);
+  });
+
+  it('keeps the first date of a repeated peak value', () => {
+    const points = [100, 90, 100, 85].map((value, i) => ({ date: `2024-05-0${i + 1}`, value }));
+    expect(drawdownCurve(points)).toMatchObject({
+      maxDrawdownPct: -15,
+      peakDate: '2024-05-01',
+      troughDate: '2024-05-04',
+    });
+  });
+
   it('rejects an empty series', () => {
     expect(() => drawdownCurve([])).toThrow('empty series');
   });
@@ -146,6 +169,10 @@ describe('buildRiskDataset', () => {
     rollingWindows: [3, 10],
   });
 
+  it('produces output the on-disk schema accepts', () => {
+    expect(() => riskDatasetSchema.parse(dataset)).not.toThrow();
+  });
+
   it('carries window metadata and the BTC drawdown curve', () => {
     expect(dataset.schemaVersion).toBe(1);
     expect(dataset.asOf).toBe('2024-03-08');
@@ -176,7 +203,7 @@ describe('buildRiskDataset', () => {
       annualizedVolPct: 29.22,
       sharpe: 8.51,
       sortino: 25.27,
-      maxDrawdownPct: -0.98, // 5150 on 03-06 -> 5100 on 03-07
+      maxDrawdownPct: -0.98, // 5100 on 03-04 -> 5050 on 03-05
     });
     expect(dataset.comparison[2]).toEqual({
       asset: 'gold',
