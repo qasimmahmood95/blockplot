@@ -48,15 +48,26 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="blockplot — Bitcoin financial analytics, fully static and open"
+    />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
     <script is:inline>
       // Before first paint: apply a pinned theme so there is no flash.
-      const pinned = localStorage.getItem('theme');
-      if (pinned === 'dark' || pinned === 'light') {
-        document.documentElement.dataset.theme = pinned;
+      // Storage can throw (blocked cookies); degrade to auto silently.
+      try {
+        const pinned = localStorage.getItem('theme');
+        if (pinned === 'dark' || pinned === 'light') {
+          document.documentElement.dataset.theme = pinned;
+        }
+      } catch {
+        /* auto */
       }
     </script>
   </head>
@@ -105,15 +116,18 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
         return t === 'dark' || t === 'light' ? t : 'auto';
       };
       const apply = (mode: Mode): void => {
-        if (mode === 'auto') {
-          delete root.dataset.theme;
-          localStorage.removeItem('theme');
-        } else {
-          root.dataset.theme = mode;
-          localStorage.setItem('theme', mode);
-        }
+        if (mode === 'auto') delete root.dataset.theme;
+        else root.dataset.theme = mode;
         if (button) button.textContent = `theme: ${mode}`;
         window.dispatchEvent(new Event('themechange'));
+        // Persist last, guarded: a blocked-storage throw must not leave the
+        // page restyled with stale charts or a lying label.
+        try {
+          if (mode === 'auto') localStorage.removeItem('theme');
+          else localStorage.setItem('theme', mode);
+        } catch {
+          /* theme still applies for this page */
+        }
       };
       if (button) {
         button.textContent = `theme: ${currentMode()}`;

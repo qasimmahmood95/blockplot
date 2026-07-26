@@ -94,7 +94,8 @@ npm run pipeline   # refresh data/ locally (normally done by CI; do not commit t
 
 This repo doubles as a public showcase of AI-assisted development, run
 matter-of-factly: Claude Code working against the milestone plan in
-[PLAN.md](PLAN.md), one pull request per milestone, in order. Every metric
+[PLAN.md](PLAN.md) — one pull request per milestone from M1 on, in order
+(M0 scaffolded directly). Every metric
 landed with fixture tests asserting exact expected values derived
 independently of the implementation; every PR was gated on an automated
 code review, an independent test/verification pass that recomputed the
