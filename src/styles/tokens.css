@@ -1,5 +1,8 @@
 /* Design tokens: warm neutral base, one burnt-orange accent, light + dark.
-   Manual theme toggle arrives in M6; until then the OS preference decides. */
+   Theme resolution: the OS preference decides by default; the header toggle
+   pins [data-theme='light'|'dark'] on <html> (persisted in localStorage).
+   The dark palette therefore appears twice — once under the media query for
+   auto mode, once under the explicit override — and must stay in sync. */
 :root {
   color-scheme: light dark;
 
@@ -25,7 +28,8 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
     --bg: #16130f;
     --surface: #1e1a15;
     --ink: #eae4dc;
@@ -40,4 +44,24 @@
     --pos: #4fae7f;
     --neg: #d96a6c;
   }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #16130f;
+  --surface: #1e1a15;
+  --ink: #eae4dc;
+  --ink-muted: #968c80;
+  --line: #322c25;
+  --accent: #e97328;
+  --cycle-1: #7f3f10;
+  --cycle-2: #a35415;
+  --cycle-3: #c9611c;
+  --cycle-4: #e97328;
+  --pos: #4fae7f;
+  --neg: #d96a6c;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
 }

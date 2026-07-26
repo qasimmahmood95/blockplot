@@ -3,7 +3,10 @@
 export const cssVar = (name: string): string =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-/** Render immediately, then again on resize (debounced) and color-scheme flips. */
+/**
+ * Render immediately, then again on resize (debounced), OS color-scheme
+ * flips, and the header theme toggle's `themechange` event.
+ */
 export function responsiveChart(render: () => void): void {
   render();
   let raf = 0;
@@ -12,4 +15,5 @@ export function responsiveChart(render: () => void): void {
     raf = requestAnimationFrame(render);
   });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  window.addEventListener('themechange', render);
 }
