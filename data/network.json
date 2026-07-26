@@ -1,11 +1,12 @@
 {
   "schemaVersion": 1,
-  "fetchedAt": "2026-07-26T18:18:12.677Z",
+  "fetchedAt": "2026-07-26T18:32:52.093Z",
   "asOf": "2026-07-25",
   "keepDays": 730,
   "hashRate": {
     "unit": "EH/s",
-    "change30dPct": -17.38,
+    "average7d": 892.2,
+    "change30dPct": -8.07,
     "series": [
       {
         "date": "2024-07-26",
@@ -2920,7 +2921,7 @@
   "txCount": {
     "unit": "tx/day",
     "average30d": 655743,
-    "change30dPct": -13.74,
+    "change30dPct": -10.53,
     "series": [
       {
         "date": "2024-07-26",
