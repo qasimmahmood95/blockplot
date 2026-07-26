@@ -39,7 +39,7 @@ and never gitignored.
   interactive charts, the DCA simulator, and the live header ticker.
 - The site builds purely from `/data` (pipeline-committed, zod-validated,
   versioned JSON). The only runtime fetch is the header ticker island
-  (CoinGecko spot price, arrives in M6).
+  (CoinGecko spot price).
 - Every metric calculation is a pure function under `pipeline/` with unit
   tests against fixed fixtures asserting exact expected outputs. No metric
   maths in UI components.
