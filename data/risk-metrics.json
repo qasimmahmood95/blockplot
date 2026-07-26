@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "fetchedAt": "2026-07-26T12:29:44.566Z",
+  "fetchedAt": "2026-07-26T12:32:37.324Z",
   "asOf": "2026-07-26",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -5864,7 +5864,7 @@
       },
       {
         "date": "2026-07-26",
-        "drawdownPct": -48.27
+        "drawdownPct": -48.28
       }
     ]
   },
@@ -5875,7 +5875,7 @@
       "observations": 365,
       "firstDate": "2025-07-27",
       "lastDate": "2026-07-26",
-      "totalReturnPct": -45.27,
+      "totalReturnPct": -45.28,
       "annualizedVolPct": 43.15,
       "sharpe": -1.4,
       "sortino": -1.82,
