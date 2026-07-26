@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { getJson } from './http';
+import { trimToLastDays } from './series';
 import {
   coingeckoGlobalSchema,
   defillamaStablecoinsSchema,
@@ -97,15 +98,6 @@ export function stablecoinChange30dPct(series: StablecoinPoint[]): number | null
   return round2((last.totalUsd / base.totalUsd - 1) * 100);
 }
 
-export function trimStablecoins(series: StablecoinPoint[], days: number): StablecoinPoint[] {
-  const last = series.at(-1);
-  if (!last) return [];
-  const cutoff = new Date(Date.parse(`${last.date}T00:00:00Z`) - days * 86_400_000)
-    .toISOString()
-    .slice(0, 10);
-  return series.filter((p) => p.date > cutoff);
-}
-
 export async function fetchStablecoins(): Promise<StablecoinPoint[]> {
-  return trimStablecoins(parseStablecoinChart(await getJson(DEFILLAMA_STABLES_URL)), STABLECOIN_KEEP_DAYS);
+  return trimToLastDays(parseStablecoinChart(await getJson(DEFILLAMA_STABLES_URL)), STABLECOIN_KEEP_DAYS);
 }

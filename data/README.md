@@ -17,4 +17,9 @@ commit; every refresh since is bot-authored.
 | `halving-cycles.json` | Per-halving-epoch price series normalised to the halving-day close, for the cycle overlay |
 | `correlations.json` | Rolling 90d Pearson correlations of aligned daily log returns for all pairs of BTC, S&P 500, gold, DXY |
 | `dominance.json` | BTC dominance + total crypto mcap, accreting one CoinGecko snapshot per UTC day (no keyless history exists) |
+
+`dominance.json` is accreted state, not a refetchable snapshot: branch and
+main copies can diverge while a feature branch runs the pipeline, so merge
+conflicts on it must be resolved by keeping the union of days (never by
+discarding one side's points).
 | `stablecoins.json` | Total USD-pegged stablecoin circulating value (DeFiLlama), trailing 460 days |

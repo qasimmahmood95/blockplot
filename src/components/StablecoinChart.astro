@@ -14,7 +14,8 @@
 
   const container = document.getElementById('stablecoin-chart');
   const points = dataset.series.map((p) => ({ date: new Date(p.date), totalUsd: p.totalUsd }));
-  const billions = (v: number): string => `$${(v / 1e9).toFixed(0)}B`;
+  const billions = (v: number): string =>
+    v >= 1e12 ? `$${(v / 1e12).toFixed(2)}T` : `$${(v / 1e9).toFixed(0)}B`;
 
   function render(): void {
     if (!container) return;

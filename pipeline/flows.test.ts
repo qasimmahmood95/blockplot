@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import {
-  accreteDominance,
-  parseStablecoinChart,
-  stablecoinChange30dPct,
-  trimStablecoins,
-} from './flows';
+import { accreteDominance, parseStablecoinChart, stablecoinChange30dPct } from './flows';
 import { dominanceDatasetSchema, stablecoinDatasetSchema } from './schema';
+import { trimToLastDays } from './series';
 
 describe('accreteDominance', () => {
   const existing = [
@@ -70,6 +66,14 @@ describe('stablecoinChange30dPct', () => {
         { date: '2024-03-01', totalUsd: 110 },
       ]),
     ).toBe(10);
+    // Exact 30d date absent: the closest earlier entry (01-28, 88) is chosen.
+    expect(
+      stablecoinChange30dPct([
+        { date: '2024-01-28', totalUsd: 88 },
+        { date: '2024-02-15', totalUsd: 100 },
+        { date: '2024-03-01', totalUsd: 110 },
+      ]),
+    ).toBe(25);
     // No entry at/before the target -> null.
     expect(
       stablecoinChange30dPct([
@@ -80,15 +84,16 @@ describe('stablecoinChange30dPct', () => {
   });
 });
 
-describe('trimStablecoins', () => {
-  it('keeps only entries within N calendar days of the last entry', () => {
+describe('trimToLastDays (shared helper, stablecoin-shaped points)', () => {
+  it('keeps only entries within N calendar days of the last entry, and [] stays []', () => {
     const series = [
       { date: '2024-12-28', totalUsd: 1 },
       { date: '2024-12-29', totalUsd: 2 },
       { date: '2024-12-30', totalUsd: 3 },
       { date: '2024-12-31', totalUsd: 4 },
     ];
-    expect(trimStablecoins(series, 2)).toEqual(series.slice(2));
+    expect(trimToLastDays(series, 2)).toEqual(series.slice(2));
+    expect(trimToLastDays([], 30)).toEqual([]);
   });
 });
 
@@ -110,6 +115,18 @@ describe('flows dataset schemas', () => {
         series: [{ date: '2026-07-26', btcDominancePct: 101, totalMcapUsd: 1 }],
       }),
     ).toThrow();
+    // Mis-ordered accreted series must fail loudly, never trim silently.
+    expect(() =>
+      dominanceDatasetSchema.parse({
+        schemaVersion: 1,
+        source: 'coingecko',
+        fetchedAt: 'x',
+        series: [
+          { date: '2026-07-26', btcDominancePct: 55, totalMcapUsd: 1 },
+          { date: '2026-07-25', btcDominancePct: 55, totalMcapUsd: 1 },
+        ],
+      }),
+    ).toThrow('not strictly ascending');
     expect(() =>
       stablecoinDatasetSchema.parse({
         schemaVersion: 1,

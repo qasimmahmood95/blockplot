@@ -1,5 +1,6 @@
 import { getJson, getText } from './http';
 import { yahooChartSchema, type BenchmarkDay } from './schema';
+import { trimToLastDays } from './series';
 
 /**
  * Benchmark sources. S&P 500 comes from FRED's keyless fredgraph.csv export
@@ -91,16 +92,6 @@ export function parseYahooChart(payload: unknown): BenchmarkDay[] {
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([date, close]) => ({ date, close }));
   return assertAscending(out, 'parseYahooChart');
-}
-
-/** Keep only entries within `days` calendar days of the series' last entry. */
-export function trimToLastDays(series: BenchmarkDay[], days: number): BenchmarkDay[] {
-  const last = series.at(-1);
-  if (!last) return [];
-  const cutoff = new Date(Date.parse(`${last.date}T00:00:00Z`) - days * 86_400_000)
-    .toISOString()
-    .slice(0, 10);
-  return series.filter((day) => day.date > cutoff);
 }
 
 export async function fetchSp500(): Promise<BenchmarkDay[]> {

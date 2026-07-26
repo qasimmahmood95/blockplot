@@ -207,7 +207,20 @@ export const dominanceDatasetSchema = z.object({
   source: z.literal('coingecko'),
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
-  series: z.array(dominancePointSchema).min(1),
+  series: z
+    .array(dominancePointSchema)
+    .min(1)
+    .superRefine((series, ctx) => {
+      // The accreted file is load-bearing state: a mis-ordered series (bad
+      // merge resolution, hand edit) must fail loudly, never trim silently.
+      for (let i = 1; i < series.length; i++) {
+        const prev = series[i - 1];
+        const curr = series[i];
+        if (prev && curr && curr.date <= prev.date) {
+          ctx.addIssue({ code: 'custom', message: `dates not strictly ascending at ${curr.date}` });
+        }
+      }
+    }),
 });
 
 export type DominanceDataset = z.infer<typeof dominanceDatasetSchema>;
