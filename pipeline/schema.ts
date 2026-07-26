@@ -7,35 +7,43 @@ export const marketChartSchema = z.object({
 
 export type MarketChart = z.infer<typeof marketChartSchema>;
 
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
 /** One UTC calendar day of the BTC/USD series. */
-export interface DailyPrice {
+const dailyPriceShape = z.object({
   /** UTC date, YYYY-MM-DD. */
-  date: string;
-  priceUsd: number;
-}
+  date: isoDate,
+  priceUsd: z.number().positive(),
+});
+
+export type DailyPrice = z.infer<typeof dailyPriceShape>;
 
 /** Headline figures derived from the daily series. Percentages are rounded to 2 dp. */
-export interface PriceStats {
-  latestDate: string;
-  latestPriceUsd: number;
-  change7dPct: number | null;
-  change30dPct: number | null;
+const priceStatsSchema = z.object({
+  latestDate: isoDate,
+  latestPriceUsd: z.number().positive(),
+  change7dPct: z.number().nullable(),
+  change30dPct: z.number().nullable(),
   /** Highest close within the fetched range — not an all-time high. */
-  rangeHighUsd: number;
-  rangeHighDate: string;
-}
+  rangeHighUsd: z.number().positive(),
+  rangeHighDate: isoDate,
+});
+
+export type PriceStats = z.infer<typeof priceStatsSchema>;
 
 /** Versioned on-disk format of data/btc-price-daily.json. */
-export interface PriceDataset {
-  schemaVersion: 1;
-  source: 'coingecko';
+export const priceDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  source: z.literal('coingecko'),
   /** ISO 8601 instant of the pipeline run that produced this file. */
-  fetchedAt: string;
+  fetchedAt: z.string(),
   /** History window requested from the source, in days. */
-  rangeDays: string;
-  stats: PriceStats;
-  series: DailyPrice[];
-}
+  rangeDays: z.string(),
+  stats: priceStatsSchema,
+  series: z.array(dailyPriceShape).min(2),
+});
+
+export type PriceDataset = z.infer<typeof priceDatasetSchema>;
 
 /** Raw response shape of Yahoo Finance `/v8/finance/chart/{ticker}` (the parts we read). */
 export const yahooChartSchema = z.object({
@@ -58,17 +66,13 @@ export const blockchainChartSchema = z.object({
   values: z.array(z.object({ x: z.number(), y: z.number() })).min(1),
 });
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-
-const dailyPriceSchema = z.object({ date: isoDate, priceUsd: z.number().positive() });
-
 /** Versioned on-disk format of data/btc-price-history.json (full daily history). */
 export const historyDatasetSchema = z.object({
   schemaVersion: z.literal(1),
   source: z.literal('blockchain.info'),
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
-  series: z.array(dailyPriceSchema).min(1000),
+  series: z.array(dailyPriceShape).min(1000),
 });
 
 export type HistoryDataset = z.infer<typeof historyDatasetSchema>;
