@@ -5,6 +5,7 @@ import correlationDataset from '../../data/correlations.json';
 import dominanceDataset from '../../data/dominance.json';
 import halvingDataset from '../../data/halving-cycles.json';
 import monthlyDataset from '../../data/monthly-returns.json';
+import networkDataset from '../../data/network.json';
 import riskDataset from '../../data/risk-metrics.json';
 import stablecoinDataset from '../../data/stablecoins.json';
 import type {
@@ -14,6 +15,7 @@ import type {
   HalvingDataset,
   HistoryDataset,
   MonthlyDataset,
+  NetworkDataset,
   PriceDataset,
   RiskDataset,
   StablecoinDataset,
@@ -29,3 +31,4 @@ export const btcHistory = historyDataset as HistoryDataset;
 export const dominance = dominanceDataset as DominanceDataset;
 export const stablecoins = stablecoinDataset as StablecoinDataset;
 export const monthlyReturns = monthlyDataset as MonthlyDataset;
+export const network = networkDataset as NetworkDataset;

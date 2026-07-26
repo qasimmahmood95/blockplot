@@ -26,6 +26,7 @@ const sections = [
   { href: `${base}/correlation/`, label: 'correlation' },
   { href: `${base}/dca/`, label: 'dca' },
   { href: `${base}/flows/`, label: 'flows' },
+  { href: `${base}/network/`, label: 'network' },
 ];
 const current = (href: string): boolean =>
   Astro.url.pathname.replace(/\/$/, '') === href.replace(/\/$/, '');
@@ -98,7 +99,7 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
     </main>
     <footer class="site-footer">
       <p>
-        Data: CoinGecko, blockchain.com, FRED/Yahoo &amp; DeFiLlama, refreshed every 6 h by CI · last fetch{' '}
+        Data: CoinGecko, blockchain.com, FRED/Yahoo, DeFiLlama &amp; mempool.space, refreshed every 6 h by CI · last fetch{' '}
         <span class="num">{fetchedAt.slice(0, 16).replace('T', ' ')} UTC</span>
       </p>
       <p><a href="https://github.com/qasimmahmood95/blockplot">source &amp; methodology</a></p>

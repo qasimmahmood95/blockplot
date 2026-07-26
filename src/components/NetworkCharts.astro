@@ -1,0 +1,83 @@
+<figure class="chart-frame">
+  <figcaption class="chart-caption num">hash rate · EH/s</figcaption>
+  <div
+    id="hashrate-chart"
+    role="img"
+    aria-label="Line chart of Bitcoin network hash rate in exahashes per second"
+  >
+  </div>
+</figure>
+
+<figure class="chart-frame chart-frame-stacked">
+  <figcaption class="chart-caption num">transactions · per day</figcaption>
+  <div
+    id="txcount-chart"
+    role="img"
+    aria-label="Line chart of confirmed Bitcoin transactions per day"
+  >
+  </div>
+</figure>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import dataset from '../../data/network.json';
+  import { cssVar, responsiveChart } from '../lib/charts';
+
+  const hashRate = dataset.hashRate.series.map((p) => ({ date: new Date(p.date), value: p.value }));
+  const txCount = dataset.txCount.series.map((p) => ({ date: new Date(p.date), value: p.value }));
+  const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+
+  function plot(
+    id: string,
+    points: { date: Date; value: number }[],
+    tickFormat: (value: number) => string,
+    tipLabel: (value: number) => string,
+  ): void {
+    const container = document.getElementById(id);
+    if (!container) return;
+    const accent = cssVar('--accent');
+    container.replaceChildren(
+      Plot.plot({
+        width: container.clientWidth || 720,
+        height: 260,
+        marginLeft: 62,
+        x: { label: null },
+        y: { label: null, grid: true, tickFormat },
+        marks: [
+          Plot.areaY(points, { x: 'date', y: 'value', fill: accent, fillOpacity: 0.08 }),
+          Plot.lineY(points, { x: 'date', y: 'value', stroke: accent, strokeWidth: 1.5 }),
+          Plot.tip(
+            points,
+            Plot.pointerX({
+              x: 'date',
+              y: 'value',
+              title: (d: { date: Date; value: number }) =>
+                `${d.date.toISOString().slice(0, 10)}\n${tipLabel(d.value)}`,
+            }),
+          ),
+        ],
+        style: {
+          background: 'transparent',
+          color: cssVar('--ink-muted'),
+          fontFamily: cssVar('--font-mono'),
+          fontSize: '11px',
+        },
+      }),
+    );
+  }
+
+  responsiveChart(() => {
+    plot(
+      'hashrate-chart',
+      hashRate,
+      (v) => `${compact.format(v)}`,
+      (v) => `${v.toFixed(0)} EH/s`,
+    );
+    plot(
+      'txcount-chart',
+      txCount,
+      (v) => compact.format(v),
+      (v) => `${compact.format(v)} tx`,
+    );
+  });
+</script>

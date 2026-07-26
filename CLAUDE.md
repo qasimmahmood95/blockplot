@@ -36,7 +36,11 @@ and never gitignored.
 ## Architecture invariants
 
 - Astro + TypeScript strict; static output only. Client islands only for
-  interactive charts, the DCA simulator, and the live header ticker.
+  interactive charts, the DCA simulator, the live header ticker, and the
+  network page's fee tiers (added in M8: fees move on a ~10-minute
+  timescale, so a 6-hourly committed value would be stale on arrival; the
+  committed snapshot renders and the island upgrades it, falling back on
+  failure — the same pattern as the ticker).
 - The site builds purely from `/data` (pipeline-committed, zod-validated,
   versioned JSON). The only runtime fetch is the header ticker island
   (CoinGecko spot price).

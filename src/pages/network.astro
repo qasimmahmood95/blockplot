@@ -1,0 +1,68 @@
+---
+import FeeTiers from '../components/FeeTiers.astro';
+import NetworkCharts from '../components/NetworkCharts.astro';
+import Base from '../layouts/Base.astro';
+import { network } from '../lib/data';
+import { formatPct } from '../lib/format';
+
+const { hashRate, txCount, asOf, keepDays } = network;
+const latestHash = hashRate.series.at(-1)?.value ?? null;
+const latestTx = txCount.series.at(-1)?.value ?? null;
+const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+---
+
+<Base
+  title="blockplot · network"
+  description="Bitcoin network hash rate, daily transaction count, and current recommended fee tiers."
+>
+  <h1 class="visually-hidden">Network</h1>
+
+  <dl class="stat-grid">
+    <div class="stat">
+      <dt>Hash rate</dt>
+      <dd class="num">{latestHash === null ? '—' : `${compact.format(latestHash)} EH/s`}</dd>
+      <dd class="sub num">{asOf}</dd>
+    </div>
+    <div class="stat">
+      <dt>Hash rate, 30d</dt>
+      <dd class={`num ${(hashRate.change30dPct ?? 0) < 0 ? 'down' : 'up'}`}>
+        {hashRate.change30dPct === null ? '—' : formatPct(hashRate.change30dPct)}
+      </dd>
+      <dd class="sub num">change</dd>
+    </div>
+    <div class="stat">
+      <dt>Transactions</dt>
+      <dd class="num">{latestTx === null ? '—' : compact.format(latestTx)}</dd>
+      <dd class="sub num">confirmed, {asOf}</dd>
+    </div>
+    <div class="stat">
+      <dt>Daily avg, 30d</dt>
+      <dd class="num">{txCount.average30d === null ? '—' : compact.format(txCount.average30d)}</dd>
+      <dd class="sub num">transactions</dd>
+    </div>
+  </dl>
+
+  <section class="chart-section">
+    <h2>Recommended fees · sat/vB</h2>
+    <FeeTiers />
+    <p class="method-note">
+      Fee tiers from mempool.space's keyless recommended-fees endpoint. Unlike every other figure
+      on the site these move on a ~10-minute timescale, so a 6-hourly committed value would be
+      stale by the time you read it: the page ships the committed snapshot and an island refreshes
+      it live (every 2 minutes while the tab is visible), falling back to the snapshot on any
+      failure. This is the site's second sanctioned runtime fetch, alongside the header ticker.
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>Hash rate &amp; transactions · trailing {keepDays}d</h2>
+    <NetworkCharts />
+    <p class="method-note">
+      Network hash rate (exahashes per second, converted in the pipeline from blockchain.com's
+      GH/s) and confirmed transactions per day, both from blockchain.com's keyless charts API —
+      the same source and payload shape as the price history, so parsing is shared. Change and
+      average figures compare against the closest entry at or before 30 days back and are computed
+      in the pipeline by fixture-tested pure functions.
+    </p>
+  </section>
+</Base>

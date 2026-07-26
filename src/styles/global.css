@@ -354,6 +354,59 @@ code {
   color: var(--ink-muted);
 }
 
+.chart-frame-stacked {
+  margin-top: 1rem;
+}
+
+.chart-caption {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  margin-bottom: 0.35rem;
+}
+
+.fee-tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.fee-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: var(--surface);
+  padding: 0.7rem 0.9rem;
+}
+
+.fee-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+
+.fee-value {
+  font-size: 1.35rem;
+  color: var(--accent);
+}
+
+.fee-unit {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.fee-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.fee-status.fee-live {
+  color: var(--pos);
+}
+
 .heat-legend .swatch {
   display: inline-block;
   width: 1.6rem;
