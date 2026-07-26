@@ -2,12 +2,23 @@ import { z } from 'zod';
 
 /** Raw response shape of CoinGecko `/coins/{id}/market_chart`. */
 export const marketChartSchema = z.object({
-  prices: z.array(z.tuple([z.number(), z.number()])),
+  prices: z.array(z.tuple([z.number(), z.number()])).min(1),
 });
 
 export type MarketChart = z.infer<typeof marketChartSchema>;
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+/** superRefine body pinning strictly ascending dates on a series. */
+function refineAscendingDates(series: { date: string }[], ctx: z.RefinementCtx): void {
+  for (let i = 1; i < series.length; i++) {
+    const prev = series[i - 1];
+    const curr = series[i];
+    if (prev && curr && curr.date <= prev.date) {
+      ctx.addIssue({ code: 'custom', message: `dates not strictly ascending at ${curr.date}` });
+    }
+  }
+}
 
 /** One UTC calendar day of the BTC/USD series. */
 const dailyPriceShape = z.object({
@@ -40,7 +51,7 @@ export const priceDatasetSchema = z.object({
   /** History window requested from the source, in days. */
   rangeDays: z.string(),
   stats: priceStatsSchema,
-  series: z.array(dailyPriceShape).min(2),
+  series: z.array(dailyPriceShape).min(2).superRefine(refineAscendingDates),
 });
 
 export type PriceDataset = z.infer<typeof priceDatasetSchema>;
@@ -125,15 +136,23 @@ export const benchmarkDatasetSchema = z.object({
   fetchedAt: z.string(),
   /** Calendar days of history kept per series (trailing window). */
   keepDays: z.number().int().positive(),
-  benchmarks: z.array(
-    z.object({
-      asset: z.enum(['sp500', 'gold', 'dxy']),
-      source: z.enum(['fred', 'yahoo']),
-      /** Identifier of the series at its source, e.g. the FRED series id. */
-      sourceSeries: z.string().min(1),
-      series: z.array(benchmarkDaySchema).min(2),
+  benchmarks: z
+    .array(
+      z.object({
+        asset: z.enum(['sp500', 'gold', 'dxy']),
+        source: z.enum(['fred', 'yahoo']),
+        /** Identifier of the series at its source, e.g. the FRED series id. */
+        sourceSeries: z.string().min(1),
+        series: z.array(benchmarkDaySchema).min(2),
+      }),
+    )
+    // The file is whole-or-nothing: all three assets, each exactly once.
+    .length(3)
+    .superRefine((benchmarks, ctx) => {
+      if (new Set(benchmarks.map((b) => b.asset)).size !== benchmarks.length) {
+        ctx.addIssue({ code: 'custom', message: 'duplicate benchmark asset' });
+      }
     }),
-  ),
 });
 
 export type BenchmarkDataset = z.infer<typeof benchmarkDatasetSchema>;
@@ -211,20 +230,9 @@ export const dominanceDatasetSchema = z.object({
   source: z.literal('coingecko'),
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
-  series: z
-    .array(dominancePointSchema)
-    .min(1)
-    .superRefine((series, ctx) => {
-      // The accreted file is load-bearing state: a mis-ordered series (bad
-      // merge resolution, hand edit) must fail loudly, never trim silently.
-      for (let i = 1; i < series.length; i++) {
-        const prev = series[i - 1];
-        const curr = series[i];
-        if (prev && curr && curr.date <= prev.date) {
-          ctx.addIssue({ code: 'custom', message: `dates not strictly ascending at ${curr.date}` });
-        }
-      }
-    }),
+  // The accreted file is load-bearing state: a mis-ordered series (bad
+  // merge resolution, hand edit) must fail loudly, never trim silently.
+  series: z.array(dominancePointSchema).min(1).superRefine(refineAscendingDates),
 });
 
 export type DominanceDataset = z.infer<typeof dominanceDatasetSchema>;

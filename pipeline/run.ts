@@ -57,6 +57,37 @@ const [raw, sp500, goldFetch, dxyFetch, history, dominanceSnapshot, stablecoins]
 
 const series = raw ? toDailySeries(raw.prices) : null;
 
+// State-bearing and independent datasets write FIRST: a bug or parse
+// throw in a later derived block must never cost the accreted dominance
+// series its day.
+if (dominanceSnapshot) {
+  const dominance = dominanceDatasetSchema.parse({
+    schemaVersion: 1,
+    source: 'coingecko',
+    fetchedAt,
+    series: accreteDominance(await readExistingDominance('data/dominance.json'), dominanceSnapshot),
+  });
+  await writeJson('data/dominance.json', dominance);
+  console.log(
+    `data/dominance.json: ${dominance.series.length} accreted days, latest ${dominanceSnapshot.btcDominancePct}%`,
+  );
+}
+
+if (stablecoins) {
+  const stablecoinDataset = stablecoinDatasetSchema.parse({
+    schemaVersion: 1,
+    source: 'defillama',
+    fetchedAt,
+    keepDays: STABLECOIN_KEEP_DAYS,
+    change30dPct: stablecoinChange30dPct(stablecoins),
+    series: stablecoins,
+  });
+  await writeJson('data/stablecoins.json', stablecoinDataset);
+  console.log(
+    `data/stablecoins.json: ${stablecoins.length} days, latest $${stablecoins.at(-1)?.totalUsd}`,
+  );
+}
+
 if (series) {
   const prices = priceDatasetSchema.parse({
     schemaVersion: 1,
@@ -108,14 +139,20 @@ if (history) {
   );
 }
 
-if (series && sp500 && goldFetch && history) {
-  // The clip only bounds the vol curves; if the history source lags the spot
-  // series the curves silently end early, so surface that in the run log.
+// The clip only bounds the vol curves; if the history source lags the spot
+// series the curves silently end early, so surface that in the run log.
+if (series && history) {
   const historyEnd = history.at(-1)?.date ?? '';
   const spotEnd = series.at(-1)?.date ?? '';
   if (historyEnd < spotEnd) {
     console.warn(`warning: history ends ${historyEnd}, before spot ${spotEnd} — vol curves stop there`);
   }
+}
+
+// history is technically optional for buildRiskDataset, but a run without it
+// would commit degraded vol curves over yesterday's full-quality file — so
+// risk (and correlations, which must share its asOf) skip instead.
+if (series && sp500 && goldFetch && history) {
   const risk = riskDatasetSchema.parse(
     buildRiskDataset(series, { sp500, gold: goldFetch.series }, { fetchedAt, history }),
   );
@@ -145,34 +182,6 @@ if (series && sp500 && goldFetch && history) {
       `data/correlations.json: ${correlations.pairs.map((p) => `${p.pair}=${p.series.length}`).join(' ')}`,
     );
   }
-}
-
-if (dominanceSnapshot) {
-  const dominance = dominanceDatasetSchema.parse({
-    schemaVersion: 1,
-    source: 'coingecko',
-    fetchedAt,
-    series: accreteDominance(await readExistingDominance('data/dominance.json'), dominanceSnapshot),
-  });
-  await writeJson('data/dominance.json', dominance);
-  console.log(
-    `data/dominance.json: ${dominance.series.length} accreted days, latest ${dominanceSnapshot.btcDominancePct}%`,
-  );
-}
-
-if (stablecoins) {
-  const stablecoinDataset = stablecoinDatasetSchema.parse({
-    schemaVersion: 1,
-    source: 'defillama',
-    fetchedAt,
-    keepDays: STABLECOIN_KEEP_DAYS,
-    change30dPct: stablecoinChange30dPct(stablecoins),
-    series: stablecoins,
-  });
-  await writeJson('data/stablecoins.json', stablecoinDataset);
-  console.log(
-    `data/stablecoins.json: ${stablecoins.length} days, latest $${stablecoins.at(-1)?.totalUsd}`,
-  );
 }
 
 if (failures.length > 0) {
