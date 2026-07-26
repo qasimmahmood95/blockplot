@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseFredCsv, parseYahooChart, trimToLastDays } from './benchmarks';
+import { parseFredCsv, parseYahooChart } from './benchmarks';
+import { trimToLastDays } from './series';
 
 const fredCsv = readFileSync(new URL('./fixtures/fred-sp500.csv', import.meta.url), 'utf8');
 const yahooGold = JSON.parse(

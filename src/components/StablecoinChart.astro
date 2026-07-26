@@ -1,0 +1,54 @@
+<figure class="chart-frame">
+  <div
+    id="stablecoin-chart"
+    role="img"
+    aria-label="Area chart of total USD-pegged stablecoin circulating value over time"
+  >
+  </div>
+</figure>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import dataset from '../../data/stablecoins.json';
+  import { cssVar, responsiveChart } from '../lib/charts';
+
+  const container = document.getElementById('stablecoin-chart');
+  const points = dataset.series.map((p) => ({ date: new Date(p.date), totalUsd: p.totalUsd }));
+  const billions = (v: number): string =>
+    v >= 1e12 ? `$${(v / 1e12).toFixed(2)}T` : `$${(v / 1e9).toFixed(0)}B`;
+
+  function render(): void {
+    if (!container) return;
+    const accent = cssVar('--accent');
+    container.replaceChildren(
+      Plot.plot({
+        width: container.clientWidth || 720,
+        height: 300,
+        marginLeft: 56,
+        x: { label: null },
+        y: { label: null, grid: true, zero: true, tickFormat: billions },
+        marks: [
+          Plot.areaY(points, { x: 'date', y: 'totalUsd', fill: accent, fillOpacity: 0.1 }),
+          Plot.lineY(points, { x: 'date', y: 'totalUsd', stroke: accent, strokeWidth: 1.5 }),
+          Plot.tip(
+            points,
+            Plot.pointerX({
+              x: 'date',
+              y: 'totalUsd',
+              title: (d: { date: Date; totalUsd: number }) =>
+                `${d.date.toISOString().slice(0, 10)}\n${billions(d.totalUsd)} stablecoins`,
+            }),
+          ),
+        ],
+        style: {
+          background: 'transparent',
+          color: cssVar('--ink-muted'),
+          fontFamily: cssVar('--font-mono'),
+          fontSize: '11px',
+        },
+      }),
+    );
+  }
+
+  responsiveChart(render);
+</script>

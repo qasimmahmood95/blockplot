@@ -27,3 +27,15 @@ export function formatRatio(value: number | null): string {
 export function formatMultiple(value: number | null): string {
   return value === null ? '—' : `×${value.toFixed(2)}`;
 }
+
+const usdCompact = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  notation: 'compact',
+  maximumFractionDigits: 2,
+});
+
+/** Compact USD, e.g. "$2.42T" or "$138B". */
+export function formatUsdCompact(value: number): string {
+  return usdCompact.format(value);
+}

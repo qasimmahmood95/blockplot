@@ -1,0 +1,57 @@
+<figure class="chart-frame">
+  <div
+    id="dominance-chart"
+    role="img"
+    aria-label="Line chart of BTC dominance, accreting one point per day since the series began"
+  >
+  </div>
+</figure>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import dataset from '../../data/dominance.json';
+  import { cssVar, responsiveChart } from '../lib/charts';
+
+  const container = document.getElementById('dominance-chart');
+  const points = dataset.series.map((p) => ({ date: new Date(p.date), pct: p.btcDominancePct }));
+
+  function render(): void {
+    if (!container) return;
+    const accent = cssVar('--accent');
+    container.replaceChildren(
+      Plot.plot({
+        width: container.clientWidth || 720,
+        height: 240,
+        marginLeft: 48,
+        x: { label: null },
+        y: {
+          label: null,
+          grid: true,
+          tickFormat: (value: number) => `${value}%`,
+        },
+        marks: [
+          // Dots keep a young accreted series visible before the line forms.
+          Plot.dot(points, { x: 'date', y: 'pct', fill: accent, r: 2 }),
+          Plot.lineY(points, { x: 'date', y: 'pct', stroke: accent, strokeWidth: 1.5 }),
+          Plot.tip(
+            points,
+            Plot.pointerX({
+              x: 'date',
+              y: 'pct',
+              title: (d: { date: Date; pct: number }) =>
+                `${d.date.toISOString().slice(0, 10)}\nBTC dominance ${d.pct.toFixed(2)}%`,
+            }),
+          ),
+        ],
+        style: {
+          background: 'transparent',
+          color: cssVar('--ink-muted'),
+          fontFamily: cssVar('--font-mono'),
+          fontSize: '11px',
+        },
+      }),
+    );
+  }
+
+  responsiveChart(render);
+</script>

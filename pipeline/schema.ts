@@ -169,6 +169,85 @@ export const riskAssetStatsSchema = z.object({
 
 export type RiskAssetStats = z.infer<typeof riskAssetStatsSchema>;
 
+/** Raw response shape of CoinGecko `/global` (the parts we read). */
+export const coingeckoGlobalSchema = z.object({
+  data: z.object({
+    total_market_cap: z.object({ usd: z.number().positive() }),
+    market_cap_percentage: z.object({ btc: z.number().min(0).max(100) }),
+  }),
+});
+
+/** Raw response shape of DeFiLlama `/stablecoincharts/all` (the parts we read). */
+export const defillamaStablecoinsSchema = z
+  .array(
+    z.object({
+      /** Unix seconds, as a string. */
+      date: z.string().regex(/^\d+$/),
+      totalCirculatingUSD: z.object({ peggedUSD: z.number().optional() }).optional(),
+    }),
+  )
+  .min(1);
+
+const dominancePointSchema = z.object({
+  date: isoDate,
+  /** BTC share of total crypto market cap, %, 2 dp. */
+  btcDominancePct: z.number().min(0).max(100),
+  totalMcapUsd: z.number().positive(),
+});
+
+export type DominancePoint = z.infer<typeof dominancePointSchema>;
+
+/**
+ * Versioned on-disk format of data/dominance.json. Historical dominance has
+ * no keyless source, so this series ACCRETES: each pipeline run appends (or
+ * replaces) the entry for its own UTC day.
+ */
+export const dominanceDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  source: z.literal('coingecko'),
+  /** ISO 8601 instant of the pipeline run that produced this file. */
+  fetchedAt: z.string(),
+  series: z
+    .array(dominancePointSchema)
+    .min(1)
+    .superRefine((series, ctx) => {
+      // The accreted file is load-bearing state: a mis-ordered series (bad
+      // merge resolution, hand edit) must fail loudly, never trim silently.
+      for (let i = 1; i < series.length; i++) {
+        const prev = series[i - 1];
+        const curr = series[i];
+        if (prev && curr && curr.date <= prev.date) {
+          ctx.addIssue({ code: 'custom', message: `dates not strictly ascending at ${curr.date}` });
+        }
+      }
+    }),
+});
+
+export type DominanceDataset = z.infer<typeof dominanceDatasetSchema>;
+
+const stablecoinPointSchema = z.object({
+  date: isoDate,
+  /** Total circulating USD-pegged stablecoin value, whole USD. */
+  totalUsd: z.number().positive(),
+});
+
+export type StablecoinPoint = z.infer<typeof stablecoinPointSchema>;
+
+/** Versioned on-disk format of data/stablecoins.json. */
+export const stablecoinDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  source: z.literal('defillama'),
+  /** ISO 8601 instant of the pipeline run that produced this file. */
+  fetchedAt: z.string(),
+  /** Trailing calendar days kept. */
+  keepDays: z.number().int().positive(),
+  /** Change vs the closest entry at or before 30 days ago, %, 2 dp; null when history is short. */
+  change30dPct: z.number().nullable(),
+  series: z.array(stablecoinPointSchema).min(2),
+});
+
+export type StablecoinDataset = z.infer<typeof stablecoinDatasetSchema>;
+
 const corrPointSchema = z.object({
   date: isoDate,
   /** Pearson correlation of aligned daily log returns, 2 dp, in [-1, 1]. */

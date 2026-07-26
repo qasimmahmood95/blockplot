@@ -11,8 +11,15 @@ commit; every refresh since is bot-authored.
 | File | Contents |
 | ---- | -------- |
 | `btc-price-daily.json` | BTC/USD daily closes (CoinGecko, past 365 days) plus headline stats |
-| `benchmarks-daily.json` | S&P 500 (FRED `SP500`) and gold (Yahoo Finance, spot or front-month futures — see `sourceSeries`) daily closes, trailing 400 days |
+| `benchmarks-daily.json` | S&P 500 (FRED `SP500`), gold and DXY (Yahoo Finance — see `sourceSeries`) daily closes, trailing 460 days |
 | `risk-metrics.json` | Derived risk metrics: rolling 30/90/365d realized vol, drawdown curve, Sharpe/Sortino comparison vs S&P 500 and gold |
 | `btc-price-history.json` | Full BTC/USD daily history from 2010 (blockchain.com charts API) |
 | `halving-cycles.json` | Per-halving-epoch price series normalised to the halving-day close, for the cycle overlay |
 | `correlations.json` | Rolling 90d Pearson correlations of aligned daily log returns for all pairs of BTC, S&P 500, gold, DXY |
+| `dominance.json` | BTC dominance + total crypto mcap, accreting one CoinGecko snapshot per UTC day (no keyless history exists) |
+
+`dominance.json` is accreted state, not a refetchable snapshot: branch and
+main copies can diverge while a feature branch runs the pipeline, so merge
+conflicts on it must be resolved by keeping the union of days (never by
+discarding one side's points).
+| `stablecoins.json` | Total USD-pegged stablecoin circulating value (DeFiLlama), trailing 460 days |
