@@ -28,7 +28,7 @@ Working name was `btc-analytics`; renamed **blockplot** before scaffolding.
 ## Milestones
 
 One PR each, in order; every PR description documents scope, approach, and
-what its tests pin down.
+what its tests pin down. All milestones (M0–M6) are shipped.
 
 | #  | Scope |
 | -- | ----- |
