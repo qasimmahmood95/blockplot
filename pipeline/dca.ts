@@ -143,6 +143,7 @@ export function simulateDca(history: DailyPrice[], opts: DcaOptions): DcaResult 
     opts.frequency,
   );
   const purchases: DcaPurchase[] = dates.map((date) => {
+    // Safe: purchaseDates only returns members of the same history array.
     const priceUsd = priceByDate.get(date) as number;
     const feeUsd = (opts.amountUsd * opts.feePct) / 100;
     return { date, priceUsd, feeUsd, btcBought: (opts.amountUsd - feeUsd) / priceUsd };

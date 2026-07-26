@@ -1,7 +1,9 @@
 ---
 import DcaSimulator from '../components/DcaSimulator.astro';
 import Base from '../layouts/Base.astro';
-import { halvingCycles } from '../lib/data';
+import { btcHistory } from '../lib/data';
+
+const asOf = btcHistory.series.at(-1)?.date;
 ---
 
 <Base
@@ -16,10 +18,11 @@ import { halvingCycles } from '../lib/data';
     <p class="method-note">
       Each scheduled buy spends the fixed amount, less the per-buy fee, at that day's close (a
       schedule date missing from the data buys on the next available day; month-end schedules
-      clamp, e.g. Jan 31 → Feb 29). The lump sum invests the same total budget on the start date
-      with the same fee rate applied once. Undeployed DCA cash counts toward wealth, so both
+      clamp, e.g. Jan 31 → Feb 29; two schedules landing on the same day collapse into one buy,
+      shrinking the budget accordingly). The lump sum invests the same total budget on the start
+      date with the same fee rate applied once. Undeployed DCA cash counts toward wealth, so both
       strategies start from the same budget and the comparison is like-for-like. Prices are
-      blockchain.com daily closes through {halvingCycles.asOf}; the simulation runs entirely in
+      blockchain.com daily closes through {asOf}; the simulation runs entirely in
       the browser on the committed dataset with the same fixture-tested functions as the pipeline,
       and ignores taxes, slippage, and yield on idle cash.
     </p>

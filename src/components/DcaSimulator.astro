@@ -51,8 +51,14 @@
   if (dateInput) {
     dateInput.min = firstDate;
     dateInput.max = lastDate;
-    // Default: three years back, clamped to available history.
-    const threeYearsBack = `${Number(lastDate.slice(0, 4)) - 3}${lastDate.slice(4)}`;
+    // Default: three years back via UTC arithmetic (a Feb 29 asOf rolls to
+    // Mar 1 instead of producing an invalid date), clamped to history.
+    const last = new Date(`${lastDate}T00:00:00Z`);
+    const threeYearsBack = new Date(
+      Date.UTC(last.getUTCFullYear() - 3, last.getUTCMonth(), last.getUTCDate()),
+    )
+      .toISOString()
+      .slice(0, 10);
     dateInput.value = threeYearsBack >= firstDate ? threeYearsBack : firstDate;
   }
 
@@ -101,18 +107,24 @@
     } catch {
       stats.replaceChildren(tile('No purchases', '—', 'pick an earlier start date'));
       container.replaceChildren();
+      legend?.replaceChildren();
       return;
     }
     const { dca, lumpSum, deltaUsd } = cmp;
 
+    const buys = dca.purchases.length;
+    const deltaLabel =
+      Math.abs(deltaUsd) < 0.005
+        ? 'even with DCA'
+        : `${deltaUsd > 0 ? 'leads' : 'trails'} by ${usd.format(Math.abs(deltaUsd))}`;
     stats.replaceChildren(
-      tile('Invested', usd.format(dca.totalInvestedUsd), `${dca.purchases.length} buys · fees ${usd.format(dca.totalFeesUsd)}`),
+      tile('Invested', usd.format(dca.totalInvestedUsd), `${buys} ${buys === 1 ? 'buy' : 'buys'} · fees ${usd.format(dca.totalFeesUsd)}`),
       tile('BTC accumulated', dca.btcAccumulated.toFixed(4), 'BTC'),
       tile('DCA value now', usd.format(dca.finalValueUsd), signedPct(dca.returnPct), dca.returnPct < 0 ? 'down' : 'up'),
       tile(
         'Lump sum now',
         usd.format(lumpSum.finalValueUsd),
-        `${signedPct(lumpSum.returnPct)} · ${deltaUsd >= 0 ? 'leads' : 'trails'} by ${usd.format(Math.abs(deltaUsd))}`,
+        `${signedPct(lumpSum.returnPct)} · ${deltaLabel}`,
         lumpSum.returnPct < 0 ? 'down' : 'up',
       ),
     );

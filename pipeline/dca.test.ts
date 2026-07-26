@@ -121,6 +121,27 @@ describe('simulateDca', () => {
     expect(monthly.returnPct).toBe(-36.11);
   });
 
+  it('shrinks the invested budget when schedules collapse onto one day', () => {
+    // Weekly schedules 01-08 and 01-15 both map to 01-20 and collapse, so
+    // only 2 of 3 scheduled buys happen and the budget is 200, not 300 —
+    // the lump sum then gets the same post-collapse budget.
+    const sparse: DailyPrice[] = [
+      { date: '2024-01-01', priceUsd: 100 },
+      { date: '2024-01-20', priceUsd: 50 },
+    ];
+    const cmp = compareDcaVsLumpSum(sparse, {
+      startDate: '2024-01-01',
+      amountUsd: 100,
+      frequency: 'weekly',
+      feePct: 0,
+    });
+    expect(cmp.dca.purchases.map((p) => p.date)).toEqual(['2024-01-01', '2024-01-20']);
+    expect(cmp.dca.totalInvestedUsd).toBe(200);
+    expect(cmp.dca.btcAccumulated).toBe(3); // 1 + 2
+    expect(cmp.lumpSum.totalInvestedUsd).toBe(200);
+    expect(cmp.lumpSum.btcAccumulated).toBe(2); // 200/100 at day one
+  });
+
   it('rejects non-positive amounts, out-of-range fees, and starts beyond history', () => {
     const opts = { startDate: '2024-01-01', frequency: 'weekly' as const };
     expect(() => simulateDca(january, { ...opts, amountUsd: 0, feePct: 1 })).toThrow('positive');
