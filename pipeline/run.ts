@@ -1,6 +1,14 @@
 import { BENCHMARK_KEEP_DAYS, fetchDxy, fetchGold, fetchSp500, SP500_FRED_SERIES } from './benchmarks';
 import { fetchBtcMarketChart, PRICE_RANGE_DAYS } from './coingecko';
 import { buildCorrelationDataset } from './correlation';
+import {
+  accreteDominance,
+  fetchDominanceSnapshot,
+  fetchStablecoins,
+  readExistingDominance,
+  STABLECOIN_KEEP_DAYS,
+  stablecoinChange30dPct,
+} from './flows';
 import { buildHalvingDataset } from './halvings';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
@@ -9,21 +17,27 @@ import { buildRiskDataset } from './risk';
 import {
   benchmarkDatasetSchema,
   correlationDatasetSchema,
+  dominanceDatasetSchema,
   halvingDatasetSchema,
   historyDatasetSchema,
   riskDatasetSchema,
+  stablecoinDatasetSchema,
   type BenchmarkDataset,
   type PriceDataset,
 } from './schema';
 
-const fetchedAt = new Date().toISOString();
-const [raw, sp500, goldFetch, dxyFetch, history] = await Promise.all([
-  fetchBtcMarketChart(),
-  fetchSp500(),
-  fetchGold(),
-  fetchDxy(),
-  fetchBtcHistory(),
-]);
+const now = new Date();
+const fetchedAt = now.toISOString();
+const [raw, sp500, goldFetch, dxyFetch, history, dominanceSnapshot, stablecoins] =
+  await Promise.all([
+    fetchBtcMarketChart(),
+    fetchSp500(),
+    fetchGold(),
+    fetchDxy(),
+    fetchBtcHistory(),
+    fetchDominanceSnapshot(now),
+    fetchStablecoins(),
+  ]);
 const gold = goldFetch.series;
 const dxy = dxyFetch.series;
 
@@ -107,4 +121,28 @@ const correlations = correlationDatasetSchema.parse(
 await writeJson('data/correlations.json', correlations);
 console.log(
   `data/correlations.json: ${correlations.pairs.map((p) => `${p.pair}=${p.series.length}`).join(' ')}`,
+);
+
+const dominance = dominanceDatasetSchema.parse({
+  schemaVersion: 1,
+  source: 'coingecko',
+  fetchedAt,
+  series: accreteDominance(await readExistingDominance('data/dominance.json'), dominanceSnapshot),
+});
+await writeJson('data/dominance.json', dominance);
+console.log(
+  `data/dominance.json: ${dominance.series.length} accreted days, latest ${dominanceSnapshot.btcDominancePct}%`,
+);
+
+const stablecoinDataset = stablecoinDatasetSchema.parse({
+  schemaVersion: 1,
+  source: 'defillama',
+  fetchedAt,
+  keepDays: STABLECOIN_KEEP_DAYS,
+  change30dPct: stablecoinChange30dPct(stablecoins),
+  series: stablecoins,
+});
+await writeJson('data/stablecoins.json', stablecoinDataset);
+console.log(
+  `data/stablecoins.json: ${stablecoins.length} days, latest $${stablecoins.at(-1)?.totalUsd}`,
 );
