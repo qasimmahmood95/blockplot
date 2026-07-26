@@ -9,6 +9,10 @@ Working name was `btc-analytics`; renamed **blockplot** before scaffolding.
 
 ## Stack
 
+*(As planned before M0. Sourcing evolved during delivery — gold and DXY moved
+to Yahoo Finance, full history to blockchain.com, and mempool.space was never
+needed; the Known constraints section below records each decision.)*
+
 - Astro + TypeScript (strict), static output only; client islands for
   interactive charts and the simulator.
 - Observable Plot for charts.
@@ -28,7 +32,7 @@ Working name was `btc-analytics`; renamed **blockplot** before scaffolding.
 ## Milestones
 
 One PR each, in order; every PR description documents scope, approach, and
-what its tests pin down.
+what its tests pin down. All milestones (M0–M6) are shipped.
 
 | #  | Scope |
 | -- | ----- |

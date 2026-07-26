@@ -29,6 +29,9 @@ const sections = [
 ];
 const current = (href: string): boolean =>
   Astro.url.pathname.replace(/\/$/, '') === href.replace(/\/$/, '');
+
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(`${base}/og.png`, Astro.site);
 ---
 
 <!doctype html>
@@ -38,6 +41,35 @@ const current = (href: string): boolean =>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <title>{title}</title>
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="blockplot" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="blockplot — Bitcoin financial analytics, fully static and open"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <script is:inline>
+      // Before first paint: apply a pinned theme so there is no flash.
+      // Storage can throw (blocked cookies); degrade to auto silently.
+      try {
+        const pinned = localStorage.getItem('theme');
+        if (pinned === 'dark' || pinned === 'light') {
+          document.documentElement.dataset.theme = pinned;
+        }
+      } catch {
+        /* auto */
+      }
+    </script>
   </head>
   <body>
     <header class="site-header">
@@ -51,10 +83,15 @@ const current = (href: string): boolean =>
           ))
         }
       </nav>
-      <p class="header-tick num">
-        BTC {formatUsd(stats.latestPriceUsd)}{' '}
-        <span class="tick-date">close {stats.latestDate}</span>
-      </p>
+      <div class="header-side">
+        <p class="header-tick num">
+          BTC <span id="tick-price">{formatUsd(stats.latestPriceUsd)}</span>{' '}
+          <span class="tick-date" id="tick-label">close {stats.latestDate}</span>
+        </p>
+        <button type="button" class="theme-toggle num" id="theme-toggle" aria-live="polite">
+          theme: auto
+        </button>
+      </div>
     </header>
     <main>
       <slot />
@@ -66,5 +103,72 @@ const current = (href: string): boolean =>
       </p>
       <p><a href="https://github.com/qasimmahmood95/blockplot">source &amp; methodology</a></p>
     </footer>
+
+    <script>
+      // Theme toggle: auto (OS preference) -> dark -> light, persisted.
+      const root = document.documentElement;
+      const button = document.getElementById('theme-toggle');
+      const modes = ['auto', 'dark', 'light'] as const;
+      type Mode = (typeof modes)[number];
+
+      const currentMode = (): Mode => {
+        const t = root.dataset.theme;
+        return t === 'dark' || t === 'light' ? t : 'auto';
+      };
+      const apply = (mode: Mode): void => {
+        if (mode === 'auto') delete root.dataset.theme;
+        else root.dataset.theme = mode;
+        if (button) button.textContent = `theme: ${mode}`;
+        window.dispatchEvent(new Event('themechange'));
+        // Persist last, guarded: a blocked-storage throw must not leave the
+        // page restyled with stale charts or a lying label.
+        try {
+          if (mode === 'auto') localStorage.removeItem('theme');
+          else localStorage.setItem('theme', mode);
+        } catch {
+          /* theme still applies for this page */
+        }
+      };
+      if (button) {
+        button.textContent = `theme: ${currentMode()}`;
+        button.addEventListener('click', () => {
+          const next = modes[(modes.indexOf(currentMode()) + 1) % modes.length] ?? 'auto';
+          apply(next);
+        });
+      }
+
+      // Live spot ticker: the site's one runtime fetch (CoinGecko public
+      // endpoint). Committed close stays as the fallback when it fails.
+      const priceEl = document.getElementById('tick-price');
+      const labelEl = document.getElementById('tick-label');
+      const usd = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      });
+      async function refreshTicker(): Promise<void> {
+        if (document.hidden || !priceEl || !labelEl) return;
+        try {
+          const res = await fetch(
+            'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
+            { headers: { accept: 'application/json' } },
+          );
+          if (!res.ok) return;
+          const payload = (await res.json()) as { bitcoin?: { usd?: number } };
+          const price = payload.bitcoin?.usd;
+          if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) return;
+          priceEl.textContent = usd.format(price);
+          labelEl.textContent = 'live';
+          labelEl.classList.add('tick-live');
+        } catch {
+          // keep the committed close
+        }
+      }
+      refreshTicker();
+      setInterval(refreshTicker, 60_000);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) void refreshTicker();
+      });
+    </script>
   </body>
 </html>

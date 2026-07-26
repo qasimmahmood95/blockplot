@@ -93,6 +93,13 @@ code {
   text-underline-offset: 4px;
 }
 
+.header-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.9rem;
+}
+
 .header-tick {
   margin: 0;
   font-size: 0.85rem;
@@ -100,6 +107,24 @@ code {
 
 .header-tick .tick-date {
   color: var(--ink-muted);
+}
+
+.header-tick .tick-live {
+  color: var(--pos);
+}
+
+.theme-toggle {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  color: var(--ink);
+  border-color: var(--ink-muted);
 }
 
 .stat-grid {
