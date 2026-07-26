@@ -12,6 +12,7 @@ import {
 import { buildHalvingDataset } from './halvings';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
+import { buildMonthlyDataset } from './monthly';
 import { computeStats, toDailySeries } from './prices';
 import { buildRiskDataset } from './risk';
 import {
@@ -20,6 +21,7 @@ import {
   dominanceDatasetSchema,
   halvingDatasetSchema,
   historyDatasetSchema,
+  monthlyDatasetSchema,
   priceDatasetSchema,
   riskDatasetSchema,
   stablecoinDatasetSchema,
@@ -136,6 +138,12 @@ if (history) {
   await writeJson('data/halving-cycles.json', halvings);
   console.log(
     `data/halving-cycles.json: ${halvings.cycles.map((c) => `c${c.cycle}=${c.series.length}`).join(' ')}`,
+  );
+
+  const monthly = monthlyDatasetSchema.parse(buildMonthlyDataset(history, { fetchedAt }));
+  await writeJson('data/monthly-returns.json', monthly);
+  console.log(
+    `data/monthly-returns.json: ${monthly.months.length} months over ${monthly.years.length} years`,
   );
 }
 
