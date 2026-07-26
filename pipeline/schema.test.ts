@@ -41,7 +41,7 @@ describe('benchmarkDatasetSchema', () => {
     expect(() =>
       benchmarkDatasetSchema.parse({
         ...valid,
-        benchmarks: [{ ...valid.benchmarks[0], asset: 'dxy' }],
+        benchmarks: [{ ...valid.benchmarks[0], asset: 'oil' }],
       }),
     ).toThrow();
     expect(() =>
