@@ -77,4 +77,9 @@ what its tests pin down.
   XAU/USD spot, falling back to COMEX front-month futures (`GC=F`) — decided
   in the M1 PR. DXY (resolved in the M3 PR) also comes from Yahoo Finance:
   the ICE index `DX-Y.NYB`, falling back to front-month futures `DX=F`.
-- M5 exchange netflow ships only if a free source exists; otherwise dropped.
+- M5 exchange netflow: dropped (decided in the M5 PR) — Glassnode, CryptoQuant,
+  and peers all meter flow metrics behind keys; no keyless source exists.
+  Historical BTC dominance is also keyless-unavailable (CoinGecko global
+  history is pro-only), so data/dominance.json accretes one snapshot per UTC
+  day from the 6-hourly pipeline instead; stablecoin supply history comes
+  keyless from DeFiLlama.

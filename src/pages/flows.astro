@@ -1,0 +1,65 @@
+---
+import DominanceChart from '../components/DominanceChart.astro';
+import StablecoinChart from '../components/StablecoinChart.astro';
+import Base from '../layouts/Base.astro';
+import { dominance, stablecoins } from '../lib/data';
+import { formatPct, formatUsdCompact } from '../lib/format';
+
+const latestDominance = dominance.series.at(-1);
+const latestStable = stablecoins.series.at(-1);
+const { change30dPct } = stablecoins;
+---
+
+<Base
+  title="blockplot · flows & dominance"
+  description="BTC dominance and total USD-pegged stablecoin supply, from keyless public sources."
+>
+  <h1 class="visually-hidden">Flows &amp; dominance</h1>
+
+  <dl class="stat-grid">
+    <div class="stat">
+      <dt>BTC dominance</dt>
+      <dd class="num">{latestDominance ? `${latestDominance.btcDominancePct.toFixed(1)}%` : '—'}</dd>
+      <dd class="sub num">{latestDominance?.date}</dd>
+    </div>
+    <div class="stat">
+      <dt>Total crypto mcap</dt>
+      <dd class="num">{latestDominance ? formatUsdCompact(latestDominance.totalMcapUsd) : '—'}</dd>
+      <dd class="sub num">CoinGecko global</dd>
+    </div>
+    <div class="stat">
+      <dt>Stablecoin supply</dt>
+      <dd class="num">{latestStable ? formatUsdCompact(latestStable.totalUsd) : '—'}</dd>
+      <dd class="sub num">{latestStable?.date}</dd>
+    </div>
+    <div class="stat">
+      <dt>Stablecoins, 30d</dt>
+      <dd class={`num ${change30dPct !== null && change30dPct < 0 ? 'down' : 'up'}`}>
+        {change30dPct === null ? '—' : formatPct(change30dPct)}
+      </dd>
+      <dd class="sub num">supply change</dd>
+    </div>
+  </dl>
+
+  <section class="chart-section">
+    <h2>Stablecoin total supply · USD-pegged · trailing {stablecoins.keepDays}d</h2>
+    <StablecoinChart />
+    <p class="method-note">
+      Total circulating value of USD-pegged stablecoins across all chains, from DeFiLlama's
+      keyless stablecoin API, one point per UTC day. Rising supply is often read as dry powder
+      entering crypto rails; the figure is descriptive only.
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>BTC dominance · accreting daily</h2>
+    <DominanceChart />
+    <p class="method-note">
+      BTC's share of total crypto market cap from CoinGecko's global endpoint. Historical
+      dominance has no keyless source, so this series accretes: every 6-hourly pipeline run
+      records one point per UTC day (the day's last run wins), growing from
+      its {dominance.series[0]?.date} start. Exchange netflow was considered for this view and
+      dropped — no free source exists (see PLAN.md).
+    </p>
+  </section>
+</Base>
