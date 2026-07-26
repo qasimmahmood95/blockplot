@@ -22,6 +22,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const sections = [
   { href: `${base}/`, label: 'overview' },
   { href: `${base}/volatility/`, label: 'volatility & risk' },
+  { href: `${base}/cycles/`, label: 'halving cycles' },
 ];
 const current = (href: string): boolean =>
   Astro.url.pathname.replace(/\/$/, '') === href.replace(/\/$/, '');
@@ -57,7 +58,7 @@ const current = (href: string): boolean =>
     </main>
     <footer class="site-footer">
       <p>
-        Data: CoinGecko &amp; FRED/Yahoo benchmarks, refreshed every 6 h by CI · last fetch{' '}
+        Data: CoinGecko, blockchain.com &amp; FRED/Yahoo, refreshed every 6 h by CI · last fetch{' '}
         <span class="num">{fetchedAt.slice(0, 16).replace('T', ' ')} UTC</span>
       </p>
       <p><a href="https://github.com/qasimmahmood95/blockplot">source &amp; methodology</a></p>

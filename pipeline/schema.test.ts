@@ -69,10 +69,11 @@ describe('benchmarkDatasetSchema', () => {
 
 describe('riskDatasetSchema', () => {
   const valid = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     fetchedAt: '2024-03-08T12:00:00.000Z',
     asOf: '2024-03-08',
     windowDays: 8,
+    rollingVolSource: 'coingecko',
     rollingVol: [{ windowDays: 30, series: [{ date: '2024-03-08', volPct: 45.1 }] }],
     drawdown: {
       maxDrawdownPct: -10,

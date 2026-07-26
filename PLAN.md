@@ -63,10 +63,12 @@ what its tests pin down.
 
 - CoinGecko's keyless public API caps historical `market_chart` queries at the
   past 365 days (confirmed 2026-07-26, error 10012 on `days=max`), so M0 ships
-  a 365-day window. M2's halving-cycle overlay needs full history — source it
-  from a free archival dataset or another free API, decided in the M2 PR.
-  The cap also means M1's 365d rolling-vol series is empty until then (the
-  full-window figure stands in); it populates once M2 lands deeper history.
+  a 365-day window. Resolved in the M2 PR: full daily history (2010 onward)
+  comes from blockchain.com's keyless charts API
+  (`/charts/market-price?timespan=all&sampled=false`), which feeds the
+  halving-cycle overlay and populates the previously empty 365d rolling-vol
+  series (the vol curves now derive from that history source, documented on
+  the page).
 - FRED works keylessly via its `fredgraph.csv` export (the JSON API needs an
   account key), which serves the S&P 500 (`SP500`). FRED's LBMA gold series
   were discontinued in 2022 when IBA pulled redistribution, and stooq's CSV

@@ -1,0 +1,113 @@
+<figure class="chart-frame">
+  <div class="chart-controls">
+    <div id="cycles-legend" class="chart-legend" aria-hidden="true"></div>
+    <div class="chart-toggle" role="group" aria-label="Y-axis scale">
+      <button type="button" data-scale="log" aria-pressed="true">log</button>
+      <button type="button" data-scale="linear" aria-pressed="false">linear</button>
+    </div>
+  </div>
+  <div
+    id="cycles-chart"
+    role="img"
+    aria-label="Overlay of BTC price as a multiple of each halving-day close, by days since halving, for the four halving cycles"
+  >
+  </div>
+</figure>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import dataset from '../../data/halving-cycles.json';
+  import { cssVar, responsiveChart } from '../lib/charts';
+
+  const container = document.getElementById('cycles-chart');
+  const legend = document.getElementById('cycles-legend');
+  const toggle = document.querySelectorAll<HTMLButtonElement>('.chart-toggle button');
+
+  // Ordinal ramp: oldest cycle lightest, current cycle the strongest step.
+  const RAMP = ['--cycle-1', '--cycle-2', '--cycle-3', '--cycle-4'];
+  const labelOf = (halvingDate: string): string => halvingDate.slice(0, 4);
+  const cycles = dataset.cycles.map((c) => ({
+    label: labelOf(c.halvingDate),
+    points: c.series.map((p) => ({ cycle: labelOf(c.halvingDate), day: p.day, multiple: p.multiple })),
+  }));
+  const points = cycles.flatMap((c) => c.points);
+  const lineEnds = cycles.flatMap((c) => c.points.slice(-1));
+  const domain = cycles.map((c) => c.label);
+
+  let scale: 'log' | 'linear' = 'log';
+
+  function render(): void {
+    if (!container) return;
+    const range = domain.map((_, i) => cssVar(RAMP[i] ?? '--accent'));
+    if (legend) {
+      legend.replaceChildren(
+        ...domain.map((label, i) => {
+          const item = document.createElement('span');
+          item.className = 'legend-item';
+          const swatch = document.createElement('span');
+          swatch.className = 'legend-swatch';
+          swatch.style.background = range[i] ?? '';
+          item.append(swatch, label);
+          return item;
+        }),
+      );
+    }
+    container.replaceChildren(
+      Plot.plot({
+        width: container.clientWidth || 720,
+        height: 380,
+        marginLeft: 48,
+        marginRight: 44,
+        x: { label: 'days since halving' },
+        y: {
+          label: null,
+          grid: true,
+          type: scale,
+          tickFormat: (value: number) => `×${value >= 10 ? value.toFixed(0) : value}`,
+        },
+        color: { domain, range },
+        marks: [
+          Plot.lineY(points, {
+            x: 'day',
+            y: 'multiple',
+            stroke: 'cycle',
+            strokeWidth: 1.5,
+          }),
+          Plot.text(lineEnds, {
+            x: 'day',
+            y: 'multiple',
+            text: 'cycle',
+            dx: 20,
+            fill: cssVar('--ink'),
+            fontSize: 11,
+          }),
+          Plot.tip(
+            points,
+            Plot.pointerX({
+              x: 'day',
+              y: 'multiple',
+              title: (d: { cycle: string; day: number; multiple: number }) =>
+                `${d.cycle} cycle · day ${d.day}\n×${d.multiple.toFixed(2)}`,
+            }),
+          ),
+        ],
+        style: {
+          background: 'transparent',
+          color: cssVar('--ink-muted'),
+          fontFamily: cssVar('--font-mono'),
+          fontSize: '11px',
+        },
+      }),
+    );
+  }
+
+  toggle.forEach((button) => {
+    button.addEventListener('click', () => {
+      scale = button.dataset.scale === 'linear' ? 'linear' : 'log';
+      toggle.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+      render();
+    });
+  });
+
+  responsiveChart(render);
+</script>

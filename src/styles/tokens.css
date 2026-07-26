@@ -9,10 +9,13 @@
   --ink-muted: #6e665e;
   --line: #e2dbd1;
   --accent: #bf4a08;
-  /* Lighter step of the accent's ordinal ramp, for the shorter window in
-     multi-window charts (30d light -> 90d full accent). Both ramps validated:
-     monotone lightness, step gap >= 0.06 L, light end >= 2:1 on surface. */
-  --accent-soft: #e08a4e;
+  /* 4-step ordinal accent ramp for ordered series (halving cycles; the vol
+     chart uses steps 2-4 for its 30/90/365d windows); validated in both
+     modes: monotone lightness, gaps >= 0.06 L, light end >= 2:1 on surface. */
+  --cycle-1: #e69c62;
+  --cycle-2: #d47531;
+  --cycle-3: #bf4a08;
+  --cycle-4: #93380a;
   --pos: #1a7a4f;
   --neg: #b3383b;
 
@@ -29,7 +32,11 @@
     --ink-muted: #968c80;
     --line: #322c25;
     --accent: #e97328;
-    --accent-soft: #9c4d13; /* on dark the ramp anchors flip: dim step 30d, bright accent 90d */
+    /* On dark the ramp anchors flip: dim oldest, bright accent for the current step. */
+    --cycle-1: #7f3f10;
+    --cycle-2: #a35415;
+    --cycle-3: #c9611c;
+    --cycle-4: #e97328;
     --pos: #4fae7f;
     --neg: #d96a6c;
   }

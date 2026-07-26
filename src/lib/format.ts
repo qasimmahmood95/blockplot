@@ -22,3 +22,8 @@ export function formatUnsignedPct(value: number): string {
 export function formatRatio(value: number | null): string {
   return value === null ? '—' : value.toFixed(2);
 }
+
+/** Price multiple, e.g. "×3.42"; an em dash when unavailable. */
+export function formatMultiple(value: number | null): string {
+  return value === null ? '—' : `×${value.toFixed(2)}`;
+}

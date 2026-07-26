@@ -1,0 +1,63 @@
+---
+import CyclesChart from '../components/CyclesChart.astro';
+import Base from '../layouts/Base.astro';
+import { halvingCycles } from '../lib/data';
+import { formatMultiple } from '../lib/format';
+
+const { cycles, asOf } = halvingCycles;
+
+const current = cycles.at(-1);
+const currentPoint = current?.series.at(-1) ?? null;
+const currentDay = currentPoint?.day ?? null;
+
+// Same-day comparison: each prior cycle's last point at or before the
+// current cycle's day count (pure selection; all maths lives in the pipeline).
+const atSameDay = (cycle: (typeof cycles)[number]): number | null => {
+  if (currentDay === null) return null;
+  const match = [...cycle.series].reverse().find((p) => p.day <= currentDay);
+  return match?.multiple ?? null;
+};
+const priorCycles = cycles.slice(0, -1).reverse();
+---
+
+<Base
+  title="blockplot · halving cycles"
+  description="BTC price normalised to days since each halving: four-cycle overlay on a log or linear scale."
+>
+  <h1 class="visually-hidden">Halving cycles</h1>
+
+  <dl class="stat-grid">
+    <div class="stat">
+      <dt>Current cycle day</dt>
+      <dd class="num">{currentDay ?? '—'}</dd>
+      <dd class="sub num">since {current?.halvingDate}</dd>
+    </div>
+    <div class="stat">
+      <dt>Current multiple</dt>
+      <dd class="num">{formatMultiple(currentPoint?.multiple ?? null)}</dd>
+      <dd class="sub num">of {current?.halvingDate.slice(0, 4)} halving close</dd>
+    </div>
+    {
+      priorCycles.slice(0, 2).map((cycle) => (
+        <div class="stat">
+          <dt>{cycle.halvingDate.slice(0, 4)} cycle, same day</dt>
+          <dd class="num">{formatMultiple(atSameDay(cycle))}</dd>
+          <dd class="sub num">day {currentDay ?? '—'} of that cycle</dd>
+        </div>
+      ))
+    }
+  </dl>
+
+  <section class="chart-section">
+    <h2>Price vs halving-day close · days since halving</h2>
+    <CyclesChart />
+    <p class="method-note">
+      Each line is one halving epoch — {cycles.map((c) => c.halvingDate).join(', ')} — with the
+      daily close divided by that epoch's halving-day close, plotted against days since the
+      halving (log scale by default; cycles end at the next halving, the current one is open).
+      History comes from blockchain.com's archival market-price series, which reaches back past
+      CoinGecko's keyless 365-day cap; data through {asOf}. Normalisation is computed in the
+      pipeline by fixture-tested pure functions and committed to <code>/data</code>.
+    </p>
+  </section>
+</Base>

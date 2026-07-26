@@ -13,3 +13,5 @@ commit; every refresh since is bot-authored.
 | `btc-price-daily.json` | BTC/USD daily closes (CoinGecko, past 365 days) plus headline stats |
 | `benchmarks-daily.json` | S&P 500 (FRED `SP500`) and gold (Yahoo Finance, spot or front-month futures — see `sourceSeries`) daily closes, trailing 400 days |
 | `risk-metrics.json` | Derived risk metrics: rolling 30/90/365d realized vol, drawdown curve, Sharpe/Sortino comparison vs S&P 500 and gold |
+| `btc-price-history.json` | Full BTC/USD daily history from 2010 (blockchain.com charts API) |
+| `halving-cycles.json` | Per-halving-epoch price series normalised to the halving-day close, for the cycle overlay |

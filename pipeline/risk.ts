@@ -11,7 +11,7 @@ import type {
 export const CRYPTO_PERIODS_PER_YEAR = 365;
 export const MARKET_PERIODS_PER_YEAR = 252;
 
-/** Rolling realized-vol windows, in days. 365 stays empty until pre-window history arrives (M2). */
+/** Rolling realized-vol windows, in days; all three populate from the deep-history source. */
 export const ROLLING_VOL_WINDOWS = [30, 90, 365];
 
 /** A dated observation, source-agnostic. */
@@ -173,27 +173,37 @@ const toPoint = ({ date, close }: BenchmarkDay): SeriesPoint => ({ date, value: 
  * Assemble data/risk-metrics.json: BTC rolling vol and drawdown over the full
  * fetched window, plus per-asset comparison stats with each benchmark clamped
  * to BTC's date range (each asset keeps its own trading calendar within it).
+ * When deep history is provided, all rolling-vol curves derive from it (so
+ * the 365d window has enough pre-window returns) and are clipped to the
+ * display window; drawdown and the comparison stay on the spot series.
  */
 export function buildRiskDataset(
   btc: DailyPrice[],
   benchmarks: { sp500: BenchmarkDay[]; gold: BenchmarkDay[] },
-  opts: { fetchedAt: string; rollingWindows?: number[] },
+  opts: { fetchedAt: string; rollingWindows?: number[]; history?: DailyPrice[] },
 ): RiskDataset {
   const points = btc.map(({ date, priceUsd }) => ({ date, value: priceUsd }));
   const first = points[0];
   const last = points.at(-1);
   if (!first || !last) throw new Error('buildRiskDataset: empty BTC series');
   const windows = opts.rollingWindows ?? ROLLING_VOL_WINDOWS;
+  const history = opts.history ?? [];
+  const volPoints = history.length
+    ? history.map(({ date, priceUsd }) => ({ date, value: priceUsd }))
+    : points;
   const sp500 = clampToRange(benchmarks.sp500.map(toPoint), first.date, last.date);
   const gold = clampToRange(benchmarks.gold.map(toPoint), first.date, last.date);
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     fetchedAt: opts.fetchedAt,
     asOf: last.date,
     windowDays: points.length,
+    rollingVolSource: history.length ? 'blockchain.info' : 'coingecko',
     rollingVol: windows.map((windowDays) => ({
       windowDays,
-      series: rollingVol(points, windowDays, CRYPTO_PERIODS_PER_YEAR),
+      series: rollingVol(volPoints, windowDays, CRYPTO_PERIODS_PER_YEAR).filter(
+        (p) => p.date >= first.date && p.date <= last.date,
+      ),
     })),
     drawdown: drawdownCurve(points),
     comparison: [

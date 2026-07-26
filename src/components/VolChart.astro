@@ -3,7 +3,7 @@
   <div
     id="vol-chart"
     role="img"
-    aria-label="Line chart of annualized BTC realized volatility over rolling 30 and 90 day windows"
+    aria-label="Line chart of annualized BTC realized volatility over rolling 30, 90, and 365 day windows"
   >
   </div>
 </figure>
@@ -16,9 +16,9 @@
   const container = document.getElementById('vol-chart');
   const legend = document.getElementById('vol-chart-legend');
 
-  // Ordinal ramp: shorter window -> lighter accent step. 365d stays empty
-  // until pre-window history arrives (M2); only populated windows render.
-  const RAMP: Record<string, string> = { '30d': '--accent-soft', '90d': '--accent' };
+  // Ordinal ramp: shorter window -> lighter accent step (shares the validated
+  // cycle ramp); only populated windows render.
+  const RAMP: Record<string, string> = { '30d': '--cycle-2', '90d': '--cycle-3', '365d': '--cycle-4' };
   const windows = dataset.rollingVol.filter((w) => w.series.length > 0);
   const points = windows.flatMap((w) =>
     w.series.map((p) => ({
