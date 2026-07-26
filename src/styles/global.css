@@ -158,13 +158,46 @@ code {
   padding: 1rem 1rem 0.5rem;
 }
 
+.chart-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.chart-controls .chart-legend {
+  margin-bottom: 0;
+}
+
 .chart-legend {
   display: flex;
-  gap: 1.1rem;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.1rem;
   margin-bottom: 0.35rem;
   font-family: var(--font-mono);
   font-size: 0.72rem;
   color: var(--ink-muted);
+}
+
+.chart-toggle {
+  display: flex;
+  border: 1px solid var(--line);
+}
+
+.chart-toggle button {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  background: transparent;
+  border: none;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+}
+
+.chart-toggle button[aria-pressed='true'] {
+  color: var(--surface);
+  background: var(--accent);
 }
 
 .legend-item {

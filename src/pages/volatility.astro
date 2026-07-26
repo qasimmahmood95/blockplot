@@ -53,13 +53,14 @@ const assetLabels: Record<string, string> = {
   </dl>
 
   <section class="chart-section">
-    <h2>Realized volatility · rolling 30/90d · annualized</h2>
+    <h2>Realized volatility · rolling 30/90/365d · annualized</h2>
     <VolChart />
     <p class="method-note">
       Rolling sample standard deviation of daily log returns, annualized by √365 and shown as a
-      percentage. Each point uses the window of returns ending that day, so the 30d line starts 30
-      days into the dataset. A 365d rolling line needs history beyond CoinGecko's keyless 365-day
-      cap and arrives once M2 sources full price history.
+      percentage; each point uses the window of returns ending that day. The vol curves (and the
+      30d/90d tiles, which read their latest points) derive from blockchain.com's full history
+      series so even the 365d window has enough pre-window returns; the 1y figure, drawdown, and
+      comparison table use CoinGecko's 365-day spot series, so figures can differ fractionally.
     </p>
   </section>
 
