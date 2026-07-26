@@ -13,6 +13,14 @@ import { buildHalvingDataset } from './halvings';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
 import { buildMonthlyDataset } from './monthly';
+import {
+  changeOverDaysPct,
+  fetchFeeTiers,
+  fetchHashRate,
+  fetchTxCount,
+  NETWORK_KEEP_DAYS,
+  trailingAverage,
+} from './network';
 import { computeStats, toDailySeries } from './prices';
 import { buildRiskDataset } from './risk';
 import {
@@ -22,6 +30,7 @@ import {
   halvingDatasetSchema,
   historyDatasetSchema,
   monthlyDatasetSchema,
+  networkDatasetSchema,
   priceDatasetSchema,
   riskDatasetSchema,
   stablecoinDatasetSchema,
@@ -46,16 +55,29 @@ async function attempt<T>(label: string, task: Promise<T>): Promise<T | null> {
   }
 }
 
-const [raw, sp500, goldFetch, dxyFetch, history, dominanceSnapshot, stablecoins] =
-  await Promise.all([
-    attempt('coingecko market chart', fetchBtcMarketChart()),
-    attempt('fred sp500', fetchSp500()),
-    attempt('yahoo gold', fetchGold()),
-    attempt('yahoo dxy', fetchDxy()),
-    attempt('blockchain.com history', fetchBtcHistory()),
-    attempt('coingecko global', fetchDominanceSnapshot(now)),
-    attempt('defillama stablecoins', fetchStablecoins()),
-  ]);
+const [
+  raw,
+  sp500,
+  goldFetch,
+  dxyFetch,
+  history,
+  dominanceSnapshot,
+  stablecoins,
+  hashRate,
+  txCount,
+  feeTiers,
+] = await Promise.all([
+  attempt('coingecko market chart', fetchBtcMarketChart()),
+  attempt('fred sp500', fetchSp500()),
+  attempt('yahoo gold', fetchGold()),
+  attempt('yahoo dxy', fetchDxy()),
+  attempt('blockchain.com history', fetchBtcHistory()),
+  attempt('coingecko global', fetchDominanceSnapshot(now)),
+  attempt('defillama stablecoins', fetchStablecoins()),
+  attempt('blockchain.com hash-rate', fetchHashRate()),
+  attempt('blockchain.com n-transactions', fetchTxCount()),
+  attempt('mempool.space fees', fetchFeeTiers()),
+]);
 
 const series = raw ? toDailySeries(raw.prices) : null;
 
@@ -87,6 +109,31 @@ if (stablecoins) {
   await writeJson('data/stablecoins.json', stablecoinDataset);
   console.log(
     `data/stablecoins.json: ${stablecoins.length} days, latest $${stablecoins.at(-1)?.totalUsd}`,
+  );
+}
+
+if (hashRate && txCount && feeTiers) {
+  const network = networkDatasetSchema.parse({
+    schemaVersion: 1,
+    fetchedAt,
+    asOf: hashRate.at(-1)?.date ?? txCount.at(-1)?.date,
+    keepDays: NETWORK_KEEP_DAYS,
+    hashRate: {
+      unit: 'EH/s',
+      change30dPct: changeOverDaysPct(hashRate, 30),
+      series: hashRate,
+    },
+    txCount: {
+      unit: 'tx/day',
+      average30d: trailingAverage(txCount, 30),
+      change30dPct: changeOverDaysPct(txCount, 30),
+      series: txCount,
+    },
+    fees: { source: 'mempool.space', tiers: feeTiers },
+  });
+  await writeJson('data/network.json', network);
+  console.log(
+    `data/network.json: hash rate ${hashRate.at(-1)?.value} EH/s, ${txCount.at(-1)?.value} tx on ${network.asOf}, fastest fee ${feeTiers.fastestFee} sat/vB`,
   );
 }
 
