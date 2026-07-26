@@ -260,6 +260,36 @@ export const stablecoinDatasetSchema = z.object({
 
 export type StablecoinDataset = z.infer<typeof stablecoinDatasetSchema>;
 
+const monthlyReturnSchema = z.object({
+  year: z.number().int().min(2009),
+  month: z.number().int().min(1).max(12),
+  /** Close-over-previous-month-close, %, 2 dp; the newest entry is month-to-date. */
+  returnPct: z.number(),
+});
+
+export type MonthlyReturn = z.infer<typeof monthlyReturnSchema>;
+
+const yearlyReturnSchema = z.object({
+  year: z.number().int().min(2009),
+  /** Compounded product of that year's available monthly returns, %, 2 dp. */
+  returnPct: z.number(),
+});
+
+export type YearlyReturn = z.infer<typeof yearlyReturnSchema>;
+
+/** Versioned on-disk format of data/monthly-returns.json. */
+export const monthlyDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  source: z.literal('blockchain.info'),
+  /** ISO 8601 instant of the pipeline run that produced this file. */
+  fetchedAt: z.string(),
+  asOf: isoDate,
+  months: z.array(monthlyReturnSchema).min(1),
+  years: z.array(yearlyReturnSchema).min(1),
+});
+
+export type MonthlyDataset = z.infer<typeof monthlyDatasetSchema>;
+
 const corrPointSchema = z.object({
   date: isoDate,
   /** Pearson correlation of aligned daily log returns, 2 dp, in [-1, 1]. */
