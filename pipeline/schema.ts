@@ -123,7 +123,7 @@ export const benchmarkDatasetSchema = z.object({
   keepDays: z.number().int().positive(),
   benchmarks: z.array(
     z.object({
-      asset: z.enum(['sp500', 'gold']),
+      asset: z.enum(['sp500', 'gold', 'dxy']),
       source: z.enum(['fred', 'yahoo']),
       /** Identifier of the series at its source, e.g. the FRED series id. */
       sourceSeries: z.string().min(1),
@@ -168,6 +168,49 @@ export const riskAssetStatsSchema = z.object({
 });
 
 export type RiskAssetStats = z.infer<typeof riskAssetStatsSchema>;
+
+const corrPointSchema = z.object({
+  date: isoDate,
+  /** Pearson correlation of aligned daily log returns, 2 dp, in [-1, 1]. */
+  corr: z.number().min(-1).max(1),
+});
+
+export type CorrPoint = z.infer<typeof corrPointSchema>;
+
+const corrAsset = z.enum(['btc', 'sp500', 'gold', 'dxy']);
+
+const pairIdSchema = z.enum([
+  'btc-sp500',
+  'btc-gold',
+  'btc-dxy',
+  'sp500-gold',
+  'sp500-dxy',
+  'gold-dxy',
+]);
+
+export type PairId = z.infer<typeof pairIdSchema>;
+
+/** Versioned on-disk format of data/correlations.json. */
+export const correlationDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  /** ISO 8601 instant of the pipeline run that produced this file. */
+  fetchedAt: z.string(),
+  asOf: isoDate,
+  /** Rolling window in calendar days, and the fewest aligned returns a window may hold. */
+  windowDays: z.number().int().min(2),
+  minObs: z.number().int().min(2),
+  pairs: z.array(
+    z.object({
+      pair: pairIdSchema,
+      a: corrAsset,
+      b: corrAsset,
+      /** Empty entries are allowed while a pair's sources lack shared history. */
+      series: z.array(corrPointSchema),
+    }),
+  ),
+});
+
+export type CorrelationDataset = z.infer<typeof correlationDatasetSchema>;
 
 /** Versioned on-disk format of data/risk-metrics.json. */
 export const riskDatasetSchema = z.object({

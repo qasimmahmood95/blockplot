@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { benchmarkDatasetSchema, riskDatasetSchema } from './schema';
+import { benchmarkDatasetSchema, correlationDatasetSchema, riskDatasetSchema } from './schema';
 import { marketChartSchema } from './schema';
 
 describe('marketChartSchema', () => {
@@ -41,7 +41,7 @@ describe('benchmarkDatasetSchema', () => {
     expect(() =>
       benchmarkDatasetSchema.parse({
         ...valid,
-        benchmarks: [{ ...valid.benchmarks[0], asset: 'dxy' }],
+        benchmarks: [{ ...valid.benchmarks[0], asset: 'oil' }],
       }),
     ).toThrow();
     expect(() =>
@@ -64,6 +64,39 @@ describe('benchmarkDatasetSchema', () => {
         ],
       }),
     ).toThrow();
+  });
+});
+
+describe('correlationDatasetSchema', () => {
+  const valid = {
+    schemaVersion: 1,
+    fetchedAt: '2024-03-08T12:00:00.000Z',
+    asOf: '2024-03-08',
+    windowDays: 90,
+    minObs: 40,
+    pairs: [
+      { pair: 'btc-sp500', a: 'btc', b: 'sp500', series: [{ date: '2024-03-08', corr: -0.27 }] },
+      { pair: 'gold-dxy', a: 'gold', b: 'dxy', series: [] },
+    ],
+  };
+
+  it('accepts the documented shape, including empty pair series', () => {
+    expect(correlationDatasetSchema.parse(valid)).toEqual(valid);
+  });
+
+  it('rejects out-of-range correlations, unknown pair ids, and bad dates', () => {
+    const withSeries = (series: unknown) => ({
+      ...valid,
+      pairs: [{ ...valid.pairs[0], series }],
+    });
+    expect(() => correlationDatasetSchema.parse(withSeries([{ date: '2024-03-08', corr: 1.5 }]))).toThrow();
+    expect(() =>
+      correlationDatasetSchema.parse({
+        ...valid,
+        pairs: [{ ...valid.pairs[0], pair: 'btc-oil' }],
+      }),
+    ).toThrow();
+    expect(() => correlationDatasetSchema.parse(withSeries([{ date: '03/08/2024', corr: 0.5 }]))).toThrow();
   });
 });
 

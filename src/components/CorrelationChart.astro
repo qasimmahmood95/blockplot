@@ -1,0 +1,85 @@
+<figure class="chart-frame">
+  <div class="chart-controls">
+    <div class="chart-toggle" id="pair-toggle" role="group" aria-label="Asset pair"></div>
+  </div>
+  <div
+    id="correlation-chart"
+    role="img"
+    aria-label="Line chart of the rolling 90-day correlation of daily log returns for the selected asset pair"
+  >
+  </div>
+</figure>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import dataset from '../../data/correlations.json';
+  import { cssVar, responsiveChart } from '../lib/charts';
+
+  const container = document.getElementById('correlation-chart');
+  const toggle = document.getElementById('pair-toggle');
+
+  const LABELS: Record<string, string> = {
+    btc: 'BTC',
+    sp500: 'S&P 500',
+    gold: 'gold',
+    dxy: 'DXY',
+  };
+  const pairs = dataset.pairs.filter((p) => p.series.length > 0);
+  let active = pairs[0]?.pair ?? '';
+
+  function render(): void {
+    if (!container) return;
+    const pair = pairs.find((p) => p.pair === active) ?? pairs[0];
+    if (!pair) return;
+    const points = pair.series.map((p) => ({ date: new Date(p.date), corr: p.corr }));
+    container.replaceChildren(
+      Plot.plot({
+        width: container.clientWidth || 720,
+        height: 300,
+        marginLeft: 44,
+        x: { label: null },
+        y: { label: null, grid: true, domain: [-1, 1] },
+        marks: [
+          Plot.ruleY([0], { stroke: cssVar('--ink-muted'), strokeDasharray: '2,3' }),
+          Plot.lineY(points, { x: 'date', y: 'corr', stroke: cssVar('--accent'), strokeWidth: 1.75 }),
+          Plot.tip(
+            points,
+            Plot.pointerX({
+              x: 'date',
+              y: 'corr',
+              title: (d: { date: Date; corr: number }) =>
+                `${d.date.toISOString().slice(0, 10)}\n${LABELS[pair.a] ?? pair.a} – ${LABELS[pair.b] ?? pair.b}: ${d.corr.toFixed(2)}`,
+            }),
+          ),
+        ],
+        style: {
+          background: 'transparent',
+          color: cssVar('--ink-muted'),
+          fontFamily: cssVar('--font-mono'),
+          fontSize: '11px',
+        },
+      }),
+    );
+  }
+
+  if (toggle) {
+    toggle.replaceChildren(
+      ...pairs.map((p) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = `${LABELS[p.a] ?? p.a} – ${LABELS[p.b] ?? p.b}`;
+        button.setAttribute('aria-pressed', String(p.pair === active));
+        button.addEventListener('click', () => {
+          active = p.pair;
+          toggle
+            .querySelectorAll('button')
+            .forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+          render();
+        });
+        return button;
+      }),
+    );
+  }
+
+  responsiveChart(render);
+</script>

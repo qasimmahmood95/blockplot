@@ -1,5 +1,6 @@
-import { BENCHMARK_KEEP_DAYS, fetchGold, fetchSp500, SP500_FRED_SERIES } from './benchmarks';
+import { BENCHMARK_KEEP_DAYS, fetchDxy, fetchGold, fetchSp500, SP500_FRED_SERIES } from './benchmarks';
 import { fetchBtcMarketChart, PRICE_RANGE_DAYS } from './coingecko';
+import { buildCorrelationDataset } from './correlation';
 import { buildHalvingDataset } from './halvings';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
@@ -7,6 +8,7 @@ import { computeStats, toDailySeries } from './prices';
 import { buildRiskDataset } from './risk';
 import {
   benchmarkDatasetSchema,
+  correlationDatasetSchema,
   halvingDatasetSchema,
   historyDatasetSchema,
   riskDatasetSchema,
@@ -15,13 +17,15 @@ import {
 } from './schema';
 
 const fetchedAt = new Date().toISOString();
-const [raw, sp500, goldFetch, history] = await Promise.all([
+const [raw, sp500, goldFetch, dxyFetch, history] = await Promise.all([
   fetchBtcMarketChart(),
   fetchSp500(),
   fetchGold(),
+  fetchDxy(),
   fetchBtcHistory(),
 ]);
 const gold = goldFetch.series;
+const dxy = dxyFetch.series;
 
 const series = toDailySeries(raw.prices);
 const prices: PriceDataset = {
@@ -44,11 +48,12 @@ const benchmarks: BenchmarkDataset = benchmarkDatasetSchema.parse({
   benchmarks: [
     { asset: 'sp500', source: 'fred', sourceSeries: SP500_FRED_SERIES, series: sp500 },
     { asset: 'gold', source: 'yahoo', sourceSeries: goldFetch.ticker, series: gold },
+    { asset: 'dxy', source: 'yahoo', sourceSeries: dxyFetch.ticker, series: dxy },
   ],
 });
 await writeJson('data/benchmarks-daily.json', benchmarks);
 console.log(
-  `data/benchmarks-daily.json: sp500 ${sp500.length} days, gold ${gold.length} days (${goldFetch.ticker})`,
+  `data/benchmarks-daily.json: sp500 ${sp500.length} days, gold ${gold.length} days (${goldFetch.ticker}), dxy ${dxy.length} days (${dxyFetch.ticker})`,
 );
 
 const historyDataset = historyDatasetSchema.parse({
@@ -82,4 +87,24 @@ const risk = riskDatasetSchema.parse(
 await writeJson('data/risk-metrics.json', risk);
 console.log(
   `data/risk-metrics.json: as of ${risk.asOf}, max drawdown ${risk.drawdown.maxDrawdownPct}% (${risk.drawdown.peakDate} -> ${risk.drawdown.troughDate})`,
+);
+
+// BTC's leg uses the deep-history series and benchmarks keep a 460d trailing
+// window, so every pair has a full 90d of pre-window returns at displayFrom.
+const toPoints = (rows: { date: string; close: number }[]) =>
+  rows.map(({ date, close }) => ({ date, value: close }));
+const correlations = correlationDatasetSchema.parse(
+  buildCorrelationDataset(
+    {
+      btc: history.map(({ date, priceUsd }) => ({ date, value: priceUsd })),
+      sp500: toPoints(sp500),
+      gold: toPoints(gold),
+      dxy: toPoints(dxy),
+    },
+    { fetchedAt, asOf: risk.asOf, displayFrom: series[0]?.date ?? risk.asOf },
+  ),
+);
+await writeJson('data/correlations.json', correlations);
+console.log(
+  `data/correlations.json: ${correlations.pairs.map((p) => `${p.pair}=${p.series.length}`).join(' ')}`,
 );

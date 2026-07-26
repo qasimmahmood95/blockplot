@@ -75,5 +75,6 @@ what its tests pin down.
   export sits behind a JavaScript bot-check for CI runner IPs (confirmed
   2026-07-26), so gold comes from Yahoo Finance's keyless chart API —
   XAU/USD spot, falling back to COMEX front-month futures (`GC=F`) — decided
-  in the M1 PR. DXY sourcing is decided in the M3 PR.
+  in the M1 PR. DXY (resolved in the M3 PR) also comes from Yahoo Finance:
+  the ICE index `DX-Y.NYB`, falling back to front-month futures `DX=F`.
 - M5 exchange netflow ships only if a free source exists; otherwise dropped.

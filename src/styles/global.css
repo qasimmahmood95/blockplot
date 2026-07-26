@@ -256,6 +256,18 @@ code {
   text-align: right;
 }
 
+.corr-matrix td.diag {
+  color: var(--ink-muted);
+}
+
+.corr-matrix td.corr-pos {
+  background: color-mix(in srgb, var(--pos) 10%, transparent);
+}
+
+.corr-matrix td.corr-neg {
+  background: color-mix(in srgb, var(--neg) 10%, transparent);
+}
+
 .method-note {
   font-size: 0.8rem;
   color: var(--ink-muted);

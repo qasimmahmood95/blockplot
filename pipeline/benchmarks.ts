@@ -12,12 +12,18 @@ import { yahooChartSchema, type BenchmarkDay } from './schema';
  */
 export const SP500_FRED_SERIES = 'SP500';
 export const GOLD_YAHOO_TICKERS = ['XAUUSD=X', 'GC=F'];
+/** ICE dollar index: the index itself, front-month futures as fallback. */
+export const DXY_YAHOO_TICKERS = ['DX-Y.NYB', 'DX=F'];
 
 const FRED_CSV_URL = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${SP500_FRED_SERIES}`;
 const YAHOO_CHART_API = 'https://query1.finance.yahoo.com/v8/finance/chart';
 
-/** Trailing calendar days of benchmark history kept on disk — covers the 365-day BTC window with margin. */
-export const BENCHMARK_KEEP_DAYS = 400;
+/**
+ * Trailing calendar days of benchmark history kept on disk: the 365-day BTC
+ * display window plus a full 90-day correlation warmup and a small margin,
+ * so rolling windows are already full at the first display date.
+ */
+export const BENCHMARK_KEEP_DAYS = 460;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -101,15 +107,16 @@ export async function fetchSp500(): Promise<BenchmarkDay[]> {
   return trimToLastDays(parseFredCsv(await getText(FRED_CSV_URL), SP500_FRED_SERIES), BENCHMARK_KEEP_DAYS);
 }
 
-export interface GoldFetch {
+export interface YahooFetch {
   /** The Yahoo ticker that actually served the data. */
   ticker: string;
   series: BenchmarkDay[];
 }
 
-export async function fetchGold(): Promise<GoldFetch> {
+/** Fetch daily closes from Yahoo, trying tickers in preference order. */
+export async function fetchYahooDaily(tickers: string[]): Promise<YahooFetch> {
   let lastError: unknown;
-  for (const ticker of GOLD_YAHOO_TICKERS) {
+  for (const ticker of tickers) {
     const url = `${YAHOO_CHART_API}/${encodeURIComponent(ticker)}?range=2y&interval=1d`;
     try {
       return { ticker, series: trimToLastDays(parseYahooChart(await getJson(url)), BENCHMARK_KEEP_DAYS) };
@@ -117,5 +124,10 @@ export async function fetchGold(): Promise<GoldFetch> {
       lastError = err;
     }
   }
-  throw lastError instanceof Error ? lastError : new Error('fetchGold: all tickers failed');
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`fetchYahooDaily: all tickers failed (${tickers.join(', ')})`);
 }
+
+export const fetchGold = (): Promise<YahooFetch> => fetchYahooDaily(GOLD_YAHOO_TICKERS);
+export const fetchDxy = (): Promise<YahooFetch> => fetchYahooDaily(DXY_YAHOO_TICKERS);
