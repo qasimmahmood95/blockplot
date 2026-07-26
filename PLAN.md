@@ -32,7 +32,8 @@ needed; the Known constraints section below records each decision.)*
 ## Milestones
 
 One PR each, in order; every PR description documents scope, approach, and
-what its tests pin down. All milestones (M0–M6) are shipped.
+what its tests pin down. All Phase 1 milestones (M0–M6) are shipped; Phase 2
+(M7–M12, below) is planned.
 
 | #  | Scope |
 | -- | ----- |
@@ -43,6 +44,30 @@ what its tests pin down. All milestones (M0–M6) are shipped.
 | M4 | DCA simulator: weekly/monthly DCA vs lump sum from arbitrary start date, fees included, fully client-side |
 | M5 | Flows & dominance: BTC dominance vs stablecoin total supply; exchange netflow only if a free source exists, otherwise drop |
 | M6 | Polish & ship: dark/light mode, live ticker island, OpenGraph cards, production deploy, and a README covering architecture, metric methodology, and a matter-of-fact "How this was built" section: Claude Code against a milestone plan, one PR per feature, fixture-tested metrics, human review at PR boundaries |
+
+## Phase 2 milestones
+
+Phase 1 built the showcase; Phase 2 makes blockplot a daily-use tool while
+deepening the portfolio story. Same rules: one PR per milestone, in order,
+each gated on automated review, independent verification, and CI; metric
+maths stays pure and fixture-tested in `pipeline/`; keyless sources only;
+personalization is local-only (localStorage), never committed or fetched.
+Timeline assumes roughly one milestone per week; each is independently
+shippable, so the plan can pause after any row.
+
+| #   | Week | Scope | Sources / notes |
+| --- | ---- | ----- | --------------- |
+| M7  | 1 | **Monthly returns heatmap**: year × month grid of BTC monthly returns from full history, diverging pos/neg tinting, yearly totals column, on the overview or its own section | existing `btc-price-history.json`; pure monthly-aggregation fns; showcases the color system on a classic quant visual |
+| M8  | 2 | **Network page**: hash rate and daily transaction count trends, plus current recommended fee tiers; closes the unused mempool.space thread from the Phase 1 plan | blockchain.com charts (hash-rate, n-transactions, keyless) via the pipeline; mempool.space `recommended-fees` — decide in the PR whether 6-hourly pipeline freshness suffices or a second sanctioned runtime island is warranted (CLAUDE.md amendment in the same PR if so) |
+| M9  | 3 | **Correlation regimes**: extend pair histories to the full shared range (Yahoo `range=max`, FRED 10y), rolling 90d correlation over years rather than one, with shaded high/low-correlation regime bands and a regime-duration table | deepens M3; the "one deep quant feature"; benchmark dataset gains a long-history variant (separate file, keeps the 460d one small) |
+| M10 | 4 | **Holdings (personal)**: local-only BTC amount + optional cost basis in localStorage; header value tile, P&L vs cost basis, holdings line on the DCA chart, explicit "stored only in your browser" note | no new sources; fully client-side island reusing pipeline fns; privacy stance documented on-page — the personal-use anchor |
+| M11 | 5 | **Signals & feed**: pipeline-computed daily signal states (vol regime crossings, drawdown thresholds, new cycle highs, dominance moves) committed to `/data`, a signals section on the overview, and generated `rss.xml` + `feed.json` for readers/automation | pure threshold fns over existing datasets; personal daily-brief utility without breaking the static model |
+| M12 | 6 | **App-grade polish**: PWA manifest + offline caching of the last committed dataset (installable on phone), Lighthouse CI job with README badge, reduced-motion + print styles, `/methodology` page aggregating all formulas, README demo GIF | portfolio rigor + phone-first personal use; ship as "2.0" |
+
+Sequencing rationale: M7 is a fast visual win; M8 adds the highest daily
+utility; M9 is the depth piece worth writing about; M10–M11 turn the site
+into a personal dashboard; M12 packages it. Cut lines M10–M12 are the
+plan's flex if priorities change.
 
 ## Testing
 
