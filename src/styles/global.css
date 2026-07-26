@@ -53,8 +53,9 @@ code {
 .site-header {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.4rem 1.5rem;
   padding: 1.1rem 0 0.9rem;
   border-bottom: 1px solid var(--line);
   margin-bottom: 2rem;
@@ -66,6 +67,30 @@ code {
   font-size: 1.25rem;
   color: var(--ink);
   text-decoration: none;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.1rem;
+  margin-right: auto;
+  font-size: 0.85rem;
+}
+
+.site-nav a {
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  color: var(--ink);
+}
+
+.site-nav a[aria-current='page'] {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
 }
 
 .header-tick {
@@ -122,11 +147,80 @@ code {
   margin: 0 0 0.75rem;
 }
 
-.price-chart {
+.chart-section + .chart-section {
+  margin-top: 2.75rem;
+}
+
+.chart-frame {
   margin: 0;
   border: 1px solid var(--line);
   background: var(--surface);
   padding: 1rem 1rem 0.5rem;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 1.1rem;
+  margin-bottom: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend-swatch {
+  width: 0.9rem;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.risk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.risk-table th,
+.risk-table td {
+  padding: 0.55rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.risk-table tbody tr:last-child th,
+.risk-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.risk-table thead th {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+
+.risk-table tbody th {
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+
+.risk-table th.num,
+.risk-table td.num {
+  text-align: right;
 }
 
 .method-note {

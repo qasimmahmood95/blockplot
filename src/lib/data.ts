@@ -1,5 +1,7 @@
-import dataset from '../../data/btc-price-daily.json';
-import type { PriceDataset } from '../../pipeline/schema';
+import priceDataset from '../../data/btc-price-daily.json';
+import riskDataset from '../../data/risk-metrics.json';
+import type { PriceDataset, RiskDataset } from '../../pipeline/schema';
 
-/** Pipeline-committed dataset the whole site builds from. */
-export const btcDaily = dataset as PriceDataset;
+/** Pipeline-committed datasets the whole site builds from. */
+export const btcDaily = priceDataset as PriceDataset;
+export const riskMetrics = riskDataset as RiskDataset;

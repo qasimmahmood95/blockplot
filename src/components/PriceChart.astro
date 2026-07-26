@@ -1,16 +1,14 @@
-<figure class="price-chart">
+<figure class="chart-frame">
   <div id="price-chart" role="img" aria-label="Line chart of the BTC/USD daily closing price"></div>
 </figure>
 
 <script>
   import * as Plot from '@observablehq/plot';
   import dataset from '../../data/btc-price-daily.json';
+  import { cssVar, responsiveChart } from '../lib/charts';
 
   const container = document.getElementById('price-chart');
   const series = dataset.series.map((d) => ({ date: new Date(d.date), priceUsd: d.priceUsd }));
-
-  const cssVar = (name: string): string =>
-    getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
   function render(): void {
     if (!container) return;
@@ -43,12 +41,5 @@
     );
   }
 
-  render();
-
-  let raf = 0;
-  window.addEventListener('resize', () => {
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(render);
-  });
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  responsiveChart(render);
 </script>
