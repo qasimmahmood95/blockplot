@@ -1,0 +1,54 @@
+<figure class="price-chart">
+  <div id="price-chart" role="img" aria-label="Line chart of the BTC/USD daily closing price"></div>
+</figure>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import dataset from '../../data/btc-price-daily.json';
+
+  const container = document.getElementById('price-chart');
+  const series = dataset.series.map((d) => ({ date: new Date(d.date), priceUsd: d.priceUsd }));
+
+  const cssVar = (name: string): string =>
+    getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  function render(): void {
+    if (!container) return;
+    container.replaceChildren(
+      Plot.plot({
+        width: container.clientWidth || 720,
+        height: 340,
+        marginLeft: 60,
+        x: { label: null },
+        y: {
+          label: null,
+          grid: true,
+          tickFormat: (value: number) => `$${value.toLocaleString('en-US')}`,
+        },
+        marks: [
+          Plot.lineY(series, {
+            x: 'date',
+            y: 'priceUsd',
+            stroke: cssVar('--accent'),
+            strokeWidth: 1.5,
+          }),
+        ],
+        style: {
+          background: 'transparent',
+          color: cssVar('--ink-muted'),
+          fontFamily: cssVar('--font-mono'),
+          fontSize: '11px',
+        },
+      }),
+    );
+  }
+
+  render();
+
+  let raf = 0;
+  window.addEventListener('resize', () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(render);
+  });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+</script>

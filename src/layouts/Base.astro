@@ -1,0 +1,49 @@
+---
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '../styles/tokens.css';
+import '../styles/global.css';
+import { btcDaily } from '../lib/data';
+import { formatUsd } from '../lib/format';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = 'Bitcoin financial analytics built from a versioned, pipeline-committed dataset.',
+} = Astro.props;
+const { stats, fetchedAt } = btcDaily;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="wordmark" href={import.meta.env.BASE_URL}>blockplot</a>
+      <p class="header-tick num">
+        BTC {formatUsd(stats.latestPriceUsd)}
+        <span class="tick-date">close {stats.latestDate}</span>
+      </p>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <p>
+        Data: CoinGecko, refreshed every 6 h by CI · last fetch
+        <span class="num">{fetchedAt.slice(0, 16).replace('T', ' ')} UTC</span>
+      </p>
+      <p><a href="https://github.com/qasimmahmood95/blockplot">source &amp; methodology</a></p>
+    </footer>
+  </body>
+</html>

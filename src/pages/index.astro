@@ -1,0 +1,51 @@
+---
+import PriceChart from '../components/PriceChart.astro';
+import Base from '../layouts/Base.astro';
+import { btcDaily } from '../lib/data';
+import { formatPct, formatUsd } from '../lib/format';
+
+const { stats, rangeDays } = btcDaily;
+
+const changes = [
+  { label: '7d change', value: stats.change7dPct },
+  { label: '30d change', value: stats.change30dPct },
+];
+---
+
+<Base title="blockplot · Bitcoin analytics">
+  <h1 class="visually-hidden">Bitcoin analytics</h1>
+
+  <dl class="stat-grid">
+    <div class="stat">
+      <dt>Spot (daily close)</dt>
+      <dd class="num">{formatUsd(stats.latestPriceUsd)}</dd>
+      <dd class="sub num">{stats.latestDate}</dd>
+    </div>
+    {
+      changes.map(({ label, value }) => (
+        <div class="stat">
+          <dt>{label}</dt>
+          <dd class={`num ${value !== null && value < 0 ? 'down' : 'up'}`}>
+            {value === null ? '—' : formatPct(value)}
+          </dd>
+        </div>
+      ))
+    }
+    <div class="stat">
+      <dt>{rangeDays}d high</dt>
+      <dd class="num">{formatUsd(stats.rangeHighUsd)}</dd>
+      <dd class="sub num">{stats.rangeHighDate}</dd>
+    </div>
+  </dl>
+
+  <section class="chart-section">
+    <h2>BTC / USD · daily close · past {rangeDays} days</h2>
+    <PriceChart />
+    <p class="method-note">
+      Daily UTC closes from CoinGecko's public market-chart endpoint (history is capped at 365 days
+      on the keyless tier; the newest point is the price at the last pipeline run). The site is
+      fully static: a scheduled GitHub Actions job validates and commits the dataset to
+      <code>/data</code>, and every figure above is derived from it by tested pure functions.
+    </p>
+  </section>
+</Base>

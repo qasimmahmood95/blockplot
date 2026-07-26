@@ -1,0 +1,44 @@
+name: Data pipeline
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: pipeline
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run pipeline
+      - name: Commit refreshed data as github-actions[bot]
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --staged --quiet; then
+            echo "No data changes"
+          else
+            git commit -m "chore(data): scheduled refresh"
+            git push
+            echo "PUSHED=1" >> "$GITHUB_ENV"
+          fi
+      # Pushes made with GITHUB_TOKEN do not fire push-triggered workflows,
+      # so a data refresh has to dispatch the deploy explicitly.
+      - name: Trigger deploy
+        if: env.PUSHED == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main

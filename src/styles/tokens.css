@@ -1,0 +1,31 @@
+/* Design tokens: warm neutral base, one burnt-orange accent, light + dark.
+   Manual theme toggle arrives in M6; until then the OS preference decides. */
+:root {
+  color-scheme: light dark;
+
+  --bg: #f6f3ee;
+  --surface: #fcfaf7;
+  --ink: #221d19;
+  --ink-muted: #6e665e;
+  --line: #e2dbd1;
+  --accent: #bf4a08;
+  --pos: #1a7a4f;
+  --neg: #b3383b;
+
+  --font-heading: 'Bricolage Grotesque Variable', 'Trebuchet MS', sans-serif;
+  --font-body: system-ui, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16130f;
+    --surface: #1e1a15;
+    --ink: #eae4dc;
+    --ink-muted: #968c80;
+    --line: #322c25;
+    --accent: #e97328;
+    --pos: #4fae7f;
+    --neg: #d96a6c;
+  }
+}
