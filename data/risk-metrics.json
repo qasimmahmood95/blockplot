@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "fetchedAt": "2026-07-26T14:58:37.055Z",
+  "fetchedAt": "2026-07-26T14:59:55.064Z",
   "asOf": "2026-07-26",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -5864,7 +5864,7 @@
       },
       {
         "date": "2026-07-26",
-        "drawdownPct": -48.17
+        "drawdownPct": -48.18
       }
     ]
   },
