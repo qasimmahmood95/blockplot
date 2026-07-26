@@ -65,4 +65,11 @@ what its tests pin down.
   past 365 days (confirmed 2026-07-26, error 10012 on `days=max`), so M0 ships
   a 365-day window. M2's halving-cycle overlay needs full history — source it
   from a free archival dataset or another free API, decided in the M2 PR.
+  The cap also means M1's 365d rolling-vol series is empty until then (the
+  full-window figure stands in); it populates once M2 lands deeper history.
+- FRED works keylessly via its `fredgraph.csv` export (the JSON API needs an
+  account key), which serves the S&P 500 (`SP500`). FRED's LBMA gold series
+  were discontinued in 2022 when IBA pulled redistribution, so gold spot
+  (XAU/USD) comes from stooq's keyless daily CSV instead (decided in the M1
+  PR). DXY sourcing is decided in the M3 PR.
 - M5 exchange netflow ships only if a free source exists; otherwise dropped.
