@@ -22,8 +22,10 @@ export function parseBlockchainChart(payload: unknown): DailyPrice[] {
   const { values } = blockchainChartSchema.parse(payload);
   const byDate = new Map<string, number>();
   for (const { x, y } of [...values].sort((a, b) => a.x - b.x)) {
-    if (y <= 0) continue;
+    // Defense-in-depth behind zod (which already rejects non-finite numbers):
+    // finiteness first, so -Infinity fails loud instead of being zero-dropped.
     if (!Number.isFinite(y)) throw new Error(`parseBlockchainChart: bad price ${y}`);
+    if (y <= 0) continue;
     byDate.set(new Date(x * 1000).toISOString().slice(0, 10), y);
   }
   const out = [...byDate.entries()]

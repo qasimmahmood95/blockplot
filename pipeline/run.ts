@@ -68,6 +68,14 @@ console.log(
   `data/halving-cycles.json: ${halvings.cycles.map((c) => `c${c.cycle}=${c.series.length}`).join(' ')}`,
 );
 
+// The clip only bounds the vol curves; if the history source lags the spot
+// series the curves silently end early, so surface that in the run log.
+const historyEnd = history.at(-1)?.date ?? '';
+const spotEnd = series.at(-1)?.date ?? '';
+if (historyEnd < spotEnd) {
+  console.warn(`warning: history ends ${historyEnd}, before spot ${spotEnd} — vol curves stop there`);
+}
+
 const risk = riskDatasetSchema.parse(
   buildRiskDataset(series, { sp500, gold }, { fetchedAt, history }),
 );

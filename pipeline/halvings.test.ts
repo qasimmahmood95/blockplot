@@ -67,6 +67,20 @@ describe('buildHalvingDataset', () => {
     ).toThrow('no history at or after halving 2020-06-01');
   });
 
+  it('rounds non-terminating multiples to 4 decimals', () => {
+    const built = buildHalvingDataset(
+      [
+        { date: '2020-01-01', priceUsd: 3 },
+        { date: '2020-01-02', priceUsd: 1 },
+      ],
+      { fetchedAt: 'x', halvings: ['2020-01-01'] },
+    );
+    expect(built.cycles[0]?.series).toEqual([
+      { day: 0, multiple: 1 },
+      { day: 1, multiple: 0.3333 },
+    ]);
+  });
+
   it('ships the four real halving dates', () => {
     expect(HALVING_DATES).toEqual(['2012-11-28', '2016-07-09', '2020-05-11', '2024-04-20']);
   });

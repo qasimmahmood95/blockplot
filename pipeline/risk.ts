@@ -11,7 +11,7 @@ import type {
 export const CRYPTO_PERIODS_PER_YEAR = 365;
 export const MARKET_PERIODS_PER_YEAR = 252;
 
-/** Rolling realized-vol windows, in days. 365 stays empty until pre-window history arrives (M2). */
+/** Rolling realized-vol windows, in days; all three populate from the deep-history source. */
 export const ROLLING_VOL_WINDOWS = [30, 90, 365];
 
 /** A dated observation, source-agnostic. */

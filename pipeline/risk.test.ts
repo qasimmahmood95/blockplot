@@ -174,9 +174,12 @@ describe('buildRiskDataset', () => {
   });
 
   it('derives rolling vol from deep history when provided, clipped to the window', () => {
-    // Three pre-window days let the 3d window populate from 03-01; the first
+    // Four pre-window days: enough for the 3d window to emit a 2024-02-29
+    // point, which the clip must remove (the exact 8-element assertion below
+    // proves it), and for the window to populate from 03-01 on. The first
     // three windows hold the same return multiset, so their vol is equal.
     const history = [
+      { date: '2024-02-26', priceUsd: 100 },
       { date: '2024-02-27', priceUsd: 100 },
       { date: '2024-02-28', priceUsd: 105 },
       { date: '2024-02-29', priceUsd: 94.5 },
