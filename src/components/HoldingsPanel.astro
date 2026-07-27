@@ -423,13 +423,21 @@ const payload = {
    * up when focus leaves.
    */
   window.addEventListener(HOLDINGS_EXTERNAL_EVENT, () => {
-    if (!document.activeElement?.closest('#holdings-form')) {
+    const stored = readHoldings();
+    // A clear overrides the cursor. Every other cross-tab change is an edit
+    // race the reader entered by opening two tabs, and leaving their typing
+    // alone is the courteous resolution — but "forget my holdings" is an
+    // explicit instruction whose whole meaning is that the figures are gone.
+    // Leaving them on screen here would let one keystroke write them back,
+    // and the button's own confirmation says they are gone. Refreshing the
+    // snapshot alone is not enough: the fields still hold the values, so they
+    // have to be reset too.
+    if (!stored || !document.activeElement?.closest('#holdings-form')) {
       syncFromStorage();
       return;
     }
-    const stored = readHoldings();
     storedCost =
-      stored?.cost == null ? null : { cost: stored.cost, costCurrency: stored.costCurrency };
+      stored.cost == null ? null : { cost: stored.cost, costCurrency: stored.costCurrency };
     setStatus('changed in another tab');
     form?.addEventListener('focusout', onLeave);
   });
