@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseFredCsv, parseYahooChart } from './benchmarks';
+import { assertDaily, parseFredCsv, parseYahooChart } from './benchmarks';
 import { trimToLastDays } from './series';
 
 const fredCsv = readFileSync(new URL('./fixtures/fred-sp500.csv', import.meta.url), 'utf8');
@@ -66,13 +66,28 @@ describe('parseYahooChart', () => {
         },
       }),
     ).toThrow('length mismatch');
+    // A single non-positive bar is skipped, not fatal: at range=max these
+    // series reach the 1980s, where one stray bar must not cost the whole
+    // benchmark. A response of nothing but bad bars still throws, below.
+    expect(
+      parseYahooChart({
+        chart: {
+          result: [
+            {
+              timestamp: [1709251200, 1709337600],
+              indicators: { quote: [{ close: [-1, 2050] }] },
+            },
+          ],
+        },
+      }),
+    ).toEqual([{ date: '2024-03-02', close: 2050 }]);
     expect(() =>
       parseYahooChart({
         chart: {
           result: [{ timestamp: [1709251200], indicators: { quote: [{ close: [-1] }] } }],
         },
       }),
-    ).toThrow('bad close');
+    ).toThrow('no data rows');
     expect(() =>
       parseYahooChart({
         chart: { result: [{ timestamp: [], indicators: { quote: [{ close: [] }] } }] },
@@ -92,5 +107,52 @@ describe('trimToLastDays', () => {
     // cutoff = 2024-12-31 − 2 d = 2024-12-29; strictly-after keeps the last 2 entries
     expect(trimToLastDays(series, 2)).toEqual(series.slice(2));
     expect(trimToLastDays([], 30)).toEqual([]);
+  });
+});
+
+describe('assertDaily', () => {
+  const at = (dates: string[]) => dates.map((date, i) => ({ date, close: 100 + i }));
+
+  it('accepts a business-day series, whose gaps are 1 and 3', () => {
+    const weekdays = at([
+      '2024-03-01', // Fri
+      '2024-03-04', // Mon, gap 3
+      '2024-03-05',
+      '2024-03-06',
+      '2024-03-07',
+      '2024-03-08',
+    ]);
+    expect(assertDaily(weekdays, 'test')).toBe(weekdays);
+  });
+
+  it('tolerates a long holiday gap inside an otherwise daily series', () => {
+    // The median, not the mean: one two-week shutdown must not fail a series
+    // that is daily everywhere else.
+    const withGap = at([
+      '2024-03-01',
+      '2024-03-04',
+      '2024-03-05',
+      '2024-03-06',
+      '2024-03-20', // 14-day gap
+      '2024-03-21',
+      '2024-03-22',
+    ]);
+    expect(assertDaily(withGap, 'test')).toBe(withGap);
+  });
+
+  it('rejects the monthly bars Yahoo serves for range=max', () => {
+    // The shape that put 13 gold bars into a file that had held 316.
+    const monthly = at(['2025-05-01', '2025-06-01', '2025-07-01', '2025-08-01', '2025-09-01']);
+    expect(() => assertDaily(monthly, 'GC=F')).toThrow('coarser bars than daily');
+    const quarterly = at(['2025-07-01', '2025-10-01', '2026-01-01', '2026-04-01']);
+    expect(() => assertDaily(quarterly, 'DX-Y.NYB')).toThrow('median gap');
+  });
+
+  it('passes through a series with no gap to measure', () => {
+    const one = at(['2024-03-01']);
+    expect(assertDaily(one, 'test')).toBe(one);
+    // Two points do have a gap, and it is judged: FRED's leg has no depth
+    // floor, so a two-row response must not slip past unchecked.
+    expect(() => assertDaily(at(['2024-03-01', '2024-06-01']), 'test')).toThrow('median gap');
   });
 });

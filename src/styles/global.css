@@ -514,3 +514,26 @@ code {
 .site-footer a {
   color: inherit;
 }
+
+/* Correlation regimes: the table sits directly under its chart, so it reads as
+   the same figure rather than a separate section. */
+.regime-table-wrap {
+  margin-top: 1rem;
+}
+
+.regime-swatch {
+  height: 0.7rem;
+  border-radius: 0;
+}
+
+.risk-table tbody th.regime-positive {
+  color: var(--pos);
+}
+
+.risk-table tbody th.regime-negative {
+  color: var(--neg);
+}
+
+.risk-table tbody th.regime-neutral {
+  color: var(--ink-muted);
+}

@@ -11,7 +11,8 @@ const { currency } = Astro.props as { currency: Currency };
 const { correlations } = dataFor(currency);
 import { formatRatio } from '../../lib/format';
 
-const { pairs, windowDays, minObs } = correlations;
+const { pairs, windowDays, minObs, regimeThreshold, regimeConfirmDays } = correlations;
+
 
 // The honest freshness label: the last shared trading day any pair reaches
 // (correlations lag the BTC calendar over weekends and holidays).
@@ -51,7 +52,7 @@ const btcPairs = [
 <Base
   currency={currency}
   title="blockplot · correlation"
-  description="Rolling 90-day correlation of BTC daily returns with the S&P 500, gold, and the dollar index."
+  description="Rolling 90-day correlation of BTC daily returns with the S&P 500, gold, and the dollar index, over full history, with correlation-regime segmentation."
 >
   <h1 class="visually-hidden">Correlation</h1>
 
@@ -97,13 +98,35 @@ const btcPairs = [
   </section>
 
   <section class="chart-section">
-    <h2>Rolling {windowDays}d correlation · by pair</h2>
+    <h2>Rolling {windowDays}d correlation &amp; regimes · by pair</h2>
     <CorrelationChart currency={currency} />
     <p class="method-note">
       Pearson correlation of daily log returns over a trailing {windowDays}-calendar-day window,
       computed on each pair's shared trading days (a holiday or weekend in either series becomes
-      one multi-day return); windows holding fewer than {minObs} shared returns are omitted. BTC
-      uses blockchain.com's daily series, the S&amp;P 500 FRED's, and gold and the dollar index
+      one multi-day return); windows holding fewer than {minObs} shared returns are omitted. Each
+      pair with BTC in it runs about ten years — FRED publishes the S&amp;P 500 as a rolling
+      decade, and ten years is the deepest range Yahoo serves at daily granularity rather than
+      quietly coarsening to monthly bars. Pairs <em>without</em> BTC keep a 365-day window — they exist to fill the
+      matrix above, which reads one number from each, and at full depth they were more than half
+      the dataset. Their regimes are still classified over the whole history, so a row may report
+      a regime that began before the charted window and count observations the chart does not
+      show.
+    </p>
+    <p class="method-note">
+      <strong>Regimes.</strong> A reading of |corr| ≥ {regimeThreshold} counts as co-moving or
+      inverse, anything inside that band as decoupled — but a threshold crossing is not a regime.
+      The rolling curve oscillates, so a bare test would report dozens of one-day regimes around
+      every crossing. A candidate must instead hold for {regimeConfirmDays} consecutive readings
+      before it replaces the incumbent, and the boundary is then dated at the <em>first</em> of
+      those readings, since that is when the change began rather than when it was confirmed. The
+      cost of that rule is stated plainly: the last {regimeConfirmDays - 1} readings of a series
+      cannot yet start a regime, so a turn in the past fortnight is shown as a continuation until
+      the data earns the change. Segments are contiguous and cover every reading, and the mean is
+      taken over the readings that established the regime — where a segment reaches back over an
+      opening too short to confirm anything, the table says which date it was confirmed from.
+    </p>
+    <p class="method-note">
+      BTC uses blockchain.com's daily series, the S&amp;P 500 FRED's, and gold and the dollar index
       Yahoo Finance's (DXY falls back to front-month futures when the index itself is
       unavailable). All values are computed in the pipeline by fixture-tested pure functions and
       committed to <code>/data</code>.{fxNote(currency)}{dxyNote(currency)}

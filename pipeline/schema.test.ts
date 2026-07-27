@@ -139,20 +139,49 @@ describe('benchmarkDatasetSchema', () => {
 
 describe('correlationDatasetSchema', () => {
   const valid = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     currency: 'usd',
     fetchedAt: '2024-03-08T12:00:00.000Z',
     asOf: '2024-03-08',
     windowDays: 90,
     minObs: 40,
+    regimeThreshold: 0.25,
+    regimeConfirmDays: 10,
     pairs: [
-      { pair: 'btc-sp500', a: 'btc', b: 'sp500', series: [{ date: '2024-03-08', corr: -0.27 }] },
-      { pair: 'gold-dxy', a: 'gold', b: 'dxy', series: [] },
+      {
+        pair: 'btc-sp500',
+        a: 'btc',
+        b: 'sp500',
+        series: [{ date: '2024-03-08', corr: -0.27 }],
+        regimes: [
+          {
+            regime: 'negative',
+            startDate: '2024-03-08',
+            confirmedFrom: '2024-03-08',
+            endDate: '2024-03-08',
+            observations: 1,
+            days: 1,
+            meanCorr: -0.27,
+          },
+        ],
+      },
+      { pair: 'gold-dxy', a: 'gold', b: 'dxy', series: [], regimes: [] },
     ],
   };
 
   it('accepts the documented shape, including empty pair series', () => {
     expect(correlationDatasetSchema.parse(valid)).toEqual(valid);
+  });
+
+  it('rejects an unknown regime and a non-positive segment span', () => {
+    const withRegimes = (regimes: unknown) => ({
+      ...valid,
+      pairs: [{ ...valid.pairs[0], regimes }],
+    });
+    const segment = { ...(valid.pairs[0]?.regimes[0] as object) };
+    expect(() => correlationDatasetSchema.parse(withRegimes([{ ...segment, regime: 'sideways' }]))).toThrow();
+    expect(() => correlationDatasetSchema.parse(withRegimes([{ ...segment, days: 0 }]))).toThrow();
+    expect(() => correlationDatasetSchema.parse(withRegimes([{ ...segment, meanCorr: 1.4 }]))).toThrow();
   });
 
   it('rejects out-of-range correlations, unknown pair ids, and bad dates', () => {

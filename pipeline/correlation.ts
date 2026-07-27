@@ -1,3 +1,7 @@
+import { convertSeries } from './fx';
+import { classifyRegimes, REGIME_CONFIRM_DAYS, REGIME_THRESHOLD } from './regimes';
+import type { BenchmarkDay, Currency, DailyPrice } from './schema';
+import { trimToLastDays } from './series';
 import type { CorrelationDataset, CorrPoint, PairId } from './schema';
 import type { SeriesPoint } from './risk';
 
@@ -8,6 +12,19 @@ export const CORRELATION_ASSETS = ['btc', 'sp500', 'gold', 'dxy'] as const;
 export const CORRELATION_WINDOW_DAYS = 90;
 export const CORRELATION_MIN_OBS = 40;
 
+/**
+ * How much history a pair without BTC in it keeps.
+ *
+ * This is a Bitcoin site: the deep view exists to show how BTC's relationship
+ * with each benchmark has moved. S&P 500 vs gold vs DXY are carried only to
+ * fill the correlation matrix, which reads one number from each — and at full
+ * depth those three pairs were more than half of the dataset (gold–DXY alone
+ * reaches 2004, further back than BTC exists). They keep a window instead, so
+ * the matrix is still exact and the page is not carrying megabytes of
+ * inter-benchmark history nobody opened.
+ */
+export const NON_BTC_KEEP_DAYS = 365;
+
 const DAY_MS = 86_400_000;
 
 function round2(value: number): number {
@@ -17,6 +34,69 @@ function round2(value: number): number {
 
 function dateMinusDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) - days * DAY_MS).toISOString().slice(0, 10);
+}
+
+/**
+ * Re-date a 00:00-UTC snapshot series onto the session it closes.
+ *
+ * BTC dailies are instantaneous snapshots at 00:00 UTC; the S&P 500, gold and
+ * the dollar index are session closes around 21:00 UTC. So the BTC return
+ * dated d spans the *previous* day's session, and correlating the two by
+ * calendar date pairs BTC's Monday with the market's Tuesday.
+ *
+ * The consequence is not academic. The March 2020 crash ran through the US
+ * session of the 12th; BTC's −49.7% lands on the snapshot dated the 13th,
+ * where it met the S&P's +9.29% rebound, while BTC's flat 12th met the S&P's
+ * −9.51%. One inverted outlier pair then dominated a 60-observation window for
+ * three months, and the page reported BTC and equities as *inverse* through
+ * the most famous co-crash on record. Correcting the offset moves the trailing
+ * BTC–S&P 500 correlation from +0.09 to +0.44.
+ *
+ * It must be applied BEFORE currency conversion, not after. Conversion is
+ * itself a per-date join of two series — the BTC close against that day's
+ * GBP/USD rate — so re-dating afterwards leaves the BTC leg carrying R(d)
+ * while the benchmark leg at the same label carries R(d−1), and the FX term
+ * stops cancelling between them. Measured on the committed data that put
+ * 0.16 of noise into GBP correlations, on a threshold of 0.25. Shifting first
+ * also stops the BTC leg being priced at a rate fixed hours after its own
+ * snapshot.
+ *
+ * The test for this is exact cancellation — that the GBP-minus-USD return
+ * difference is identical on both legs — and NOT that GBP correlations end up
+ * near the USD ones. The bug injected independent noise into one leg, which
+ * attenuates a correlation toward zero rather than displacing it, so removing
+ * it un-attenuates GBP while leaving intact the genuine common-FX component a
+ * GBP investor really does experience.
+ *
+ * Metrics that aggregate a single series — volatility, drawdown, the Sharpe
+ * comparison — need nothing here: a uniform relabelling changes none of them,
+ * which is why the committed BTC history stays 00:00-UTC dated and only the
+ * correlation input is re-dated.
+ */
+export function toSessionClose<T extends { date: string }>(series: T[]): T[] {
+  return series.map((point) => ({
+    ...point,
+    date: new Date(Date.parse(`${point.date}T00:00:00Z`) - DAY_MS).toISOString().slice(0, 10),
+  }));
+}
+
+/**
+ * The BTC leg of a correlation, in one place so the order of operations is
+ * testable. Re-date first, convert second: conversion is itself a per-date
+ * join, so converting first leaves this leg carrying R(d) while a benchmark
+ * at the same label carries R(d−1), and the FX term stops cancelling between
+ * them. Swapping these two calls costs up to 0.16 of correlation against a
+ * 0.25 regime threshold, and would otherwise be invisible.
+ */
+export function correlationBtcLeg(
+  history: DailyPrice[],
+  rates: BenchmarkDay[],
+  currency: Currency,
+): SeriesPoint[] {
+  return convertSeries(toSessionClose(history), rates, currency).map(({ date, price }) => ({
+    date,
+    value: price,
+  }));
 }
 
 export interface AlignedReturn {
@@ -87,11 +167,17 @@ export function rollingCorrelation(
 ): CorrPoint[] {
   const aligned = alignReturns(a, b);
   const out: CorrPoint[] = [];
+  // `start` only ever moves forward: the cutoff is monotonic in the end date,
+  // so a return that has left one window can never re-enter a later one.
+  let start = 0;
   for (let i = 0; i < aligned.length; i++) {
     const end = aligned[i];
     if (!end) continue;
     const cutoff = dateMinusDays(end.date, windowDays);
-    const window = aligned.filter((r, j) => j <= i && r.date > cutoff);
+    while (start <= i && aligned[start] !== undefined && (aligned[start] as AlignedReturn).date <= cutoff) {
+      start += 1;
+    }
+    const window = aligned.slice(start, i + 1);
     if (window.length < minObs) continue;
     const corr = pearson(
       window.map((r) => r.ra),
@@ -105,42 +191,73 @@ export function rollingCorrelation(
 
 /**
  * Assemble data/correlations.json: every unordered pair of the fixed asset
- * list, rolling correlation clipped to dates >= displayFrom.
+ * list, rolling correlation over each pair's whole shared history, with the
+ * regime segmentation that history supports.
+ *
+ * Every leg must already be dated on the session it closes. For BTC that means
+ * the caller has applied `toSessionClose` — and applied it before any currency
+ * conversion, for the reason given there.
+ *
+ * Pairs containing BTC carry their whole shared history: a 365-day view of a
+ * 90-day correlation shows barely three independent windows — enough to read
+ * today's number, not enough to see that BTC decoupled from gold for two
+ * years. They reach about a decade: FRED publishes SP500 as a rolling ten
+ * years, and 10y is the deepest range Yahoo serves at daily granularity.
+ * Pairs without BTC keep a window instead — see NON_BTC_KEEP_DAYS.
  */
 export function buildCorrelationDataset(
   series: Record<(typeof CORRELATION_ASSETS)[number], SeriesPoint[]>,
   opts: {
     fetchedAt: string;
     asOf: string;
-    displayFrom: string;
     windowDays?: number;
     minObs?: number;
+    regimeThreshold?: number;
+    regimeConfirmDays?: number;
+    nonBtcKeepDays?: number;
   },
 ): Omit<CorrelationDataset, 'currency'> {
   const windowDays = opts.windowDays ?? CORRELATION_WINDOW_DAYS;
   const minObs = opts.minObs ?? CORRELATION_MIN_OBS;
+  const regimeThreshold = opts.regimeThreshold ?? REGIME_THRESHOLD;
+  const regimeConfirmDays = opts.regimeConfirmDays ?? REGIME_CONFIRM_DAYS;
+  const nonBtcKeepDays = opts.nonBtcKeepDays ?? NON_BTC_KEEP_DAYS;
   const pairs: CorrelationDataset['pairs'] = [];
   for (let i = 0; i < CORRELATION_ASSETS.length; i++) {
     for (let j = i + 1; j < CORRELATION_ASSETS.length; j++) {
       const a = CORRELATION_ASSETS[i];
       const b = CORRELATION_ASSETS[j];
       if (!a || !b) continue;
+      const full = rollingCorrelation(series[a], series[b], windowDays, minObs);
+      // Regimes are classified on the full series first: segmenting a clipped
+      // one would date the opening regime at the clip rather than at the
+      // change, and the clipped pairs are exactly where that would show.
+      const regimes = classifyRegimes(full, {
+        threshold: regimeThreshold,
+        confirmDays: regimeConfirmDays,
+      });
+      const deep = a === 'btc' || b === 'btc';
+      const corrSeries = deep ? full : trimToLastDays(full, nonBtcKeepDays);
+      const from = corrSeries[0]?.date;
       pairs.push({
         pair: `${a}-${b}` as PairId,
         a,
         b,
-        series: rollingCorrelation(series[a], series[b], windowDays, minObs).filter(
-          (p) => p.date >= opts.displayFrom,
-        ),
+        // An empty series keeps no regimes: `regimes` is empty exactly when
+        // `series` is, which the schema states as an invariant.
+        series: corrSeries,
+        regimes: from === undefined ? [] : regimes.filter((r) => r.endDate >= from),
       });
     }
   }
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     fetchedAt: opts.fetchedAt,
     asOf: opts.asOf,
     windowDays,
     minObs,
+    regimeThreshold,
+    regimeConfirmDays,
     pairs,
   };
 }
