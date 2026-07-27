@@ -79,8 +79,8 @@ describe('classifyRegimes', () => {
 
   it('breaks a candidate run on a single reading back in the incumbent regime', () => {
     // Two positives, one neutral, two positives: never three consecutive, so
-    // the whole series stays the neutral regime it opened in.
-    const series = points([0.0, 0.3, 0.4, 0.1, 0.3, 0.4]);
+    // no switch is ever confirmed and the series stays one segment.
+    const series = points([0.0, 0.3, 0.4, 0.1, 0.3, 0.0]);
     const segments = classifyRegimes(series, { threshold: 0.25, confirmDays: 3 });
     expect(segments).toHaveLength(1);
     expect(segments[0]?.regime).toBe('neutral');
@@ -114,19 +114,27 @@ describe('classifyRegimes', () => {
   });
 
   it('leaves the tail in the incumbent regime until confirmDays have passed', () => {
-    // Nine positives after a neutral open, with the shipped 10-reading
-    // confirmation: not yet a regime change, and the segmentation says so
-    // rather than guessing.
+    // A confirmed neutral opening, then nine positives: under the shipped
+    // 10-reading rule that is not yet a regime change, and the segmentation
+    // says so rather than guessing.
     expect(REGIME_CONFIRM_DAYS).toBe(10);
-    const nine = classifyRegimes(points([0.0, ...Array<number>(9).fill(0.6)]));
+    const open = Array<number>(10).fill(0.0);
+    const nine = classifyRegimes(points([...open, ...Array<number>(9).fill(0.6)]));
     expect(nine).toHaveLength(1);
     expect(nine[0]?.regime).toBe('neutral');
-    // One more positive reading tips it. The single opening neutral reading is
-    // too short to stand as its own segment, so it is absorbed and the whole
-    // series reads positive rather than gaining a one-day neutral row.
-    const ten = classifyRegimes(points([0.0, ...Array<number>(10).fill(0.6)]));
-    expect(ten).toHaveLength(1);
-    expect(ten[0]).toMatchObject({ regime: 'positive', observations: 11 });
+    // The tenth tips it, dated at the first of the ten.
+    const ten = classifyRegimes(points([...open, ...Array<number>(10).fill(0.6)]));
+    expect(ten.map((s) => s.regime)).toEqual(['neutral', 'positive']);
+    expect(ten[1]?.startDate).toBe('2024-01-11');
+  });
+
+  it('absorbs an unconfirmed opening even when it is long enough to stand', () => {
+    // Length is not confirmation: this opening runs 10 readings but only its
+    // first is neutral, so it was never confirmed and belongs to what follows.
+    const series = points([0.0, ...Array<number>(20).fill(0.6)]);
+    const segments = classifyRegimes(series);
+    expect(segments).toHaveLength(1);
+    expect(segments[0]).toMatchObject({ regime: 'positive', startDate: '2024-01-01' });
   });
 
   // The opening reading has no history to confirm against, so taking the
@@ -195,6 +203,52 @@ describe('classifyRegimes', () => {
     // Adjacent segments always differ, or they would be one segment.
     for (let i = 1; i < segments.length; i++) {
       expect(segments[i]?.regime).not.toBe(segments[i - 1]?.regime);
+    }
+  });
+});
+
+describe('classifyRegimes: a label never contradicts its own mean', () => {
+  const points = (corrs: number[]): { date: string; corr: number }[] =>
+    corrs.map((corr, i) => ({ date: day(i + 1), corr }));
+
+  it('takes meanCorr from the confirmed readings, not the absorbed opening', () => {
+    // Nine readings at +0.9 absorbed into ten at -0.26: over the whole span
+    // the mean is positive, which would print "inverse ... +0.29".
+    const series = points([...Array<number>(9).fill(0.9), ...Array<number>(10).fill(-0.26)]);
+    const segments = classifyRegimes(series, { threshold: 0.25, confirmDays: 10 });
+    expect(segments).toHaveLength(1);
+    expect(segments[0]?.regime).toBe('negative');
+    expect(segments[0]?.meanCorr).toBe(-0.26);
+    // The span still covers the absorbed opening, which `observations` shows.
+    expect(segments[0]?.startDate).toBe('2024-01-01');
+    expect(segments[0]?.observations).toBe(19);
+  });
+
+  it('labels a never-confirmed series by its mean, not by its first reading', () => {
+    // [0.9, -0.9, 0, -0.9] confirms nothing. Reading it as 'co-moving' off the
+    // opening 0.9 is the same artifact the leading-span rule removes, and
+    // there is no following span to absorb into — so the mean decides, which
+    // is also the only label that cannot contradict the mean printed beside it.
+    const segments = classifyRegimes(points([0.9, -0.9, 0, -0.9]), {
+      threshold: 0.25,
+      confirmDays: 2,
+    });
+    expect(segments).toHaveLength(1);
+    expect(segments[0]?.meanCorr).toBe(-0.22);
+    expect(segments[0]?.regime).toBe('neutral');
+  });
+
+  it('still reads a short but unanimous series as the regime it shows', () => {
+    // The flip side: two readings at corr 1 confirm nothing either, but
+    // calling them decoupled would contradict the mean just as badly.
+    const segments = classifyRegimes(points([1, 1]), { threshold: 0.25, confirmDays: 10 });
+    expect(segments[0]).toMatchObject({ regime: 'positive', meanCorr: 1 });
+  });
+
+  it('keeps every segment label consistent with its reported mean', () => {
+    const series = points([0.9, 0.1, -0.6, -0.7, -0.8, -0.9, 0.0, 0.1, 0.2, 0.05]);
+    for (const segment of classifyRegimes(series, { threshold: 0.25, confirmDays: 3 })) {
+      expect(regimeOf(segment.meanCorr, 0.25)).toBe(segment.regime);
     }
   });
 });

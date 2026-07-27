@@ -47,6 +47,29 @@ export function regimeOf(corr: number, threshold = REGIME_THRESHOLD): Regime {
   return 'neutral';
 }
 
+/**
+ * Whether the opening span was ever actually confirmed.
+ *
+ * Length alone is not enough. The first span is seeded from a single reading,
+ * so a series like [0.9, -0.9, 0, -0.9] yields one long "co-moving" span on
+ * the strength of its first value. A leading span counts as confirmed only if
+ * its first confirmDays readings all agree with its regime — the same standard
+ * every later switch has to meet.
+ */
+function leadConfirmed(
+  series: CorrPoint[],
+  span: { regime: Regime; startIdx: number; endIdx: number },
+  threshold: number,
+  confirmDays: number,
+): boolean {
+  if (span.endIdx - span.startIdx + 1 < confirmDays) return false;
+  for (let i = span.startIdx; i < span.startIdx + confirmDays; i++) {
+    const point = series[i];
+    if (!point || regimeOf(point.corr, threshold) !== span.regime) return false;
+  }
+  return true;
+}
+
 /** Inclusive calendar-day span, so a segment of one observation is 1 day. */
 function daysBetween(from: string, to: string): number {
   return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS) + 1;
@@ -68,9 +91,12 @@ export function classifyRegimes(
   // Collected as index spans, then materialised: the leading span needs
   // adjusting once the rest are known (see below), which is fiddly to do
   // against already-formatted dates.
-  const spans: { regime: Regime; startIdx: number; endIdx: number }[] = [];
+  // `confirmedIdx` is where the regime itself was confirmed; `startIdx` can be
+  // pulled earlier by absorption. meanCorr is taken from the former so a row
+  // can never label itself inverse while reporting a co-moving average.
+  const spans: { regime: Regime; startIdx: number; confirmedIdx: number; endIdx: number }[] = [];
   const emit = (regime: Regime, startIdx: number, endIdx: number): void => {
-    if (endIdx >= startIdx) spans.push({ regime, startIdx, endIdx });
+    if (endIdx >= startIdx) spans.push({ regime, startIdx, confirmedIdx: startIdx, endIdx });
   };
 
   let current = regimeOf(first.corr, threshold);
@@ -115,35 +141,42 @@ export function classifyRegimes(
    * hysteresis exists to prevent (a series opening 0.26 then sitting inside
    * the band produced a one-day "co-moving" segment).
    *
-   * Every interior span is at least confirmDays long by construction: a span
-   * opens at the first of the confirmDays readings that confirmed it, and the
-   * next switch needs confirmDays further readings after those. So a short
-   * span can only be the leading one, and it is not a regime change at all —
-   * it is where the data starts. Absorbing it into the span that follows says
-   * the honest thing: by the time this series begins, that was already the
-   * regime. A lone short span has nothing to absorb into and stands as is,
-   * with `observations` on the page to show how little is behind it.
+   * Every interior span is confirmed by construction: it opens at the first of
+   * the confirmDays readings that confirmed it, and the next switch needs
+   * confirmDays further readings after those. Only the leading span can be
+   * unconfirmed, and an unconfirmed opening is not a regime change at all — it
+   * is where the data starts. Absorbing it into the span that follows says the
+   * honest thing: by the time this series begins, that was already the regime.
    */
   const lead = spans[0];
   const next = spans[1];
-  if (lead && next && lead.endIdx - lead.startIdx + 1 < confirmDays) {
-    next.startIdx = lead.startIdx;
-    spans.shift();
+  if (lead && !leadConfirmed(series, lead, threshold, confirmDays)) {
+    if (next) {
+      next.startIdx = lead.startIdx;
+      spans.shift();
+    } else {
+      // Nothing to absorb into: the whole series never confirmed a regime.
+      // Its first reading is not evidence of one, so label it by its mean —
+      // the only summary available, and the only one that cannot contradict
+      // the meanCorr printed beside it.
+      let sum = 0;
+      for (let i = lead.startIdx; i <= lead.endIdx; i++) sum += series[i]?.corr ?? 0;
+      lead.regime = regimeOf(sum / (lead.endIdx - lead.startIdx + 1), threshold);
+    }
   }
 
-  return spans.map(({ regime, startIdx, endIdx }) => {
+  return spans.map(({ regime, startIdx, confirmedIdx, endIdx }) => {
     const start = series[startIdx] as CorrPoint;
     const end = series[endIdx] as CorrPoint;
     let sum = 0;
-    for (let i = startIdx; i <= endIdx; i++) sum += series[i]?.corr ?? 0;
-    const observations = endIdx - startIdx + 1;
+    for (let i = confirmedIdx; i <= endIdx; i++) sum += series[i]?.corr ?? 0;
     return {
       regime,
       startDate: start.date,
       endDate: end.date,
-      observations,
+      observations: endIdx - startIdx + 1,
       days: daysBetween(start.date, end.date),
-      meanCorr: round2(sum / observations),
+      meanCorr: round2(sum / (endIdx - confirmedIdx + 1)),
     };
   });
 }

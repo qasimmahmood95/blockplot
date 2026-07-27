@@ -148,8 +148,11 @@ describe('assertDaily', () => {
     expect(() => assertDaily(quarterly, 'DX-Y.NYB')).toThrow('median gap');
   });
 
-  it('passes through a series too short to judge', () => {
-    const two = at(['2024-03-01', '2024-06-01']);
-    expect(assertDaily(two, 'test')).toBe(two);
+  it('passes through a series with no gap to measure', () => {
+    const one = at(['2024-03-01']);
+    expect(assertDaily(one, 'test')).toBe(one);
+    // Two points do have a gap, and it is judged: FRED's leg has no depth
+    // floor, so a two-row response must not slip past unchecked.
+    expect(() => assertDaily(at(['2024-03-01', '2024-06-01']), 'test')).toThrow('median gap');
   });
 });

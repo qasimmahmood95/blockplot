@@ -34,6 +34,33 @@ function dateMinusDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) - days * DAY_MS).toISOString().slice(0, 10);
 }
 
+/**
+ * Re-date a 00:00-UTC snapshot series onto the session it closes.
+ *
+ * BTC dailies are instantaneous snapshots at 00:00 UTC; the S&P 500, gold and
+ * the dollar index are session closes around 21:00 UTC. So the BTC return
+ * dated d spans the *previous* day's session, and correlating the two by
+ * calendar date pairs BTC's Monday with the market's Tuesday.
+ *
+ * The consequence is not academic. The March 2020 crash ran through the US
+ * session of the 12th; BTC's −49.7% lands on the snapshot dated the 13th,
+ * where it met the S&P's +9.29% rebound, while BTC's flat 12th met the S&P's
+ * −9.51%. One inverted outlier pair then dominated a 60-observation window for
+ * three months, and the page reported BTC and equities as *inverse* through
+ * the most famous co-crash on record. Correcting the offset moves the trailing
+ * BTC–S&P 500 correlation from +0.09 to +0.44.
+ *
+ * Only correlation needs this: it is the one metric that pairs observations
+ * across two series. Volatility, drawdown and the Sharpe comparison aggregate
+ * each series on its own, where a uniform one-day relabelling changes nothing.
+ */
+export function toSessionClose(series: SeriesPoint[]): SeriesPoint[] {
+  return series.map(({ date, value }) => ({
+    date: new Date(Date.parse(`${date}T00:00:00Z`) - DAY_MS).toISOString().slice(0, 10),
+    value,
+  }));
+}
+
 export interface AlignedReturn {
   /** The later of the two shared dates the return spans. */
   date: string;
@@ -129,11 +156,14 @@ export function rollingCorrelation(
  * list, rolling correlation over each pair's whole shared history, with the
  * regime segmentation that history supports.
  *
+ * `series.btc` must be the raw 00:00-UTC-dated series; this function re-dates
+ * it onto the session it closes (see toSessionClose) before correlating.
+ *
  * Pairs containing BTC carry their whole shared history: a 365-day view of a
  * 90-day correlation shows barely three independent windows — enough to read
  * today's number, not enough to see that BTC decoupled from gold for two
- * years. They reach as far back as their shallower source: ten years for
- * BTC–S&P 500 (FRED's SP500 is a rolling decade), further for gold and DXY.
+ * years. They reach about a decade: FRED publishes SP500 as a rolling ten
+ * years, and 10y is the deepest range Yahoo serves at daily granularity.
  * Pairs without BTC keep a window instead — see NON_BTC_KEEP_DAYS.
  */
 export function buildCorrelationDataset(
@@ -153,13 +183,17 @@ export function buildCorrelationDataset(
   const regimeThreshold = opts.regimeThreshold ?? REGIME_THRESHOLD;
   const regimeConfirmDays = opts.regimeConfirmDays ?? REGIME_CONFIRM_DAYS;
   const nonBtcKeepDays = opts.nonBtcKeepDays ?? NON_BTC_KEEP_DAYS;
+  // The btc series arrives 00:00-UTC dated; every benchmark is a session
+  // close. Aligning them without this pairs BTC's move with the following
+  // day's market move — see toSessionClose.
+  const aligned = { ...series, btc: toSessionClose(series.btc) };
   const pairs: CorrelationDataset['pairs'] = [];
   for (let i = 0; i < CORRELATION_ASSETS.length; i++) {
     for (let j = i + 1; j < CORRELATION_ASSETS.length; j++) {
       const a = CORRELATION_ASSETS[i];
       const b = CORRELATION_ASSETS[j];
       if (!a || !b) continue;
-      const full = rollingCorrelation(series[a], series[b], windowDays, minObs);
+      const full = rollingCorrelation(aligned[a], aligned[b], windowDays, minObs);
       // Regimes are classified on the full series first: segmenting a clipped
       // one would date the opening regime at the clip rather than at the
       // change, and the clipped pairs are exactly where that would show.
@@ -169,13 +203,15 @@ export function buildCorrelationDataset(
       });
       const deep = a === 'btc' || b === 'btc';
       const corrSeries = deep ? full : trimToLastDays(full, nonBtcKeepDays);
-      const from = corrSeries[0]?.date ?? '';
+      const from = corrSeries[0]?.date;
       pairs.push({
         pair: `${a}-${b}` as PairId,
         a,
         b,
+        // An empty series keeps no regimes: `regimes` is empty exactly when
+        // `series` is, which the schema states as an invariant.
         series: corrSeries,
-        regimes: regimes.filter((r) => r.endDate >= from),
+        regimes: from === undefined ? [] : regimes.filter((r) => r.endDate >= from),
       });
     }
   }

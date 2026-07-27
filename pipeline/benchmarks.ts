@@ -45,7 +45,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  * the mean: a genuine daily series still contains long holiday gaps.
  */
 export function assertDaily(series: BenchmarkDay[], context: string): BenchmarkDay[] {
-  if (series.length < 3) return series;
+  if (series.length < 2) return series;
   const gaps: number[] = [];
   for (let i = 1; i < series.length; i++) {
     const prev = series[i - 1];
@@ -62,6 +62,24 @@ export function assertDaily(series: BenchmarkDay[], context: string): BenchmarkD
   if (median > 4) {
     throw new Error(
       `${context}: median gap ${median} days — the source served coarser bars than daily`,
+    );
+  }
+  return series;
+}
+
+/**
+ * Minimum bars a benchmark response must carry. Depth is load-bearing now that
+ * the correlation regimes read these series in full: a throttled or truncated
+ * response would silently shorten the headline view rather than fail. Two
+ * years of trading days is far below the ~2,500 a 10y daily range serves and
+ * far above anything truncated.
+ */
+export const MIN_BENCHMARK_DAYS = 500;
+
+export function assertDepth(series: BenchmarkDay[], context: string): BenchmarkDay[] {
+  if (series.length < MIN_BENCHMARK_DAYS) {
+    throw new Error(
+      `${context}: only ${series.length} days (need ${MIN_BENCHMARK_DAYS})`,
     );
   }
   return series;
@@ -137,17 +155,29 @@ export function parseYahooChart(payload: unknown): BenchmarkDay[] {
 }
 
 /**
- * Full S&P 500 history FRED will serve. Its `SP500` series is a rolling
- * ten-year window, which is therefore the binding constraint on how far the
- * BTC–S&P 500 regime view can reach — gold and DXY go back further.
+ * Full S&P 500 history FRED will serve: a rolling ten-year window. Gold and
+ * DXY land in the same place, since 10y is the deepest range Yahoo serves at
+ * daily granularity — so every BTC pair reaches about a decade.
  */
 export async function fetchSp500(): Promise<BenchmarkDay[]> {
-  return parseFredCsv(await getText(FRED_CSV_URL), SP500_FRED_SERIES);
+  const series = assertDaily(
+    parseFredCsv(await getText(FRED_CSV_URL), SP500_FRED_SERIES),
+    SP500_FRED_SERIES,
+  );
+  assertDepth(series, SP500_FRED_SERIES);
+  return series;
 }
 
-/** The trailing window benchmarks-daily.json and the risk page need. */
+/**
+ * The trailing window benchmarks-daily.json and the risk page need.
+ *
+ * Re-asserts granularity on the slice rather than trusting the whole-series
+ * check: a median over 2,500 daily bars stays 1 even if the last 20 turn
+ * monthly, and the risk page reads only those last bars. The guarantee has to
+ * hold where it is consumed.
+ */
 export const recentWindow = (series: BenchmarkDay[]): BenchmarkDay[] =>
-  trimToLastDays(series, BENCHMARK_KEEP_DAYS);
+  assertDaily(trimToLastDays(series, BENCHMARK_KEEP_DAYS), 'recentWindow');
 
 export interface YahooFetch {
   /** The Yahoo ticker that actually served the data. */
@@ -176,7 +206,11 @@ export async function fetchYahooDaily(
   for (const ticker of tickers) {
     const url = `${YAHOO_CHART_API}/${encodeURIComponent(ticker)}?range=${range}&interval=1d`;
     try {
-      return { ticker, series: assertDaily(parseYahooChart(await getJson(url)), ticker) };
+      // Both checks run inside the loop so a coarse or truncated response from
+      // the primary ticker falls through to the fallback — which is precisely
+      // the throttling case the depth floor exists for.
+      const series = assertDaily(parseYahooChart(await getJson(url)), ticker);
+      return { ticker, series: range === '2y' ? series : assertDepth(series, ticker) };
     } catch (err) {
       lastError = err;
     }
@@ -186,24 +220,5 @@ export async function fetchYahooDaily(
     : new Error(`fetchYahooDaily: all tickers failed (${tickers.join(', ')})`);
 }
 
-/**
- * Minimum bars a benchmark response must carry. Depth is load-bearing now
- * that the correlation regimes read these series in full: a throttled or
- * truncated response would silently shorten the headline view rather than
- * fail. Two years of trading days is far below the ~2,500 a 10y daily range
- * serves and far above anything truncated.
- */
-export const MIN_BENCHMARK_DAYS = 500;
-
-async function fetchDeep(tickers: string[]): Promise<YahooFetch> {
-  const fetched = await fetchYahooDaily(tickers);
-  if (fetched.series.length < MIN_BENCHMARK_DAYS) {
-    throw new Error(
-      `fetchDeep: ${fetched.ticker} returned only ${fetched.series.length} days (need ${MIN_BENCHMARK_DAYS})`,
-    );
-  }
-  return fetched;
-}
-
-export const fetchGold = (): Promise<YahooFetch> => fetchDeep(GOLD_YAHOO_TICKERS);
-export const fetchDxy = (): Promise<YahooFetch> => fetchDeep(DXY_YAHOO_TICKERS);
+export const fetchGold = (): Promise<YahooFetch> => fetchYahooDaily(GOLD_YAHOO_TICKERS);
+export const fetchDxy = (): Promise<YahooFetch> => fetchYahooDaily(DXY_YAHOO_TICKERS);

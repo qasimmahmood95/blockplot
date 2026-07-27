@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CORRELATION_ASSETS,
   alignReturns,
   buildCorrelationDataset,
-  CORRELATION_ASSETS,
   pearson,
   rollingCorrelation,
+  toSessionClose,
 } from './correlation';
 import { correlationDatasetSchema } from './schema';
 
@@ -74,7 +75,14 @@ describe('rollingCorrelation', () => {
 });
 
 describe('buildCorrelationDataset', () => {
-  const series = { btc: x, sp500: y, gold: x, dxy: y };
+  // btc arrives 00:00-UTC dated and is re-dated onto the session it closes, so
+  // pass it a day later than the benchmarks: after the correction it is x, and
+  // btc-gold is again x against itself.
+  const xSnapshot = x.map(({ date, value }) => ({
+    date: new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10),
+    value,
+  }));
+  const series = { btc: xSnapshot, sp500: y, gold: x, dxy: y };
   const dataset = buildCorrelationDataset(series, {
     fetchedAt: '2024-01-05T12:00:00.000Z',
     asOf: '2024-01-05',
@@ -135,5 +143,63 @@ describe('buildCorrelationDataset', () => {
 
   it('produces output the on-disk schema accepts', () => {
     expect(() => correlationDatasetSchema.parse({ ...dataset, currency: 'usd' })).not.toThrow();
+  });
+});
+
+describe('toSessionClose', () => {
+  it('re-dates a 00:00-UTC snapshot onto the session it closes', () => {
+    expect(
+      toSessionClose([
+        { date: '2020-03-12', value: 7900 },
+        { date: '2020-03-13', value: 3970 },
+      ]),
+    ).toEqual([
+      { date: '2020-03-11', value: 7900 },
+      { date: '2020-03-12', value: 3970 },
+    ]);
+  });
+
+  it('crosses a month and a year boundary correctly', () => {
+    expect(toSessionClose([{ date: '2024-03-01', value: 1 }])[0]?.date).toBe('2024-02-29');
+    expect(toSessionClose([{ date: '2024-01-01', value: 1 }])[0]?.date).toBe('2023-12-31');
+  });
+
+  // The defect this exists to remove, on the week it actually mattered: the
+  // 00:00-UTC snapshot dated d carries the previous session's move, so
+  // correlating on the raw date pairs BTC's crash with the market's rebound
+  // and reports the two as inverse through the biggest co-crash on record.
+  it('turns a spuriously inverse pairing into the co-movement that happened', () => {
+    // BTC snapshots, one per calendar day: the 12th's crash lands on the 13th.
+    const btc = [
+      { date: '2020-03-11', value: 7900 },
+      { date: '2020-03-12', value: 7950 },
+      { date: '2020-03-13', value: 3975 },
+      { date: '2020-03-14', value: 4094 },
+      { date: '2020-03-15', value: 4050 },
+      { date: '2020-03-16', value: 4000 },
+      { date: '2020-03-17', value: 3890 },
+    ];
+    // S&P session closes: −9.5% on the 12th, +9.3% on the 13th, −12% on the 16th.
+    const sp = [
+      { date: '2020-03-11', value: 2741 },
+      { date: '2020-03-12', value: 2481 },
+      { date: '2020-03-13', value: 2711 },
+      { date: '2020-03-16', value: 2386 },
+    ];
+    const corr = (a: typeof btc): number | null => {
+      const rows = alignReturns(a, sp);
+      return pearson(
+        rows.map((r) => r.ra),
+        rows.map((r) => r.rb),
+      );
+    };
+    // The sign flip is the point. The corrected magnitude stays moderate
+    // because BTC's crash is seven times the S&P's, which Pearson penalises
+    // over three observations — but every pair now agrees in direction.
+    expect(corr(btc)).toBeLessThan(0);
+    expect(corr(toSessionClose(btc))).toBeGreaterThan(0.45);
+    for (const row of alignReturns(toSessionClose(btc), sp)) {
+      expect(Math.sign(row.ra)).toBe(Math.sign(row.rb));
+    }
   });
 });

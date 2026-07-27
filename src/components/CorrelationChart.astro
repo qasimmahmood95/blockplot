@@ -251,6 +251,12 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
     );
   }
 
-  renderAll();
+  // responsiveChart plots immediately, so only the width-independent parts
+  // are drawn here; calling renderAll would plot the chart twice on load.
+  const initial = currentPair();
+  if (initial) {
+    renderLegend();
+    renderTable(initial);
+  }
   responsiveChart(render);
 </script>

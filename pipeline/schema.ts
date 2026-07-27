@@ -458,7 +458,14 @@ export const correlationDatasetSchema = z.object({
       b: corrAsset,
       /** Empty entries are allowed while a pair's sources lack shared history. */
       series: z.array(corrPointSchema),
-      /** Contiguous and gapless over `series`; empty exactly when it is. */
+      /**
+       * Contiguous, gapless, and empty exactly when `series` is. Segments are
+       * classified over the pair's full history, so on a clipped pair (see
+       * NON_BTC_KEEP_DAYS) the first segment can start before `series` does
+       * and count observations the shipped series omits — deliberately: the
+       * regime's true start date is more useful than one truncated at the
+       * display window.
+       */
       regimes: z.array(regimeSegmentSchema),
     }),
   ),

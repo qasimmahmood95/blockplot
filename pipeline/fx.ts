@@ -1,4 +1,4 @@
-import { fetchYahooDaily, parseFredCsv } from './benchmarks';
+import { assertDaily, fetchYahooDaily, parseFredCsv } from './benchmarks';
 import { getJson, getText } from './http';
 import {
   frankfurterSchema,
@@ -196,13 +196,13 @@ export async function fetchGbpUsd(): Promise<FxFetch> {
     // deep history is optional if the fresher sources cover enough
   }
   try {
-    parts.push(parseFredCsv(await getText(FRED_CSV_URL), GBPUSD_FRED_SERIES));
+    parts.push(assertDaily(parseFredCsv(await getText(FRED_CSV_URL), GBPUSD_FRED_SERIES), 'fred gbpusd'));
     sources.push('fred');
   } catch {
     // optional middle source
   }
   try {
-    parts.push(parseFrankfurter(await getJson(FRANKFURTER_URL)));
+    parts.push(assertDaily(parseFrankfurter(await getJson(FRANKFURTER_URL)), 'ecb gbpusd'));
     sources.push('ecb');
   } catch {
     // optional; the lag guard in run.ts surfaces a stale tail
