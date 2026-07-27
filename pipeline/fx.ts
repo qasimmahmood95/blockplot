@@ -48,9 +48,12 @@ export const MAX_FX_LAG_DAYS = 5;
 export const FX_HISTORY_FROM = '2009-01-01';
 
 /**
- * Total order on dates. Returning 0 for a tie matters: with `-1 : 1` the
- * comparator claims a > b for equal dates, so duplicates sort arbitrarily and
- * the lookup below stops being order-independent.
+ * Total order on dates. Returning 0 for a tie matters: `-1 : 1` claims a > b
+ * for equal dates, which breaks antisymmetry and lets duplicates land in an
+ * engine-defined order. With 0 the sort is stable, so duplicates keep input
+ * order and the last one wins — deterministic rather than arbitrary. Callers
+ * pass `mergeRates` output, which is already deduped by date; this only
+ * governs what a direct caller of `rateLookup` gets.
  */
 const byDate = (a: { date: string }, b: { date: string }): number =>
   a.date < b.date ? -1 : a.date > b.date ? 1 : 0;

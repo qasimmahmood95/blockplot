@@ -54,14 +54,17 @@ describe('rateLookup', () => {
     expect(lookup('2024-03-01')).toBe(1.25);
   });
 
-  it('resolves a duplicated date the same way regardless of input order', () => {
-    const dupA = [
+  // Duplicates cannot reach here through mergeRates, but rateLookup is
+  // exported, so pin the rule rather than leave it engine-defined: the sort is
+  // stable, so the last entry for a date wins.
+  it('resolves a duplicated date deterministically, last entry winning', () => {
+    const dup = [
       { date: '2024-03-01', close: 1.25 },
-      { date: '2024-03-01', close: 1.25 },
+      { date: '2024-03-01', close: 9.99 },
       { date: '2024-03-04', close: 1.28 },
     ];
-    expect(rateLookup(dupA)('2024-03-02')).toBe(1.25);
-    expect(rateLookup([...dupA].reverse())('2024-03-02')).toBe(1.25);
+    expect(rateLookup(dup)('2024-03-02')).toBe(9.99);
+    expect(rateLookup([...dup].reverse())('2024-03-02')).toBe(1.25);
   });
 });
 
@@ -168,9 +171,11 @@ describe('parseFrankfurter', () => {
 });
 
 describe('FX_HISTORY_FROM', () => {
-  it('sits a year before any BTC price, so no close loses its rate', () => {
-    // blockchain.com's history starts 2010-07-17 at the earliest; the floor
-    // must be earlier than that, and earlier than BTC's first traded price.
+  it('sits before any BTC close a source could return', () => {
+    // blockchain.com's history starts 2010-07 at the earliest, and BTC had no
+    // price at all before late 2009. run.ts enforces the real invariant — that
+    // converting drops no day — and throws naming this constant if it ever
+    // stops holding.
     expect(FX_HISTORY_FROM < '2010-01-01').toBe(true);
   });
 });

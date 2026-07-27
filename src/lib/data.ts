@@ -44,19 +44,37 @@ import type { Currency } from './currency';
  * regenerated, a hand edit, a bad merge — build clean and publish `$NaN`,
  * because a missing field is `undefined` all the way to `Intl.format`. Parsing
  * turns that into a build failure, which is what CLAUDE.md means by the site
- * building from zod-validated JSON. It costs a few hundred ms at build time
- * and nothing at runtime: this runs in Astro's server phase, and no island
- * imports it, so zod never reaches a client bundle.
+ * building from zod-validated JSON. It costs ~60 ms per build and nothing at
+ * runtime: this runs in Astro's server phase, and no island imports it, so
+ * zod never reaches a client bundle.
+ *
+ * Parsing must stay EAGER, at module scope. `astro check` cannot see through
+ * these parses (the raw imports widen to `unknown`), so this eager pass is the
+ * only thing standing between a drifted `/data` and a published `$NaN`. Moving
+ * it behind a lazy getter would reopen that hole for any page that happens not
+ * to read the broken file.
  */
+
+/** Parse one file, naming it so the zod path below is unambiguous. */
+const parseOne = <T>(file: string, schema: { parse(raw: unknown): T }, raw: unknown): T => {
+  try {
+    return schema.parse(raw);
+  } catch (err) {
+    throw new Error(
+      `data/${file}: failed validation — run the pipeline to regenerate it.`,
+      { cause: err },
+    );
+  }
+};
 
 /**
  * Currency-free datasets: stablecoin supply and total market cap are
  * USD-pegged by definition, and network metrics are denominated in hashes,
  * transactions and sat/vB.
  */
-export const dominance = dominanceDatasetSchema.parse(dominanceDataset);
-export const stablecoins = stablecoinDatasetSchema.parse(stablecoinDataset);
-export const network = networkDatasetSchema.parse(networkDataset);
+export const dominance = parseOne('dominance.json', dominanceDatasetSchema, dominanceDataset);
+export const stablecoins = parseOne('stablecoins.json', stablecoinDatasetSchema, stablecoinDataset);
+export const network = parseOne('network.json', networkDatasetSchema, networkDataset);
 
 interface CurrencyData {
   btcDaily: PriceDataset;
@@ -68,32 +86,19 @@ interface CurrencyData {
   monthlyReturns: MonthlyDataset;
 }
 
-/** Parse one currency's tree, naming the currency in any validation failure. */
-const parseCurrency = (
-  currency: Currency,
-  raw: Record<keyof CurrencyData, unknown>,
-): CurrencyData => {
-  try {
-    return {
-      btcDaily: priceDatasetSchema.parse(raw.btcDaily),
-      benchmarksDaily: benchmarkDatasetSchema.parse(raw.benchmarksDaily),
-      riskMetrics: riskDatasetSchema.parse(raw.riskMetrics),
-      halvingCycles: halvingDatasetSchema.parse(raw.halvingCycles),
-      correlations: correlationDatasetSchema.parse(raw.correlations),
-      btcHistory: historyDatasetSchema.parse(raw.btcHistory),
-      monthlyReturns: monthlyDatasetSchema.parse(raw.monthlyReturns),
-    };
-  } catch (err) {
-    throw new Error(
-      `data/${currency === 'usd' ? '' : `${currency}/`}: dataset failed validation — ` +
-        'run the pipeline to regenerate it.',
-      { cause: err },
-    );
-  }
-};
+/** One currency's tree, each file named so a zod path is unambiguous. */
+const currencyData = (dir: string, raw: Record<keyof CurrencyData, unknown>): CurrencyData => ({
+  btcDaily: parseOne(`${dir}btc-price-daily.json`, priceDatasetSchema, raw.btcDaily),
+  benchmarksDaily: parseOne(`${dir}benchmarks-daily.json`, benchmarkDatasetSchema, raw.benchmarksDaily),
+  riskMetrics: parseOne(`${dir}risk-metrics.json`, riskDatasetSchema, raw.riskMetrics),
+  halvingCycles: parseOne(`${dir}halving-cycles.json`, halvingDatasetSchema, raw.halvingCycles),
+  correlations: parseOne(`${dir}correlations.json`, correlationDatasetSchema, raw.correlations),
+  btcHistory: parseOne(`${dir}btc-price-history.json`, historyDatasetSchema, raw.btcHistory),
+  monthlyReturns: parseOne(`${dir}monthly-returns.json`, monthlyDatasetSchema, raw.monthlyReturns),
+});
 
 const BY_CURRENCY: Record<Currency, CurrencyData> = {
-  usd: parseCurrency('usd', {
+  usd: currencyData('', {
     btcDaily: usdPrice,
     benchmarksDaily: usdBenchmarks,
     riskMetrics: usdRisk,
@@ -102,7 +107,7 @@ const BY_CURRENCY: Record<Currency, CurrencyData> = {
     btcHistory: usdHistory,
     monthlyReturns: usdMonthly,
   }),
-  gbp: parseCurrency('gbp', {
+  gbp: currencyData('gbp/', {
     btcDaily: gbpPrice,
     benchmarksDaily: gbpBenchmarks,
     riskMetrics: gbpRisk,

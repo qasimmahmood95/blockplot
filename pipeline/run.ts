@@ -9,7 +9,14 @@ import {
   STABLECOIN_KEEP_DAYS,
   stablecoinChange30dPct,
 } from './flows';
-import { convertBenchmark, convertSeries, fetchGbpUsd, fxLagDays, MAX_FX_LAG_DAYS } from './fx';
+import {
+  convertBenchmark,
+  convertSeries,
+  fetchGbpUsd,
+  FX_HISTORY_FROM,
+  fxLagDays,
+  MAX_FX_LAG_DAYS,
+} from './fx';
 import { buildHalvingDataset } from './halvings';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
@@ -158,6 +165,15 @@ for (const currency of CURRENCIES) {
   const dir = currency === 'usd' ? 'data' : `data/${currency}`;
   const spot = series ? convertSeries(series, rates, currency) : null;
   const deep = history ? convertSeries(history, rates, currency) : null;
+  // convertSeries drops days with no rate, so a rate floor later than the BTC
+  // start would quietly give GBP a shorter history than USD — the heatmap and
+  // cycle overlay would begin later with nothing anywhere saying why.
+  if (deep && history && deep.length !== history.length) {
+    throw new Error(
+      `convertSeries dropped ${history.length - deep.length} ${currency} days: ` +
+        `the FX floor ${FX_HISTORY_FROM} is later than the BTC start ${history[0]?.date}`,
+    );
+  }
   const sp = sp500 ? convertBenchmark(sp500, rates, currency) : null;
   const au = goldFetch ? convertBenchmark(goldFetch.series, rates, currency) : null;
   // DXY is a dollar index by construction, so it is never converted; the
