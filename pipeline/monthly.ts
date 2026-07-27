@@ -49,7 +49,7 @@ export function yearlyReturns(months: MonthlyReturn[]): YearlyReturn[] {
 export function buildMonthlyDataset(
   history: DailyPrice[],
   opts: { fetchedAt: string },
-): MonthlyDataset {
+): Omit<MonthlyDataset, 'currency'> {
   const last = history.at(-1);
   if (!last) throw new Error('buildMonthlyDataset: empty history');
   const months = monthlyReturns(history);

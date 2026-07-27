@@ -181,7 +181,7 @@ export function buildRiskDataset(
   btc: DailyPrice[],
   benchmarks: { sp500: BenchmarkDay[]; gold: BenchmarkDay[] },
   opts: { fetchedAt: string; rollingWindows?: number[]; history?: DailyPrice[] },
-): RiskDataset {
+): Omit<RiskDataset, 'currency'> {
   const points = btc.map(({ date, priceUsd }) => ({ date, value: priceUsd }));
   const first = points[0];
   const last = points.at(-1);

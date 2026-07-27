@@ -116,7 +116,7 @@ export function buildCorrelationDataset(
     windowDays?: number;
     minObs?: number;
   },
-): CorrelationDataset {
+): Omit<CorrelationDataset, 'currency'> {
   const windowDays = opts.windowDays ?? CORRELATION_WINDOW_DAYS;
   const minObs = opts.minObs ?? CORRELATION_MIN_OBS;
   const pairs: CorrelationDataset['pairs'] = [];
