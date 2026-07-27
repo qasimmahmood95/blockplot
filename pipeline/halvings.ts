@@ -22,7 +22,7 @@ function round4(value: number): number {
 export function buildHalvingDataset(
   history: DailyPrice[],
   opts: { fetchedAt: string; halvings?: string[] },
-): HalvingDataset {
+): Omit<HalvingDataset, 'currency'> {
   const halvings = opts.halvings ?? HALVING_DATES;
   const last = history.at(-1);
   if (!last) throw new Error('buildHalvingDataset: empty history');
@@ -37,10 +37,10 @@ export function buildHalvingDataset(
       cycle: i + 1,
       halvingDate,
       endDate,
-      basePriceUsd: base.priceUsd,
+      basePrice: base.price,
       series: slice.map((p) => ({
         day: daysBetween(halvingDate, p.date),
-        multiple: round4(p.priceUsd / base.priceUsd),
+        multiple: round4(p.price / base.price),
       })),
     };
   });

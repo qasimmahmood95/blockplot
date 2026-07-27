@@ -1,3 +1,12 @@
+---
+import { network } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
+
+const payload = { hashRate: network.hashRate.series, txCount: network.txCount.series };
+---
+
+<script is:inline type="application/json" id="network-chart-data" set:html={toJsonScript(payload)} />
+
 <figure class="chart-frame">
   <figcaption class="chart-caption num">hash rate · EH/s</figcaption>
   <div
@@ -20,11 +29,12 @@
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import dataset from '../../data/network.json';
-  import { cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
 
-  const hashRate = dataset.hashRate.series.map((p) => ({ date: new Date(p.date), value: p.value }));
-  const txCount = dataset.txCount.series.map((p) => ({ date: new Date(p.date), value: p.value }));
+  type Point = { date: string; value: number };
+  const data = chartData<{ hashRate: Point[]; txCount: Point[] }>('network-chart-data');
+  const hashRate = data.hashRate.map((p) => ({ date: new Date(p.date), value: p.value }));
+  const txCount = data.txCount.map((p) => ({ date: new Date(p.date), value: p.value }));
   const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
 
   function plot(

@@ -4,6 +4,10 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Data refreshes are pushed with GITHUB_TOKEN, which by design fires no
+  # workflow — so a bot commit that lands on a PR branch leaves the newest
+  # head unchecked. This lets CI be run against it on demand.
+  workflow_dispatch:
 
 jobs:
   checks:

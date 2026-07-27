@@ -6,13 +6,13 @@ import { monthlyDatasetSchema } from './schema';
 // so January 2025's return spans the gap. Ratios are exact: 99/110 = 0.9,
 // 108.9/99 = 1.1, 119.79/108.9 = 1.1, 131.769/119.79 = 1.1.
 const history = [
-  { date: '2024-01-15', priceUsd: 100 },
-  { date: '2024-01-31', priceUsd: 110 },
-  { date: '2024-02-10', priceUsd: 105 },
-  { date: '2024-02-29', priceUsd: 99 },
-  { date: '2024-03-31', priceUsd: 108.9 },
-  { date: '2024-04-10', priceUsd: 119.79 },
-  { date: '2025-01-31', priceUsd: 131.769 },
+  { date: '2024-01-15', price: 100 },
+  { date: '2024-01-31', price: 110 },
+  { date: '2024-02-10', price: 105 },
+  { date: '2024-02-29', price: 99 },
+  { date: '2024-03-31', price: 108.9 },
+  { date: '2024-04-10', price: 119.79 },
+  { date: '2025-01-31', price: 131.769 },
 ];
 
 describe('monthlyReturns', () => {
@@ -45,7 +45,7 @@ describe('buildMonthlyDataset', () => {
     expect(dataset.asOf).toBe('2025-01-31');
     expect(dataset.months).toHaveLength(4);
     expect(dataset.years).toHaveLength(2);
-    expect(() => monthlyDatasetSchema.parse(dataset)).not.toThrow();
+    expect(() => monthlyDatasetSchema.parse({ ...dataset, currency: 'usd' })).not.toThrow();
   });
 
   it('rejects empty history', () => {

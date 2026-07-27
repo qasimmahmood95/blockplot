@@ -20,19 +20,20 @@ describe('priceDatasetSchema', () => {
   const valid = {
     schemaVersion: 1,
     source: 'coingecko',
+    currency: 'usd',
     fetchedAt: '2024-03-08T12:00:00.000Z',
     rangeDays: '365',
     stats: {
       latestDate: '2024-03-08',
-      latestPriceUsd: 46620,
+      latestPrice: 46620,
       change7dPct: 11,
       change30dPct: null,
-      rangeHighUsd: 47000,
+      rangeHigh: 47000,
       rangeHighDate: '2024-03-07',
     },
     series: [
-      { date: '2024-03-07', priceUsd: 47000 },
-      { date: '2024-03-08', priceUsd: 46620 },
+      { date: '2024-03-07', price: 47000 },
+      { date: '2024-03-08', price: 46620 },
     ],
   };
 
@@ -44,7 +45,7 @@ describe('priceDatasetSchema', () => {
     expect(() =>
       priceDatasetSchema.parse({
         ...valid,
-        series: [valid.series[0], { date: '2024-03-08', priceUsd: 0 }],
+        series: [valid.series[0], { date: '2024-03-08', price: 0 }],
       }),
     ).toThrow();
     expect(() =>
@@ -56,6 +57,7 @@ describe('priceDatasetSchema', () => {
 describe('benchmarkDatasetSchema', () => {
   const valid = {
     schemaVersion: 1,
+    currency: 'usd',
     fetchedAt: '2024-03-08T12:00:00.000Z',
     keepDays: 400,
     benchmarks: [
@@ -138,6 +140,7 @@ describe('benchmarkDatasetSchema', () => {
 describe('correlationDatasetSchema', () => {
   const valid = {
     schemaVersion: 1,
+    currency: 'usd',
     fetchedAt: '2024-03-08T12:00:00.000Z',
     asOf: '2024-03-08',
     windowDays: 90,
@@ -171,6 +174,7 @@ describe('correlationDatasetSchema', () => {
 describe('riskDatasetSchema', () => {
   const valid = {
     schemaVersion: 2,
+    currency: 'usd',
     fetchedAt: '2024-03-08T12:00:00.000Z',
     asOf: '2024-03-08',
     windowDays: 8,

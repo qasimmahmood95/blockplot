@@ -1,14 +1,36 @@
+---
+import { CURRENCY_META, type Currency } from '../lib/currency';
+import { dataFor } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
+
+interface Props {
+  currency: Currency;
+}
+
+const { currency } = Astro.props;
+const { btcDaily } = dataFor(currency);
+const payload = { code: CURRENCY_META[currency].code, series: btcDaily.series };
+---
+
 <figure class="chart-frame">
-  <div id="price-chart" role="img" aria-label="Line chart of the BTC/USD daily closing price"></div>
+  <script is:inline type="application/json" id="price-chart-data" set:html={toJsonScript(payload)} />
+  <div id="price-chart" role="img" aria-label="Line chart of the BTC daily closing price"></div>
 </figure>
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import dataset from '../../data/btc-price-daily.json';
-  import { cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
 
+  const { code, series } = chartData<{ code: string; series: { date: string; price: number }[] }>(
+    'price-chart-data',
+  );
   const container = document.getElementById('price-chart');
-  const series = dataset.series.map((d) => ({ date: new Date(d.date), priceUsd: d.priceUsd }));
+  const points = series.map((d) => ({ date: new Date(d.date), price: d.price }));
+  const money = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: code,
+    maximumFractionDigits: 0,
+  });
 
   function render(): void {
     if (!container) return;
@@ -18,15 +40,11 @@
         height: 340,
         marginLeft: 70,
         x: { label: null },
-        y: {
-          label: null,
-          grid: true,
-          tickFormat: (value: number) => `$${value.toLocaleString('en-US')}`,
-        },
+        y: { label: null, grid: true, tickFormat: (value: number) => money.format(value) },
         marks: [
-          Plot.lineY(series, {
+          Plot.lineY(points, {
             x: 'date',
-            y: 'priceUsd',
+            y: 'price',
             stroke: cssVar('--accent'),
             strokeWidth: 1.5,
           }),

@@ -104,13 +104,22 @@ export interface YahooFetch {
   series: BenchmarkDay[];
 }
 
-/** Fetch daily closes from Yahoo, trying tickers in preference order. */
-export async function fetchYahooDaily(tickers: string[]): Promise<YahooFetch> {
+/**
+ * Fetch daily closes from Yahoo, trying tickers in preference order.
+ * `range: 'max'` also skips the trailing-window trim, for callers (FX) that
+ * need history reaching back as far as the BTC series.
+ */
+export async function fetchYahooDaily(
+  tickers: string[],
+  opts: { range?: '2y' | 'max' } = {},
+): Promise<YahooFetch> {
+  const range = opts.range ?? '2y';
   let lastError: unknown;
   for (const ticker of tickers) {
-    const url = `${YAHOO_CHART_API}/${encodeURIComponent(ticker)}?range=2y&interval=1d`;
+    const url = `${YAHOO_CHART_API}/${encodeURIComponent(ticker)}?range=${range}&interval=1d`;
     try {
-      return { ticker, series: trimToLastDays(parseYahooChart(await getJson(url)), BENCHMARK_KEEP_DAYS) };
+      const parsed = parseYahooChart(await getJson(url));
+      return { ticker, series: range === 'max' ? parsed : trimToLastDays(parsed, BENCHMARK_KEEP_DAYS) };
     } catch (err) {
       lastError = err;
     }

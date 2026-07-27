@@ -1,7 +1,9 @@
 import type { DailyPrice, PriceStats } from './schema';
 
 /**
- * Collapse raw CoinGecko [unixMs, priceUsd] points into one entry per UTC day.
+ * Collapse raw CoinGecko [unixMs, price] points into one entry per UTC day.
+ * The feed is USD; conversion into other display currencies happens later, in
+ * `fx.ts`, so nothing downstream of here is currency-specific.
  * The feed's midnight points and its trailing "now" point can share a date;
  * the chronologically last value for each day wins.
  */
@@ -12,7 +14,7 @@ export function toDailySeries(prices: [number, number][]): DailyPrice[] {
   }
   return [...byDate.entries()]
     .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([date, priceUsd]) => ({ date, priceUsd }));
+    .map(([date, price]) => ({ date, price }));
 }
 
 function pctChange(latest: number, past: number): number {
@@ -36,15 +38,15 @@ export function computeStats(series: DailyPrice[]): PriceStats {
 
   let high = first;
   for (const day of series) {
-    if (day.priceUsd > high.priceUsd) high = day;
+    if (day.price > high.price) high = day;
   }
 
   return {
     latestDate: latest.date,
-    latestPriceUsd: latest.priceUsd,
-    change7dPct: week ? pctChange(latest.priceUsd, week.priceUsd) : null,
-    change30dPct: month ? pctChange(latest.priceUsd, month.priceUsd) : null,
-    rangeHighUsd: high.priceUsd,
+    latestPrice: latest.price,
+    change7dPct: week ? pctChange(latest.price, week.price) : null,
+    change30dPct: month ? pctChange(latest.price, month.price) : null,
+    rangeHigh: high.price,
     rangeHighDate: high.date,
   };
 }

@@ -1,16 +1,25 @@
 ---
-import DominanceChart from '../components/DominanceChart.astro';
-import StablecoinChart from '../components/StablecoinChart.astro';
-import Base from '../layouts/Base.astro';
-import { dominance, stablecoins } from '../lib/data';
-import { formatPct, formatUsdCompact } from '../lib/format';
+import { currencyPaths } from '../../lib/routes';
+import DominanceChart from '../../components/DominanceChart.astro';
+import StablecoinChart from '../../components/StablecoinChart.astro';
+import Base from '../../layouts/Base.astro';
+import { dominance, stablecoins } from '../../lib/data';
+import { formatPct, formatUsdCompact } from '../../lib/format';
 
 const latestDominance = dominance.series.at(-1);
 const latestStable = stablecoins.series.at(-1);
 const { change30dPct } = stablecoins;
+
+export const getStaticPaths = currencyPaths;
+
+// This view is currency-free — stablecoin supply and total market cap are
+// USD-pegged by definition — but the layout still needs the reader's currency
+// so the nav and switcher keep them in it.
+const { currency } = Astro.props as { currency: import('../../lib/currency').Currency };
 ---
 
 <Base
+  currency={currency}
   title="blockplot · flows & dominance"
   description="BTC dominance and total USD-pegged stablecoin supply, from keyless public sources."
 >

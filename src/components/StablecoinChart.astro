@@ -1,4 +1,10 @@
+---
+import { stablecoins } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
+---
+
 <figure class="chart-frame">
+  <script is:inline type="application/json" id="stablecoin-chart-data" set:html={toJsonScript(stablecoins.series)} />
   <div
     id="stablecoin-chart"
     role="img"
@@ -9,11 +15,11 @@
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import dataset from '../../data/stablecoins.json';
-  import { cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
 
+  const series = chartData<{ date: string; totalUsd: number }[]>('stablecoin-chart-data');
   const container = document.getElementById('stablecoin-chart');
-  const points = dataset.series.map((p) => ({ date: new Date(p.date), totalUsd: p.totalUsd }));
+  const points = series.map((p) => ({ date: new Date(p.date), totalUsd: p.totalUsd }));
   const billions = (v: number): string =>
     v >= 1e12 ? `$${(v / 1e12).toFixed(2)}T` : `$${(v / 1e9).toFixed(0)}B`;
 

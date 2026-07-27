@@ -146,7 +146,7 @@ describe('assetRiskStats', () => {
 });
 
 describe('buildRiskDataset', () => {
-  const btc = dates.map((date, i) => ({ date, priceUsd: closes[i] ?? 0 }));
+  const btc = dates.map((date, i) => ({ date, price: closes[i] ?? 0 }));
   // Benchmark rows on their own trading calendars, with out-of-window rows
   // on 2024-02-29 that clamping must drop.
   const sp500 = [
@@ -170,7 +170,7 @@ describe('buildRiskDataset', () => {
   });
 
   it('produces output the on-disk schema accepts', () => {
-    expect(() => riskDatasetSchema.parse(dataset)).not.toThrow();
+    expect(() => riskDatasetSchema.parse({ ...dataset, currency: 'usd' })).not.toThrow();
   });
 
   it('derives rolling vol from deep history when provided, clipped to the window', () => {
@@ -179,10 +179,10 @@ describe('buildRiskDataset', () => {
     // proves it), and for the window to populate from 03-01 on. The first
     // three windows hold the same return multiset, so their vol is equal.
     const history = [
-      { date: '2024-02-26', priceUsd: 100 },
-      { date: '2024-02-27', priceUsd: 100 },
-      { date: '2024-02-28', priceUsd: 105 },
-      { date: '2024-02-29', priceUsd: 94.5 },
+      { date: '2024-02-26', price: 100 },
+      { date: '2024-02-27', price: 100 },
+      { date: '2024-02-28', price: 105 },
+      { date: '2024-02-29', price: 94.5 },
       ...btc,
     ];
     const withHistory = buildRiskDataset(btc, { sp500, gold }, {

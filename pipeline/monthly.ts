@@ -16,7 +16,7 @@ const round2 = (v: number): number => {
 export function monthlyReturns(history: DailyPrice[]): MonthlyReturn[] {
   const lastClosePerMonth = new Map<string, number>();
   for (const day of history) {
-    lastClosePerMonth.set(day.date.slice(0, 7), day.priceUsd);
+    lastClosePerMonth.set(day.date.slice(0, 7), day.price);
   }
   const months = [...lastClosePerMonth.keys()].sort();
   const out: MonthlyReturn[] = [];
@@ -49,7 +49,7 @@ export function yearlyReturns(months: MonthlyReturn[]): YearlyReturn[] {
 export function buildMonthlyDataset(
   history: DailyPrice[],
   opts: { fetchedAt: string },
-): MonthlyDataset {
+): Omit<MonthlyDataset, 'currency'> {
   const last = history.at(-1);
   if (!last) throw new Error('buildMonthlyDataset: empty history');
   const months = monthlyReturns(history);

@@ -5,7 +5,7 @@ pipeline fetches market data, validates it with zod, derives every metric in
 tested pure TypeScript, and commits versioned JSON to `/data`; Astro builds
 the site from that dataset alone, charted with Observable Plot.
 
-**Status:** Phase 1 (M0–M6) shipped; Phase 2 (M7–M12) planned.
+**Status:** Phase 1 (M0–M6) shipped; Phase 2 in progress (M7–M10 done, M11–M14 planned).
 [PLAN.md](PLAN.md) holds the milestone plan, [CLAUDE.md](CLAUDE.md) the
 development rules.
 
@@ -21,16 +21,20 @@ src/        Astro site; builds exclusively from /data
 ```
 
 - **Static output only.** Every figure on the site is baked at build time from
-  `/data`. The one exception, allowed by design: the header ticker island
-  fetches the live spot price client-side and falls back to the committed
-  close.
+  `/data`. Exactly two runtime fetches are sanctioned, and both render a
+  committed value first and upgrade it on success: the header ticker (spot
+  price) and the network page's fee tiers (which move on a ~10-minute
+  timescale, so a 6-hourly snapshot would be stale on arrival).
 - **The pipeline is the only writer of `/data`.** It runs 6-hourly (and on
   pushes that change pipeline code, so new datasets get seeded by the bot on
   the branch that introduces them), validates every source response and every
   on-disk dataset with zod, and commits as `github-actions[bot]`.
 - **Client islands only where interactivity demands them**: the charts, the
   DCA simulator (which runs the pipeline's own fixture-tested functions in
-  the browser), and the live ticker.
+  the browser), the live ticker, and the fee tiers.
+- **Two display currencies, USD and GBP.** USD pages live at the root, GBP
+  under `/gbp/`, with a header switcher that holds your place on the page.
+  GBP is a re-denomination, not a relabelling — see below.
 - **Hosting is swappable**: the deploy step is isolated in
   `.github/workflows/deploy.yml`.
 
@@ -43,6 +47,8 @@ src/        Astro site; builds exclusively from /data
 | FRED `fredgraph.csv` | S&P 500 daily closes |
 | Yahoo Finance chart API | gold (XAU/USD spot, `GC=F` fallback), DXY (`DX-Y.NYB`, `DX=F` fallback) |
 | DeFiLlama | total USD-pegged stablecoin circulating value, full history |
+| mempool.space | recommended fee tiers (committed snapshot + the network page's live refresh) |
+| FRED `DEXUSUK`, Yahoo `GBPUSD=X`, ECB via Frankfurter | GBP/USD daily rates, merged |
 
 Historical BTC dominance has no keyless source, so `data/dominance.json`
 accretes one snapshot per UTC day. Exchange netflow was dropped — no free
@@ -75,6 +81,21 @@ fixed fixtures with exact, independently derived expected values.
   clamping, undeployed cash counted toward wealth so an equal-budget lump sum
   from the same start date compares like-for-like; ignores taxes, slippage,
   and yield on idle cash.
+- **GBP re-denomination**: each daily close is divided by *that day's*
+  GBP/USD rate and every metric recomputed from the converted series — a
+  GBP holder's drawdown, volatility and monthly returns genuinely differ
+  from the USD ones, so converting the finished figures at today's rate
+  would be wrong. Rates merge FRED `DEXUSUK` and Yahoo (both reach 1971,
+  both publish with a lag) with ECB reference rates (from 1999, published
+  every business day), later sources winning per date; each leg is
+  optional and the file records which ones a run actually got. FX markets close
+  at weekends and on bank holidays while BTC does not, so the last quote is
+  carried forward; days before the first quoted rate are dropped rather
+  than converted, and the pipeline warns if the rate tail lags BTC by more
+  than 5 days. Converted closes are kept unrounded — a 2 dp round on a 2010
+  sub-pound price is an error of up to 11% that would propagate into the
+  monthly heatmap. The dollar index is never converted: it measures the
+  dollar itself.
 
 Rounding is applied at the serialization edge (2 dp percentages, 8 dp BTC,
 4 dp multiples) and every page carries a methodology note for its own view.

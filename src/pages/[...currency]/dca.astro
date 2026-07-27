@@ -1,12 +1,18 @@
 ---
-import DcaSimulator from '../components/DcaSimulator.astro';
-import Base from '../layouts/Base.astro';
-import { btcHistory } from '../lib/data';
+import DcaSimulator from '../../components/DcaSimulator.astro';
+import Base from '../../layouts/Base.astro';
+import { fxNote, type Currency } from '../../lib/currency';
+import { dataFor } from '../../lib/data';
+import { currencyPaths } from '../../lib/routes';
 
-const asOf = btcHistory.series.at(-1)?.date;
+export const getStaticPaths = currencyPaths;
+
+const { currency } = Astro.props as { currency: Currency };
+const asOf = dataFor(currency).btcHistory.series.at(-1)?.date;
 ---
 
 <Base
+  currency={currency}
   title="blockplot · DCA simulator"
   description="Simulate weekly or monthly BTC dollar-cost averaging vs an equal lump sum from any start date, fees included."
 >
@@ -14,7 +20,7 @@ const asOf = btcHistory.series.at(-1)?.date;
 
   <section class="chart-section">
     <h2>DCA vs lump sum · fully client-side</h2>
-    <DcaSimulator />
+    <DcaSimulator currency={currency} />
     <p class="method-note">
       Each scheduled buy spends the fixed amount, less the per-buy fee, at that day's close (a
       schedule date missing from the data buys on the next available day; month-end schedules
@@ -24,7 +30,7 @@ const asOf = btcHistory.series.at(-1)?.date;
       strategies start from the same budget and the comparison is like-for-like. Prices are
       blockchain.com daily closes through {asOf}; the simulation runs entirely in
       the browser on the committed dataset with the same fixture-tested functions as the pipeline,
-      and ignores taxes, slippage, and yield on idle cash.
+      and ignores taxes, slippage, and yield on idle cash.{fxNote(currency)}
     </p>
   </section>
 </Base>

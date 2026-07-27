@@ -1,8 +1,14 @@
 ---
-import { monthlyReturns } from '../lib/data';
+import type { Currency } from '../lib/currency';
+import { dataFor } from '../lib/data';
 import { formatPct } from '../lib/format';
 
-const { months, years } = monthlyReturns;
+interface Props {
+  currency: Currency;
+}
+
+const { currency } = Astro.props;
+const { months, years } = dataFor(currency).monthlyReturns;
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 

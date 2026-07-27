@@ -1,7 +1,22 @@
+---
+import type { Currency } from '../lib/currency';
+import { dataFor } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
+
+interface Props {
+  currency: Currency;
+}
+
+const { currency } = Astro.props;
+const { correlations } = dataFor(currency);
+const payload = correlations.pairs.filter((p) => p.series.length > 0);
+---
+
 <figure class="chart-frame">
   <div class="chart-controls">
     <div class="chart-toggle" id="pair-toggle" role="group" aria-label="Asset pair"></div>
   </div>
+  <script is:inline type="application/json" id="correlation-chart-data" set:html={toJsonScript(payload)} />
   <div
     id="correlation-chart"
     role="img"
@@ -12,9 +27,10 @@
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import dataset from '../../data/correlations.json';
-  import { cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
 
+  type Pair = { pair: string; a: string; b: string; series: { date: string; corr: number }[] };
+  const pairs = chartData<Pair[]>('correlation-chart-data');
   const container = document.getElementById('correlation-chart');
   const toggle = document.getElementById('pair-toggle');
 
@@ -24,7 +40,6 @@
     gold: 'gold',
     dxy: 'DXY',
   };
-  const pairs = dataset.pairs.filter((p) => p.series.length > 0);
   let active = pairs[0]?.pair ?? '';
 
   function render(): void {
