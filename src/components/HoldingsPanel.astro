@@ -121,15 +121,6 @@ const payload = {
     new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 }).format(v);
 
   /**
-   * What the form currently says, or null when there is nothing to value.
-   *
-   * The cost field is labelled in this page's currency, so a cost entered on
-   * the other route leaves it blank. Blank therefore means "nothing entered in
-   * this currency" rather than "no cost basis", and the stored figure carries
-   * over — shown converted, and flagged as converted. Typing a figure here
-   * replaces it with one denominated in this currency.
-   */
-  /**
    * Whether the reader has touched the cost field this visit. Until they do,
    * the field is showing a stored figure — possibly converted from the other
    * currency — and editing the BTC amount must not re-denominate it. Once they
@@ -137,6 +128,7 @@ const payload = {
    */
   let costEdited = false;
 
+  /** What the form currently says, or null when there is nothing to value. */
   function formHoldings(): Holdings | null {
     if (!form) return null;
     const raw = new FormData(form);
