@@ -78,7 +78,6 @@ const payload = {
     clearHoldings,
     HOLDINGS_EVENT,
     readHoldings,
-    watchOtherTabs,
     writeHoldings,
   } from '../lib/holdings-store';
 
@@ -128,6 +127,17 @@ const payload = {
    */
   let costEdited = false;
 
+  /**
+   * The cost as loaded, held here rather than re-read from storage.
+   *
+   * Emptying the BTC field clears storage, so reading the un-edited cost back
+   * out of it destroyed the cost basis the moment the reader cleared and
+   * retyped an amount — the ordinary way anyone changes a number — while the
+   * field went on displaying a figure that no longer existed. Snapshotting
+   * makes the field and the model agree by construction rather than by timing.
+   */
+  let storedCost: { cost: number; costCurrency: Currency } | null = null;
+
   /** What the form currently says, or null when there is nothing to value. */
   function formHoldings(): Holdings | null {
     if (!form) return null;
@@ -137,11 +147,7 @@ const payload = {
     if (btcRaw === '' || !Number.isFinite(btc) || btc < 0 || btc > MAX_BTC) return null;
     const costRaw = String(raw.get('cost') ?? '').trim();
     if (!costEdited) {
-      // Keep the stored cost in its own currency; the field is only displaying it.
-      const stored = readHoldings();
-      return stored?.cost != null
-        ? { btc, cost: stored.cost, costCurrency: stored.costCurrency }
-        : { btc, cost: null, costCurrency: data.currency };
+      return storedCost ? { btc, ...storedCost } : { btc, cost: null, costCurrency: data.currency };
     }
     if (costRaw === '') return { btc, cost: null, costCurrency: data.currency };
     const cost = Number(costRaw);
@@ -261,11 +267,32 @@ const payload = {
       }
     }
     stats.replaceChildren(...tiles);
-    renderChart(holdings.btc);
   }
 
   function setStatus(message: string): void {
     if (status) status.textContent = message;
+  }
+
+  /**
+   * Trailing debounce for the two expensive, order-sensitive effects: plotting
+   * ~5,800 points, and persisting. The tiles stay synchronous — they are three
+   * multiplications and cost nothing — so typing still feels immediate.
+   */
+  const DEBOUNCE_MS = 200;
+  let pending: ReturnType<typeof setTimeout> | undefined;
+  function afterTyping(run: () => void): void {
+    if (pending !== undefined) clearTimeout(pending);
+    pending = setTimeout(() => {
+      pending = undefined;
+      run();
+    }, DEBOUNCE_MS);
+  }
+  /** Persist immediately if a debounced write is still owed. */
+  function flushPending(): void {
+    if (pending === undefined) return;
+    clearTimeout(pending);
+    pending = undefined;
+    commit();
   }
 
   /**
@@ -280,13 +307,28 @@ const payload = {
   function save(): string {
     const btcRaw = String(new FormData(form as HTMLFormElement).get('btc') ?? '').trim();
     if (btcRaw === '') {
+      // Storage goes, but the snapshot stays: an empty amount field means the
+      // reader is retyping the amount, not deleting the cost basis. Only the
+      // clear button and blanking the cost field itself discard that.
       clearHoldings();
       return '';
     }
     const holdings = formHoldings();
     if (!holdings) return 'not a valid amount — nothing saved';
     writeHoldings(holdings);
+    if (holdings.cost !== null) {
+      storedCost = { cost: holdings.cost, costCurrency: holdings.costCurrency };
+    } else {
+      storedCost = null;
+    }
     return 'saved in this browser';
+  }
+
+  /** The debounced half of an edit: persist, then redraw the chart. */
+  function commit(): void {
+    setStatus(save());
+    const holdings = formHoldings();
+    renderChart(holdings && holdings.btc > 0 ? holdings.btc : 0);
   }
 
   function load(): void {
@@ -295,6 +337,9 @@ const payload = {
     const btcInput = form.elements.namedItem('btc') as HTMLInputElement | null;
     const costInput = form.elements.namedItem('cost') as HTMLInputElement | null;
     if (btcInput) btcInput.value = String(stored.btc);
+    storedCost =
+      stored.cost === null ? null : { cost: stored.cost, costCurrency: stored.costCurrency };
+    if (costInput && stored.cost === null) costInput.value = '';
     if (costInput && stored.cost !== null) {
       // Converted when it was entered on the other route, so the field is
       // always in the currency its label claims — and always clearable.
@@ -309,17 +354,25 @@ const payload = {
 
   form?.addEventListener('input', (event) => {
     if ((event.target as HTMLElement | null)?.getAttribute('name') === 'cost') costEdited = true;
-    const message = save();
     render();
-    // After render(), which clears the status when there is nothing to show.
-    setStatus(message);
+    afterTyping(commit);
+  });
+  // A debounced write must not be lost to a navigation or a closed tab.
+  form?.addEventListener('change', flushPending);
+  window.addEventListener('pagehide', flushPending);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) flushPending();
   });
 
   clearButton?.addEventListener('click', () => {
+    if (pending !== undefined) clearTimeout(pending);
+    pending = undefined;
     clearHoldings();
     form?.reset();
     costEdited = false;
+    storedCost = null;
     render();
+    renderChart(0);
     // After render(): it blanks the status, which swallowed this confirmation.
     setStatus('cleared — nothing is stored for this browser');
   });
@@ -332,6 +385,12 @@ const payload = {
   });
 
   load();
-  watchOtherTabs();
-  responsiveChart(render);
+  render();
+  // watchOtherTabs is registered by the layout, which is on every page; adding
+  // it here too would double every cross-tab dispatch.
+  responsiveChart(() => {
+    render();
+    const holdings = formHoldings();
+    renderChart(holdings && holdings.btc > 0 ? holdings.btc : 0);
+  });
 </script>

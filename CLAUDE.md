@@ -50,9 +50,11 @@ and never gitignored.
   written to `localStorage` and read back by the page, nothing more. Any
   feature that would move it requires amending this rule in the same PR.
 - Adding or removing a runtime fetch requires re-checking the holdings page's
-  privacy note against the built output in the same PR. That note enumerates
-  the site's requests, so a change here silently makes it false — which is
-  worse than having no note, because a reader can check it.
+  privacy note against the built output — by driving `dist/` and recording the
+  requests, not by reading the diff. That note enumerates the site's requests
+  and which pages make them, so a change here silently makes it false, which is
+  worse than having no note because a reader can check it. Errors that
+  understate exposure are the ones that matter.
 - The site builds purely from `/data` (pipeline-committed, zod-validated,
   versioned JSON). Exactly two runtime fetches are sanctioned, both of which
   render a committed value first and upgrade it on success: the header ticker

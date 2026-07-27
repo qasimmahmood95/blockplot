@@ -22,11 +22,11 @@ const { currency } = Astro.props as { currency: Currency };
       <strong>This stays on your device.</strong> What you enter is written to this browser's
       <code>localStorage</code> and read back by this page. It is never transmitted: blockplot is a
       static site with no server, no account, and no analytics, so there is nowhere for it to go
-      even in principle. Two pages do make requests — the header ticker asks CoinGecko for the live
-      price, and the network page asks mempool.space for fee tiers — and neither carries anything
-      you enter here. Both still reveal what any web request does: your IP address and the fact
-      that you loaded blockplot. Clearing your browser data, or the button below, removes what you
-      entered. Anyone with access to this browser profile can read it, so treat it as you would a
+      even in principle. Every page — this one included — asks CoinGecko for the live BTC price
+      about once a minute while the tab is open, to keep the header ticker current, and the network
+      page also asks mempool.space for fee tiers. Neither request carries anything you enter here.
+      Both still reveal what any web request does: your IP address and the fact that you loaded
+      blockplot. Clearing your browser data, or the button below, removes what you entered. Anyone with access to this browser profile can read it, so treat it as you would a
       note kept on the same machine.
     </p>
     <HoldingsPanel currency={currency} />

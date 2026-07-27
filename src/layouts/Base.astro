@@ -205,6 +205,10 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
         // must not disagree about whether it exists.
         if (!stored) {
           holdingsEl.hidden = true;
+          // Blank it too: a hidden element still carrying the last figure is a
+          // copy of the reader's data left in the DOM after they cleared it.
+          holdingsValueEl.textContent = '';
+          holdingsPnlEl.textContent = '';
           return;
         }
         const result = valueHoldings(stored, headerLatest[pageCurrency], pageCurrency, headerLatest);

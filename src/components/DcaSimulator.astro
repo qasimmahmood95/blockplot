@@ -154,8 +154,17 @@ const payload = { code: meta.code, series: btcHistory.series };
     const muted = cssVar('--ink-muted');
     const dcaPoints = dca.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
     const lumpPoints = lumpSum.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
-    const simulated = [...dcaPoints, ...lumpPoints].map((p) => p.wealth);
-    const wealthDomain: [number, number] = [Math.min(...simulated, 0), Math.max(...simulated)];
+    // Reduce rather than spread: these arrays run to thousands of points, and
+    // Math.max(...arr) has an argument-count ceiling. The domain is the
+    // simulated lines' own extent — pinning it to zero would silently rescale
+    // a chart that is not part of this feature.
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const point of [...dcaPoints, ...lumpPoints]) {
+      if (point.wealth < lo) lo = point.wealth;
+      if (point.wealth > hi) hi = point.wealth;
+    }
+    const wealthDomain: [number, number] = [lo, hi];
 
     // The reader's own stack, if they entered one on /holdings, valued at a
     // constant BTC amount across the same window. It answers the question the
