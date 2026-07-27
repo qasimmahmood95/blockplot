@@ -7,7 +7,7 @@ import {
   SP500_FRED_SERIES,
 } from './benchmarks';
 import { fetchBtcMarketChart, PRICE_RANGE_DAYS } from './coingecko';
-import { buildCorrelationDataset, toSessionClose } from './correlation';
+import { buildCorrelationDataset, correlationBtcLeg } from './correlation';
 import {
   accreteDominance,
   fetchDominanceSnapshot,
@@ -176,17 +176,23 @@ for (const currency of CURRENCIES) {
   // and only then converted, so both legs of a GBP pair are priced at the same
   // day's rate and the FX term cancels between them. The committed history
   // stays 00:00-UTC dated, because every other metric aggregates one series.
-  const deepSession = history
-    ? convertSeries(toSessionClose(history), rates, currency)
-    : null;
+  const deepSession = history ? correlationBtcLeg(history, rates, currency) : null;
   // convertSeries drops days with no rate, so a rate floor later than the BTC
   // start would quietly give GBP a shorter history than USD — the heatmap and
   // cycle overlay would begin later with nothing anywhere saying why.
-  if (deep && history && deep.length !== history.length) {
-    throw new Error(
-      `convertSeries dropped ${history.length - deep.length} ${currency} days: ` +
-        `the FX floor ${FX_HISTORY_FROM} is later than the BTC start ${history[0]?.date}`,
-    );
+  // deepSession is checked too, not just deep: re-dating moves the BTC start a
+  // day earlier, so it consumes a day of the very headroom this guard exists
+  // to protect and would be the first of the two to lose history.
+  for (const [label, converted] of [
+    ['history', deep],
+    ['correlation input', deepSession],
+  ] as const) {
+    if (converted && history && converted.length !== history.length) {
+      throw new Error(
+        `${currency} ${label}: converting dropped ${history.length - converted.length} days — ` +
+          `the FX floor ${FX_HISTORY_FROM} is later than the BTC start ${history[0]?.date}`,
+      );
+    }
   }
   // Deep, for the correlation regimes; the 460d window below is what the risk
   // page and the benchmarks file need.
@@ -291,13 +297,13 @@ for (const currency of CURRENCIES) {
     await writeJson(`${dir}/risk-metrics.json`, risk);
     console.log(`${dir}/risk-metrics.json: as of ${risk.asOf}, max drawdown ${risk.drawdown.maxDrawdownPct}%`);
 
-    if (spAll && auAll && dxyAll) {
+    if (spAll && auAll && dxyAll && deepSession) {
       const toPoints = (rows: { date: string; close: number }[]) =>
         rows.map(({ date, close }) => ({ date, value: close }));
       const correlations = correlationDatasetSchema.parse({
         ...buildCorrelationDataset(
           {
-            btc: (deepSession ?? deep).map(({ date, price }) => ({ date, value: price })),
+            btc: deepSession,
             sp500: toPoints(spAll),
             gold: toPoints(auAll),
             dxy: toPoints(dxyAll),

@@ -269,7 +269,10 @@ describe('classifyRegimes: a label never contradicts its own mean', () => {
     expect(segments[0]).toMatchObject({ regime: 'positive', meanCorr: 1 });
   });
 
-  it('keeps every segment label consistent with its reported mean', () => {
+  it('agrees label with mean when no opening was absorbed', () => {
+    // Fixture-scoped, deliberately: regimes.ts documents that a confirmed
+    // regime whose later readings drift is still that regime, so this is not
+    // a general invariant and the name must not imply one.
     const series = points([0.9, 0.1, -0.6, -0.7, -0.8, -0.9, 0.0, 0.1, 0.2, 0.05]);
     for (const segment of classifyRegimes(series, { threshold: 0.25, confirmDays: 3 })) {
       expect(regimeOf(segment.meanCorr, 0.25)).toBe(segment.regime);

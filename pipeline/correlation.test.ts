@@ -3,11 +3,14 @@ import {
   CORRELATION_ASSETS,
   alignReturns,
   buildCorrelationDataset,
+  correlationBtcLeg,
   pearson,
   rollingCorrelation,
   toSessionClose,
 } from './correlation';
+import { convertBenchmark, convertSeries } from './fx';
 import { correlationDatasetSchema } from './schema';
+import type { SeriesPoint } from './risk';
 
 // Two calendars with a gap: y has no 2024-01-03, so the shared dates are
 // 01, 02, 04, 05 and the 02->04 return spans the gap. Expected values were
@@ -139,6 +142,73 @@ describe('buildCorrelationDataset', () => {
 
   it('produces output the on-disk schema accepts', () => {
     expect(() => correlationDatasetSchema.parse({ ...dataset, currency: 'usd' })).not.toThrow();
+  });
+});
+
+describe('correlationBtcLeg', () => {
+  // The order of these two operations was a live bug worth 0.16 of correlation
+  // against a 0.25 threshold, and it lived only in run.ts where no test ran it.
+  // The invariant: converting both legs of a pair at the same day's rate makes
+  // the FX term cancel, so the GBP-minus-USD return difference is identical on
+  // each leg. Converting before re-dating breaks that and nothing else notices.
+  const rates = [
+    { date: '2024-01-01', close: 1.2 },
+    { date: '2024-01-02', close: 1.25 },
+    { date: '2024-01-03', close: 1.22 },
+    { date: '2024-01-04', close: 1.3 },
+    { date: '2024-01-05', close: 1.27 },
+    { date: '2024-01-06', close: 1.24 },
+  ];
+  const history = [
+    { date: '2024-01-02', price: 42000 },
+    { date: '2024-01-03', price: 43500 },
+    { date: '2024-01-04', price: 41800 },
+    { date: '2024-01-05', price: 44100 },
+    { date: '2024-01-06', price: 45000 },
+  ];
+  const benchmark = [
+    { date: '2024-01-01', close: 4700 },
+    { date: '2024-01-02', close: 4750 },
+    { date: '2024-01-03', close: 4690 },
+    { date: '2024-01-04', close: 4810 },
+    { date: '2024-01-05', close: 4780 },
+  ];
+
+  const fxResidual = (btcGbp: SeriesPoint[], btcUsd: SeriesPoint[]): number => {
+    const gbp = alignReturns(btcGbp, pts(convertBenchmark(benchmark, rates, 'gbp')));
+    const usd = alignReturns(btcUsd, pts(convertBenchmark(benchmark, rates, 'usd')));
+    let worst = 0;
+    for (let i = 0; i < gbp.length; i++) {
+      const g = gbp[i];
+      const u = usd[i];
+      if (!g || !u) continue;
+      worst = Math.max(worst, Math.abs(g.ra - u.ra - (g.rb - u.rb)));
+    }
+    return worst;
+  };
+  const pts = (rows: { date: string; close: number }[]): SeriesPoint[] =>
+    rows.map(({ date, close }) => ({ date, value: close }));
+
+  it('re-dates before converting, so the FX term cancels between the legs', () => {
+    const usd = correlationBtcLeg(history, rates, 'usd');
+    const gbp = correlationBtcLeg(history, rates, 'gbp');
+    expect(fxResidual(gbp, usd)).toBeLessThan(1e-12);
+  });
+
+  it('is broken by converting first — the ordering this pins', () => {
+    // What run.ts used to do: convert, then re-date.
+    const wrong = (currency: 'usd' | 'gbp'): SeriesPoint[] =>
+      toSessionClose(convertSeries(history, rates, currency)).map(({ date, price }) => ({
+        date,
+        value: price,
+      }));
+    expect(fxResidual(wrong('gbp'), wrong('usd'))).toBeGreaterThan(1e-3);
+  });
+
+  it('leaves usd untouched apart from the re-dating', () => {
+    expect(correlationBtcLeg(history, rates, 'usd')).toEqual(
+      toSessionClose(history).map(({ date, price }) => ({ date, value: price })),
+    );
   });
 });
 

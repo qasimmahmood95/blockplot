@@ -1,4 +1,6 @@
+import { convertSeries } from './fx';
 import { classifyRegimes, REGIME_CONFIRM_DAYS, REGIME_THRESHOLD } from './regimes';
+import type { BenchmarkDay, Currency, DailyPrice } from './schema';
 import { trimToLastDays } from './series';
 import type { CorrelationDataset, CorrPoint, PairId } from './schema';
 import type { SeriesPoint } from './risk';
@@ -68,6 +70,25 @@ export function toSessionClose<T extends { date: string }>(series: T[]): T[] {
   return series.map((point) => ({
     ...point,
     date: new Date(Date.parse(`${point.date}T00:00:00Z`) - DAY_MS).toISOString().slice(0, 10),
+  }));
+}
+
+/**
+ * The BTC leg of a correlation, in one place so the order of operations is
+ * testable. Re-date first, convert second: conversion is itself a per-date
+ * join, so converting first leaves this leg carrying R(d) while a benchmark
+ * at the same label carries R(d−1), and the FX term stops cancelling between
+ * them. Swapping these two calls costs up to 0.16 of correlation against a
+ * 0.25 regime threshold, and would otherwise be invisible.
+ */
+export function correlationBtcLeg(
+  history: DailyPrice[],
+  rates: BenchmarkDay[],
+  currency: Currency,
+): SeriesPoint[] {
+  return convertSeries(toSessionClose(history), rates, currency).map(({ date, price }) => ({
+    date,
+    value: price,
   }));
 }
 
