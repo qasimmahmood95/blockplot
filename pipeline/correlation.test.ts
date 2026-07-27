@@ -110,9 +110,15 @@ describe('buildCorrelationDataset', () => {
     for (const pair of dataset.pairs) {
       expect(pair.regimes.length > 0).toBe(pair.series.length > 0);
       if (pair.series.length === 0) continue;
-      expect(pair.regimes[0]?.startDate).toBe(pair.series[0]?.date);
+      // Regimes are classified over full history, so a clipped pair's first
+      // segment may start before its shipped window — but never after it, and
+      // the last always ends with the series.
+      expect((pair.regimes[0]?.startDate ?? '') <= (pair.series[0]?.date ?? '')).toBe(true);
       expect(pair.regimes.at(-1)?.endDate).toBe(pair.series.at(-1)?.date);
-      expect(pair.regimes.reduce((n, r) => n + r.observations, 0)).toBe(pair.series.length);
+      if (pair.a === 'btc' || pair.b === 'btc') {
+        expect(pair.regimes[0]?.startDate).toBe(pair.series[0]?.date);
+        expect(pair.regimes.reduce((n, r) => n + r.observations, 0)).toBe(pair.series.length);
+      }
     }
     // Both fixture pairs sit at corr >= 0.25 throughout.
     expect(dataset.pairs.find((p) => p.pair === 'btc-gold')?.regimes).toEqual([

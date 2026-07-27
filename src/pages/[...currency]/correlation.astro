@@ -1,7 +1,7 @@
 ---
 import CorrelationChart from '../../components/CorrelationChart.astro';
 import Base from '../../layouts/Base.astro';
-import { dxyNote, fxNote, type Currency } from '../../lib/currency';
+import { dxyNote, fxNote, gbpDepthNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
 
@@ -13,12 +13,6 @@ import { formatRatio } from '../../lib/format';
 
 const { pairs, windowDays, minObs, regimeThreshold, regimeConfirmDays } = correlations;
 
-// The earliest date any pair reaches: what "full history" actually means here,
-// rather than a claim the data may not support.
-const firstCorrDate = pairs.reduce((min, p) => {
-  const first = p.series[0]?.date ?? '';
-  return first && (!min || first < min) ? first : min;
-}, '');
 
 // The honest freshness label: the last shared trading day any pair reaches
 // (correlations lag the BTC calendar over weekends and holidays).
@@ -104,16 +98,19 @@ const btcPairs = [
   </section>
 
   <section class="chart-section">
-    <h2>Rolling {windowDays}d correlation &amp; regimes · {firstCorrDate.slice(0, 4)}–{
-      lastCorrDate.slice(0, 4)
-    }</h2>
+    <h2>Rolling {windowDays}d correlation &amp; regimes · by pair</h2>
     <CorrelationChart currency={currency} />
     <p class="method-note">
       Pearson correlation of daily log returns over a trailing {windowDays}-calendar-day window,
       computed on each pair's shared trading days (a holiday or weekend in either series becomes
       one multi-day return); windows holding fewer than {minObs} shared returns are omitted. Each
-      pair runs as far back as its shallower source: FRED publishes the S&amp;P 500 as a rolling
-      ten years, so pairs against it stop there, while gold and the dollar index reach further.
+      pair with BTC in it runs as far back as its shallower source: FRED publishes the S&amp;P 500
+      as a rolling ten years, so pairs against it stop there, while gold and the dollar index
+      reach further. Pairs <em>without</em> BTC keep a 365-day window — they exist to fill the
+      matrix above, which reads one number from each, and at full depth they were more than half
+      the dataset. Their regimes are still classified over the whole history, so a row may report
+      a regime that began before the charted window and count observations the chart does not
+      show.{gbpDepthNote(currency)}
     </p>
     <p class="method-note">
       <strong>Regimes.</strong> A reading of |corr| ≥ {regimeThreshold} counts as co-moving or

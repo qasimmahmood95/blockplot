@@ -85,16 +85,25 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
   let active = pairs[0]?.pair ?? '';
 
   const pairLabel = (p: Pair): string => `${LABELS[p.a] ?? p.a} – ${LABELS[p.b] ?? p.b}`;
-  // Bands are drawn as rects spanning [start, end]; the end date is inclusive,
-  // so extend it by a day or the last observation sits outside its own band.
+  // Plot.rect treats x2 as exclusive, so a segment of one observation would be
+  // a zero-width rect. Extending the end by a day gives it the width of the
+  // day it covers; correlation dates strictly increase, so the extended edge
+  // never reaches the next segment's start.
   const dayAfter = (date: string): Date => new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000);
 
   function renderChart(pair: Pair): void {
     if (!container) return;
     const points = pair.series.map((p) => ({ date: new Date(p.date), corr: p.corr }));
+    // Pairs without BTC ship a window of a series classified over full
+    // history, so their first regime can legitimately have begun before the
+    // window opens. The table keeps that true start date — it is information,
+    // not an error — but the band is clamped, or Plot widens the x domain to
+    // a date the chart has no data for.
+    const first = pair.series[0]?.date ?? '';
     const bands = pair.regimes
       .map((r) => ({ ...r, fill: bandFill(r.regime) }))
-      .filter((r) => r.fill !== null);
+      .filter((r) => r.fill !== null)
+      .map((r) => ({ ...r, bandStart: r.startDate < first ? first : r.startDate }));
     container.replaceChildren(
       Plot.plot({
         width: container.clientWidth || 720,
@@ -104,7 +113,7 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
         y: { label: null, grid: true, domain: [-1, 1] },
         marks: [
           Plot.rect(bands, {
-            x1: (d: Segment) => new Date(d.startDate),
+            x1: (d: Segment & { bandStart: string }) => new Date(d.bandStart),
             x2: (d: Segment) => dayAfter(d.endDate),
             y1: -1,
             y2: 1,
@@ -200,11 +209,23 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
       }
       body.append(row);
     }
-    table.replaceChildren(head, body);
+    // Keep the server-rendered caption: it is the table's accessible name,
+    // and replaceChildren would drop it on the first render.
+    const caption = table.querySelector('caption');
+    table.replaceChildren(...(caption ? [caption, head, body] : [head, body]));
   }
 
+  const currentPair = (): Pair | undefined => pairs.find((p) => p.pair === active) ?? pairs[0];
+
+  /** Width-dependent only: this is what a resize needs to redo. */
   function render(): void {
-    const pair = pairs.find((p) => p.pair === active) ?? pairs[0];
+    const pair = currentPair();
+    if (pair) renderChart(pair);
+  }
+
+  /** Everything a pair change needs. The table and legend ignore width. */
+  function renderAll(): void {
+    const pair = currentPair();
     if (!pair) return;
     renderChart(pair);
     renderLegend();
@@ -223,12 +244,13 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
           toggle
             .querySelectorAll('button')
             .forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-          render();
+          renderAll();
         });
         return button;
       }),
     );
   }
 
+  renderAll();
   responsiveChart(render);
 </script>

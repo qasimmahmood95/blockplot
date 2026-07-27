@@ -191,6 +191,24 @@ for (const currency of CURRENCIES) {
   const sp = spAll ? recentWindow(spAll) : null;
   const au = auAll ? recentWindow(auAll) : null;
   const dxy = dxyAll ? recentWindow(dxyAll) : null;
+  // Unlike the BTC series, a benchmark reaching further back than the FX
+  // record is expected — gold quotes from 2004, the rates from 2009 — so this
+  // reports rather than throws. It still has to be visible: without it the GBP
+  // correlation view is years shorter than the USD one for no stated reason.
+  if (currency !== 'usd') {
+    for (const [label, converted, source] of [
+      ['sp500', spAll, sp500],
+      ['gold', auAll, goldFetch?.series],
+    ] as const) {
+      const dropped = (source?.length ?? 0) - (converted?.length ?? 0);
+      if (dropped > 0) {
+        console.log(
+          `${currency} ${label}: ${dropped} days before the FX record (${FX_HISTORY_FROM}) dropped; ` +
+            `its ${currency} correlations start at ${converted?.[0]?.date}`,
+        );
+      }
+    }
+  }
 
   if (spot) {
     const prices = priceDatasetSchema.parse({

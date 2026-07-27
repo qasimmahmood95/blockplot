@@ -28,7 +28,7 @@ currency, since the same key holds dollars at the root and pounds under
 | `risk-metrics.json` | Derived risk metrics: rolling 30/90/365d realized vol, drawdown curve, Sharpe/Sortino comparison vs S&P 500 and gold |
 | `halving-cycles.json` | Per-halving-epoch price series normalised to the halving-day close, for the cycle overlay |
 | `monthly-returns.json` | Month-over-month BTC returns from full history plus compounded yearly totals, for the heatmap |
-| `correlations.json` | Rolling 90d Pearson correlations of aligned daily log returns for all pairs of BTC, S&P 500, gold, DXY, over each pair's full shared history, plus its regime segmentation |
+| `correlations.json` | Rolling 90d Pearson correlations of aligned daily log returns for all pairs of BTC, S&P 500, gold, DXY, plus each pair's regime segmentation. Pairs with BTC carry full shared history; the other three keep 365 days |
 
 DXY is the one series never converted: it measures the dollar itself, so
 the GBP file carries it as quoted and the correlation page says so.
@@ -61,13 +61,17 @@ series is cut at 2009-01-01: FRED goes back to 1971, but BTC has no price
 before then, so earlier rates are permanently committed JSON that can never
 convert a close.
 
-`correlations.json` carries each pair's whole shared history rather than a
+`correlations.json` carries each BTC pair's whole shared history rather than a
 display window, because a 365-day view of a 90-day correlation holds barely
 three independent windows. Depth is set by the shallower source in each pair:
 FRED publishes `SP500` as a rolling ten years, so anything against the S&P 500
-stops there, while gold and DXY reach further. The full benchmark histories
-that produce it are **not** committed — they are an input, not something the
-site renders, and the correlations derived from them are the deliverable.
+stops there, while gold and DXY reach further. The three pairs *without* BTC
+keep 365 days — they exist to fill the correlation matrix, which reads one
+number from each, and at full depth they were more than half the file. Their
+regimes are still classified over full history, so a segment may start before
+the shipped window. The full benchmark histories that produce all of this are
+**not** committed — they are an input, not something the site renders, and the
+correlations derived from them are the deliverable.
 
 FX markets close at weekends and on bank holidays while BTC trades every
 day, so the last quote is **carried forward** — the standard convention, and

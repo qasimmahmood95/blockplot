@@ -1,4 +1,5 @@
 import { classifyRegimes, REGIME_CONFIRM_DAYS, REGIME_THRESHOLD } from './regimes';
+import { trimToLastDays } from './series';
 import type { CorrelationDataset, CorrPoint, PairId } from './schema';
 import type { SeriesPoint } from './risk';
 
@@ -8,6 +9,19 @@ export const CORRELATION_ASSETS = ['btc', 'sp500', 'gold', 'dxy'] as const;
 /** Rolling correlation window (calendar days) and the minimum aligned returns it must hold. */
 export const CORRELATION_WINDOW_DAYS = 90;
 export const CORRELATION_MIN_OBS = 40;
+
+/**
+ * How much history a pair without BTC in it keeps.
+ *
+ * This is a Bitcoin site: the deep view exists to show how BTC's relationship
+ * with each benchmark has moved. S&P 500 vs gold vs DXY are carried only to
+ * fill the correlation matrix, which reads one number from each — and at full
+ * depth those three pairs were more than half of the dataset (gold–DXY alone
+ * reaches 2004, further back than BTC exists). They keep a window instead, so
+ * the matrix is still exact and the page is not carrying megabytes of
+ * inter-benchmark history nobody opened.
+ */
+export const NON_BTC_KEEP_DAYS = 365;
 
 const DAY_MS = 86_400_000;
 
@@ -95,7 +109,9 @@ export function rollingCorrelation(
     const end = aligned[i];
     if (!end) continue;
     const cutoff = dateMinusDays(end.date, windowDays);
-    while (start <= i && (aligned[start]?.date ?? '') <= cutoff) start += 1;
+    while (start <= i && aligned[start] !== undefined && (aligned[start] as AlignedReturn).date <= cutoff) {
+      start += 1;
+    }
     const window = aligned.slice(start, i + 1);
     if (window.length < minObs) continue;
     const corr = pearson(
@@ -113,11 +129,12 @@ export function rollingCorrelation(
  * list, rolling correlation over each pair's whole shared history, with the
  * regime segmentation that history supports.
  *
- * No display clipping. A 365-day view of a 90-day correlation shows barely
- * three independent windows — enough to read today's number, not enough to
- * see that BTC decoupled from gold for two years. The pairs reach as far back
- * as their shallower source: ten years for anything against the S&P 500
- * (FRED's SP500 is a rolling decade), further for gold and DXY.
+ * Pairs containing BTC carry their whole shared history: a 365-day view of a
+ * 90-day correlation shows barely three independent windows — enough to read
+ * today's number, not enough to see that BTC decoupled from gold for two
+ * years. They reach as far back as their shallower source: ten years for
+ * BTC–S&P 500 (FRED's SP500 is a rolling decade), further for gold and DXY.
+ * Pairs without BTC keep a window instead — see NON_BTC_KEEP_DAYS.
  */
 export function buildCorrelationDataset(
   series: Record<(typeof CORRELATION_ASSETS)[number], SeriesPoint[]>,
@@ -128,28 +145,37 @@ export function buildCorrelationDataset(
     minObs?: number;
     regimeThreshold?: number;
     regimeConfirmDays?: number;
+    nonBtcKeepDays?: number;
   },
 ): Omit<CorrelationDataset, 'currency'> {
   const windowDays = opts.windowDays ?? CORRELATION_WINDOW_DAYS;
   const minObs = opts.minObs ?? CORRELATION_MIN_OBS;
   const regimeThreshold = opts.regimeThreshold ?? REGIME_THRESHOLD;
   const regimeConfirmDays = opts.regimeConfirmDays ?? REGIME_CONFIRM_DAYS;
+  const nonBtcKeepDays = opts.nonBtcKeepDays ?? NON_BTC_KEEP_DAYS;
   const pairs: CorrelationDataset['pairs'] = [];
   for (let i = 0; i < CORRELATION_ASSETS.length; i++) {
     for (let j = i + 1; j < CORRELATION_ASSETS.length; j++) {
       const a = CORRELATION_ASSETS[i];
       const b = CORRELATION_ASSETS[j];
       if (!a || !b) continue;
-      const corrSeries = rollingCorrelation(series[a], series[b], windowDays, minObs);
+      const full = rollingCorrelation(series[a], series[b], windowDays, minObs);
+      // Regimes are classified on the full series first: segmenting a clipped
+      // one would date the opening regime at the clip rather than at the
+      // change, and the clipped pairs are exactly where that would show.
+      const regimes = classifyRegimes(full, {
+        threshold: regimeThreshold,
+        confirmDays: regimeConfirmDays,
+      });
+      const deep = a === 'btc' || b === 'btc';
+      const corrSeries = deep ? full : trimToLastDays(full, nonBtcKeepDays);
+      const from = corrSeries[0]?.date ?? '';
       pairs.push({
         pair: `${a}-${b}` as PairId,
         a,
         b,
         series: corrSeries,
-        regimes: classifyRegimes(corrSeries, {
-          threshold: regimeThreshold,
-          confirmDays: regimeConfirmDays,
-        }),
+        regimes: regimes.filter((r) => r.endDate >= from),
       });
     }
   }

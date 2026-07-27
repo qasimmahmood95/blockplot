@@ -66,13 +66,28 @@ describe('parseYahooChart', () => {
         },
       }),
     ).toThrow('length mismatch');
+    // A single non-positive bar is skipped, not fatal: at range=max these
+    // series reach the 1980s, where one stray bar must not cost the whole
+    // benchmark. A response of nothing but bad bars still throws, below.
+    expect(
+      parseYahooChart({
+        chart: {
+          result: [
+            {
+              timestamp: [1709251200, 1709337600],
+              indicators: { quote: [{ close: [-1, 2050] }] },
+            },
+          ],
+        },
+      }),
+    ).toEqual([{ date: '2024-03-02', close: 2050 }]);
     expect(() =>
       parseYahooChart({
         chart: {
           result: [{ timestamp: [1709251200], indicators: { quote: [{ close: [-1] }] } }],
         },
       }),
-    ).toThrow('bad close');
+    ).toThrow('no data rows');
     expect(() =>
       parseYahooChart({
         chart: { result: [{ timestamp: [], indicators: { quote: [{ close: [] }] } }] },

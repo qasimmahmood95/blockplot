@@ -14,6 +14,9 @@ import type { CorrPoint, Regime, RegimeSegment } from './schema';
  * final CONFIRM_DAYS − 1 observations of a series cannot yet start a regime,
  * which is the honest position — a fortnight of data cannot tell you a regime
  * has turned.
+ *
+ * The opening span is the one place confirmation has nothing to work with;
+ * see the note at the end of classifyRegimes for how it is handled.
  */
 
 /**
@@ -62,22 +65,12 @@ export function classifyRegimes(
   const first = series[0];
   if (!first) return [];
 
-  const segments: RegimeSegment[] = [];
+  // Collected as index spans, then materialised: the leading span needs
+  // adjusting once the rest are known (see below), which is fiddly to do
+  // against already-formatted dates.
+  const spans: { regime: Regime; startIdx: number; endIdx: number }[] = [];
   const emit = (regime: Regime, startIdx: number, endIdx: number): void => {
-    const start = series[startIdx];
-    const end = series[endIdx];
-    if (!start || !end) return;
-    let sum = 0;
-    for (let i = startIdx; i <= endIdx; i++) sum += series[i]?.corr ?? 0;
-    const observations = endIdx - startIdx + 1;
-    segments.push({
-      regime,
-      startDate: start.date,
-      endDate: end.date,
-      observations,
-      days: daysBetween(start.date, end.date),
-      meanCorr: round2(sum / observations),
-    });
+    if (endIdx >= startIdx) spans.push({ regime, startIdx, endIdx });
   };
 
   let current = regimeOf(first.corr, threshold);
@@ -114,5 +107,43 @@ export function classifyRegimes(
     }
   }
   emit(current, segmentStart, series.length - 1);
-  return segments;
+
+  /*
+   * The opening regime is the one case confirmation cannot reach: at the first
+   * reading there is no history to confirm against, so it was being taken from
+   * that single reading — which reintroduces exactly the one-day regime the
+   * hysteresis exists to prevent (a series opening 0.26 then sitting inside
+   * the band produced a one-day "co-moving" segment).
+   *
+   * Every interior span is at least confirmDays long by construction: a span
+   * opens at the first of the confirmDays readings that confirmed it, and the
+   * next switch needs confirmDays further readings after those. So a short
+   * span can only be the leading one, and it is not a regime change at all —
+   * it is where the data starts. Absorbing it into the span that follows says
+   * the honest thing: by the time this series begins, that was already the
+   * regime. A lone short span has nothing to absorb into and stands as is,
+   * with `observations` on the page to show how little is behind it.
+   */
+  const lead = spans[0];
+  const next = spans[1];
+  if (lead && next && lead.endIdx - lead.startIdx + 1 < confirmDays) {
+    next.startIdx = lead.startIdx;
+    spans.shift();
+  }
+
+  return spans.map(({ regime, startIdx, endIdx }) => {
+    const start = series[startIdx] as CorrPoint;
+    const end = series[endIdx] as CorrPoint;
+    let sum = 0;
+    for (let i = startIdx; i <= endIdx; i++) sum += series[i]?.corr ?? 0;
+    const observations = endIdx - startIdx + 1;
+    return {
+      regime,
+      startDate: start.date,
+      endDate: end.date,
+      observations,
+      days: daysBetween(start.date, end.date),
+      meanCorr: round2(sum / observations),
+    };
+  });
 }
