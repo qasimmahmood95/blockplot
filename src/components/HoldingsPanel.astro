@@ -1,0 +1,285 @@
+---
+import { CURRENCY_META, type Currency } from '../lib/currency';
+import { dataFor } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
+
+interface Props {
+  currency: Currency;
+}
+
+const { currency } = Astro.props;
+const { btcDaily, btcHistory } = dataFor(currency);
+const meta = CURRENCY_META[currency];
+
+/**
+ * The other currency's latest close travels with the payload so a cost basis
+ * entered in one currency can be shown in the other: the ratio of the two is
+ * the implied rate, and no other source is needed for it.
+ */
+const other = currency === 'usd' ? 'gbp' : 'usd';
+const payload = {
+  currency,
+  code: meta.code,
+  latest: {
+    [currency]: btcDaily.stats.latestPrice,
+    [other]: dataFor(other).btcDaily.stats.latestPrice,
+  },
+  latestDate: btcDaily.stats.latestDate,
+  series: btcHistory.series,
+};
+---
+
+<script is:inline type="application/json" id="holdings-data" set:html={toJsonScript(payload)} />
+
+<form class="sim-form" id="holdings-form">
+  <label>
+    <span>BTC held</span>
+    <input type="number" name="btc" min="0" step="0.00000001" placeholder="0.25" />
+  </label>
+  <label>
+    <span>Total paid ({meta.symbol}, optional)</span>
+    <input type="number" name="cost" min="0" step="0.01" placeholder="—" />
+  </label>
+</form>
+
+<p class="holdings-actions">
+  <button type="button" class="theme-toggle num" id="holdings-clear">forget my holdings</button>
+  <span class="holdings-status num" id="holdings-status" aria-live="polite"></span>
+</p>
+
+<dl class="stat-grid" id="holdings-stats" aria-live="polite"></dl>
+
+<section class="chart-section" id="holdings-chart-section" hidden>
+  <h2>What that stack has been worth</h2>
+  <figure class="chart-frame">
+    <div
+      id="holdings-chart"
+      role="img"
+      aria-label="Line chart of the value of the entered BTC amount at each historical daily close"
+    >
+    </div>
+  </figure>
+  <p class="method-note" id="holdings-chart-note"></p>
+</section>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import { holdingsSeries, valueHoldings, type Holdings } from '../../pipeline/holdings';
+  import type { Currency } from '../../pipeline/schema';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import {
+    clearHoldings,
+    HOLDINGS_EVENT,
+    readHoldings,
+    writeHoldings,
+  } from '../lib/holdings-store';
+
+  const data = chartData<{
+    currency: Currency;
+    code: string;
+    latest: Record<Currency, number>;
+    latestDate: string;
+    series: { date: string; price: number }[];
+  }>('holdings-data');
+
+  const form = document.getElementById('holdings-form') as HTMLFormElement | null;
+  const stats = document.getElementById('holdings-stats');
+  const status = document.getElementById('holdings-status');
+  const clearButton = document.getElementById('holdings-clear');
+  const chartSection = document.getElementById('holdings-chart-section');
+  const container = document.getElementById('holdings-chart');
+  const chartNote = document.getElementById('holdings-chart-note');
+
+  const money = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: data.code,
+    maximumFractionDigits: 0,
+  });
+  const exact = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: data.code,
+    maximumFractionDigits: 2,
+  });
+  const signedPct = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+
+  /**
+   * What the form currently says, or null when there is nothing to value.
+   *
+   * The cost field is labelled in this page's currency, so a cost entered on
+   * the other route leaves it blank. Blank therefore means "nothing entered in
+   * this currency" rather than "no cost basis", and the stored figure carries
+   * over — shown converted, and flagged as converted. Typing a figure here
+   * replaces it with one denominated in this currency.
+   */
+  function formHoldings(): Holdings | null {
+    if (!form) return null;
+    const raw = new FormData(form);
+    const btcRaw = String(raw.get('btc') ?? '').trim();
+    const btc = Number(btcRaw);
+    if (btcRaw === '' || !Number.isFinite(btc) || btc < 0) return null;
+    const costRaw = String(raw.get('cost') ?? '').trim();
+    if (costRaw === '') {
+      const stored = readHoldings();
+      const carried =
+        stored && stored.cost !== null && stored.costCurrency !== data.currency
+          ? { cost: stored.cost, costCurrency: stored.costCurrency }
+          : { cost: null, costCurrency: data.currency };
+      return { btc, ...carried };
+    }
+    const cost = Number(costRaw);
+    if (!Number.isFinite(cost) || cost < 0) return null;
+    return { btc, cost, costCurrency: data.currency };
+  }
+
+  function tile(label: string, value: string, sub: string, tone = ''): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'stat';
+    const dt = document.createElement('dt');
+    dt.textContent = label;
+    const dd = document.createElement('dd');
+    dd.className = `num ${tone}`.trim();
+    dd.textContent = value;
+    const ddSub = document.createElement('dd');
+    ddSub.className = 'sub num';
+    ddSub.textContent = sub;
+    wrap.append(dt, dd, ddSub);
+    return wrap;
+  }
+
+  function renderChart(btc: number): void {
+    if (!container || !chartSection || !chartNote) return;
+    if (btc <= 0) {
+      chartSection.hidden = true;
+      return;
+    }
+    chartSection.hidden = false;
+    const points = holdingsSeries(data.series, btc).map((p) => ({
+      date: new Date(p.date),
+      value: p.value,
+    }));
+    chartNote.textContent =
+      `${btc} BTC valued at every daily close since ${data.series[0]?.date}. This holds the amount ` +
+      'constant — the site does not know when any of it was bought, so this is what this much BTC ' +
+      'was worth, not a reconstruction of a position. Prices are blockchain.com daily closes.';
+    container.replaceChildren(
+      Plot.plot({
+        width: container.clientWidth || 720,
+        height: 300,
+        marginLeft: 70,
+        x: { label: null },
+        y: { label: null, grid: true, type: 'log', tickFormat: (v: number) => money.format(v) },
+        marks: [
+          Plot.lineY(points, {
+            x: 'date',
+            y: 'value',
+            stroke: cssVar('--accent'),
+            strokeWidth: 1.5,
+          }),
+          Plot.tip(
+            points,
+            Plot.pointerX({
+              x: 'date',
+              y: 'value',
+              title: (d: { date: Date; value: number }) =>
+                `${d.date.toISOString().slice(0, 10)}\n${money.format(d.value)}`,
+            }),
+          ),
+        ],
+        style: {
+          background: 'transparent',
+          color: cssVar('--ink-muted'),
+          fontFamily: cssVar('--font-mono'),
+          fontSize: '11px',
+        },
+      }),
+    );
+  }
+
+  function render(): void {
+    if (!stats) return;
+    const holdings = formHoldings();
+    if (!holdings) {
+      stats.replaceChildren();
+      if (chartSection) chartSection.hidden = true;
+      if (status) status.textContent = '';
+      return;
+    }
+    const result = valueHoldings(
+      holdings,
+      data.latest[data.currency] as number,
+      data.currency,
+      data.latest,
+    );
+    const tiles = [
+      tile(
+        'Value',
+        money.format(result.value),
+        `${holdings.btc} BTC · close ${data.latestDate}`,
+      ),
+    ];
+    if (result.pnl !== null && result.cost !== null) {
+      const tone = result.pnl < 0 ? 'down' : 'up';
+      tiles.push(
+        tile(
+          'Profit / loss',
+          money.format(result.pnl),
+          result.pnlPct === null ? 'no cost to compare' : signedPct(result.pnlPct),
+          tone,
+        ),
+        tile(
+          'Cost',
+          money.format(result.cost),
+          result.costConverted ? 'converted at today’s rate' : 'as entered',
+        ),
+      );
+      if (result.avgEntry !== null) {
+        tiles.push(tile('Average entry', exact.format(result.avgEntry), 'per BTC'));
+      }
+    }
+    stats.replaceChildren(...tiles);
+    renderChart(holdings.btc);
+  }
+
+  /** Persist, then re-render every holdings-aware island on the page. */
+  function save(): void {
+    const holdings = formHoldings();
+    if (holdings) writeHoldings(holdings);
+    if (status) status.textContent = holdings ? 'saved in this browser' : '';
+  }
+
+  function load(): void {
+    const stored = readHoldings();
+    if (!form || !stored) return;
+    const btcInput = form.elements.namedItem('btc') as HTMLInputElement | null;
+    const costInput = form.elements.namedItem('cost') as HTMLInputElement | null;
+    if (btcInput) btcInput.value = String(stored.btc);
+    // A cost entered in the other currency is shown converted in the stats but
+    // left out of the field, which is labelled in this page's currency.
+    if (costInput && stored.cost !== null && stored.costCurrency === data.currency) {
+      costInput.value = String(stored.cost);
+    }
+    if (status) status.textContent = 'loaded from this browser';
+  }
+
+  form?.addEventListener('input', () => {
+    save();
+    render();
+  });
+
+  clearButton?.addEventListener('click', () => {
+    clearHoldings();
+    form?.reset();
+    if (status) status.textContent = 'cleared';
+    render();
+  });
+
+  // Another island on the page (the header tile) can change the stored value.
+  window.addEventListener(HOLDINGS_EVENT, () => {
+    if (document.activeElement?.closest('#holdings-form')) return;
+    load();
+    render();
+  });
+
+  load();
+  responsiveChart(render);
+</script>

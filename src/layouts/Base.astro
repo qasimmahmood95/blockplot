@@ -12,6 +12,7 @@ import {
   type Currency,
 } from '../lib/currency';
 import { dataFor } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
 import { PAGES, pageForPath } from '../lib/routes';
 
 interface Props {
@@ -43,6 +44,13 @@ const currencyLinks = CURRENCIES.map((c) => ({
 }));
 const current = (href: string): boolean =>
   Astro.url.pathname.replace(/\/$/, '') === href.replace(/\/$/, '');
+
+// Both currencies' latest closes: the header tile values a cost basis entered
+// in either, and their ratio is the implied rate that makes that possible.
+const latestJson = toJsonScript({
+  usd: dataFor('usd').btcDaily.stats.latestPrice,
+  gbp: dataFor('gbp').btcDaily.stats.latestPrice,
+});
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(`${base}/og.png`, Astro.site);
@@ -102,6 +110,12 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
           BTC <span id="tick-price">{money.format(stats.latestPrice)}</span>{' '}
           <span class="tick-date" id="tick-label">close {stats.latestDate}</span>
         </p>
+        <p class="header-tick header-holdings num" id="header-holdings" hidden>
+          <a href={currencyPath(base, currency, 'holdings')}>
+            <span id="header-holdings-value"></span>{' '}
+            <span class="tick-date" id="header-holdings-pnl"></span>
+          </a>
+        </p>
         <nav class="currency-switch num" aria-label="Currency">
           {
             currencyLinks.map(({ code, href, active }) => (
@@ -127,7 +141,23 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
       <p><a href="https://github.com/qasimmahmood95/blockplot">source &amp; methodology</a></p>
     </footer>
 
+    <script is:inline type="application/json" id="header-latest" set:html={latestJson} />
     <script>
+      import { valueHoldings } from '../../pipeline/holdings';
+      import type { Currency } from '../../pipeline/schema';
+      import { chartData } from '../lib/charts';
+      import { HOLDINGS_EVENT, readHoldings } from '../lib/holdings-store';
+
+      const headerLatest = chartData<Record<Currency, number>>('header-latest');
+      const pageCurrency = (document.documentElement.dataset.currency ?? 'usd') as Currency;
+      // Declared here because both the holdings tile and the live ticker format
+      // with it, and the tile renders first.
+      const money = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: pageCurrency.toUpperCase(),
+        maximumFractionDigits: 0,
+      });
+
       // Theme toggle: auto (OS preference) -> dark -> light, persisted.
       const root = document.documentElement;
       const button = document.getElementById('theme-toggle');
@@ -160,18 +190,37 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
         });
       }
 
+      // Holdings tile: reads what the reader entered on /holdings and values it
+      // at the committed close. Hidden entirely when nothing is stored, so this
+      // is invisible to anyone who never uses the feature.
+      const holdingsEl = document.getElementById('header-holdings');
+      const holdingsValueEl = document.getElementById('header-holdings-value');
+      const holdingsPnlEl = document.getElementById('header-holdings-pnl');
+
+      function renderHoldings(): void {
+        if (!holdingsEl || !holdingsValueEl || !holdingsPnlEl) return;
+        const stored = readHoldings();
+        if (!stored || stored.btc <= 0) {
+          holdingsEl.hidden = true;
+          return;
+        }
+        const result = valueHoldings(stored, headerLatest[pageCurrency], pageCurrency, headerLatest);
+        holdingsEl.hidden = false;
+        holdingsValueEl.textContent = money.format(result.value);
+        holdingsPnlEl.textContent =
+          result.pnlPct === null ? 'holdings' : `${result.pnlPct >= 0 ? '+' : ''}${result.pnlPct.toFixed(1)}%`;
+        holdingsPnlEl.className = `tick-date ${result.pnlPct === null ? '' : result.pnlPct < 0 ? 'down' : 'up'}`.trim();
+      }
+      renderHoldings();
+      window.addEventListener(HOLDINGS_EVENT, renderHoldings);
+
       // Live spot ticker: one of the site's two sanctioned runtime fetches.
       // CoinGecko's simple-price endpoint is queried in the page's currency,
       // so the live upgrade works on both; the committed close stays as the
       // fallback when it fails.
-      const tickCurrency = document.documentElement.dataset.currency ?? 'usd';
+      const tickCurrency = pageCurrency;
       const priceEl = document.getElementById('tick-price');
       const labelEl = document.getElementById('tick-label');
-      const money = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: tickCurrency.toUpperCase(),
-        maximumFractionDigits: 0,
-      });
       async function refreshTicker(): Promise<void> {
         if (document.hidden || !priceEl || !labelEl) return;
         try {

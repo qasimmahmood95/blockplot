@@ -36,11 +36,18 @@ and never gitignored.
 ## Architecture invariants
 
 - Astro + TypeScript strict; static output only. Client islands only for
-  interactive charts, the DCA simulator, the live header ticker, and the
+  interactive charts, the DCA simulator, the live header ticker, the
   network page's fee tiers (added in M8: fees move on a ~10-minute
   timescale, so a 6-hourly committed value would be stale on arrival; the
   committed snapshot renders and the island upgrades it, falling back on
-  failure — the same pattern as the ticker).
+  failure — the same pattern as the ticker), and the holdings panel and its
+  header tile (added in M12: the input is the reader's own and is held in
+  `localStorage`, so it cannot be baked at build time — this is the one
+  island class whose state is personal rather than derived from `/data`).
+- Reader-entered data stays in the browser. It is written to `localStorage`,
+  never transmitted, and never committed; the site is static and has no
+  server, account, or analytics to receive it. Any feature that would send
+  it anywhere requires amending this rule in the same PR.
 - The site builds purely from `/data` (pipeline-committed, zod-validated,
   versioned JSON). Exactly two runtime fetches are sanctioned, both of which
   render a committed value first and upgrade it on success: the header ticker

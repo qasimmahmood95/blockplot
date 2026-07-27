@@ -9,6 +9,7 @@ export const PAGES = [
   { page: 'dca', label: 'dca' },
   { page: 'flows', label: 'flows' },
   { page: 'network', label: 'network' },
+  { page: 'holdings', label: 'holdings' },
 ] as const;
 
 /**

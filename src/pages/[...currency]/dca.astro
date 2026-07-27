@@ -1,7 +1,7 @@
 ---
 import DcaSimulator from '../../components/DcaSimulator.astro';
 import Base from '../../layouts/Base.astro';
-import { fxNote, type Currency } from '../../lib/currency';
+import { currencyPath, fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
 
@@ -9,6 +9,7 @@ export const getStaticPaths = currencyPaths;
 
 const { currency } = Astro.props as { currency: Currency };
 const asOf = dataFor(currency).btcHistory.series.at(-1)?.date;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <Base
@@ -30,7 +31,10 @@ const asOf = dataFor(currency).btcHistory.series.at(-1)?.date;
       strategies start from the same budget and the comparison is like-for-like. Prices are
       blockchain.com daily closes through {asOf}; the simulation runs entirely in
       the browser on the committed dataset with the same fixture-tested functions as the pipeline,
-      and ignores taxes, slippage, and yield on idle cash.{fxNote(currency)}
+      and ignores taxes, slippage, and yield on idle cash. If you have entered holdings on the
+      <a href={currencyPath(base, currency, 'holdings')}>holdings</a> page, a third line shows that
+      BTC amount valued across the same window — held constant, since the site does not know when
+      any of it was bought.{fxNote(currency)}
     </p>
   </section>
 </Base>

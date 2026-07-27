@@ -5,7 +5,7 @@ pipeline fetches market data, validates it with zod, derives every metric in
 tested pure TypeScript, and commits versioned JSON to `/data`; Astro builds
 the site from that dataset alone, charted with Observable Plot.
 
-**Status:** Phase 1 (M0–M6) shipped; Phase 2 in progress (M7–M11 done, M12–M14 planned).
+**Status:** Phase 1 (M0–M6) shipped; Phase 2 in progress (M7–M12 done, M13–M14 planned).
 [PLAN.md](PLAN.md) holds the milestone plan, [CLAUDE.md](CLAUDE.md) the
 development rules.
 
@@ -31,7 +31,11 @@ src/        Astro site; builds exclusively from /data
   on-disk dataset with zod, and commits as `github-actions[bot]`.
 - **Client islands only where interactivity demands them**: the charts, the
   DCA simulator (which runs the pipeline's own fixture-tested functions in
-  the browser), the live ticker, and the fee tiers.
+  the browser), the live ticker, the fee tiers, and the holdings panel.
+- **Reader-entered holdings stay in the browser.** The one piece of personal
+  data the site accepts is written to `localStorage` and read back by the
+  page. It is never transmitted — there is no server, account, or analytics
+  to receive it.
 - **Two display currencies, USD and GBP.** USD pages live at the root, GBP
   under `/gbp/`, with a header switcher that holds your place on the page.
   GBP is a re-denomination, not a relabelling — see below.
@@ -94,6 +98,13 @@ fixed fixtures with exact, independently derived expected values.
   clamping, undeployed cash counted toward wealth so an equal-budget lump sum
   from the same start date compares like-for-like; ignores taxes, slippage,
   and yield on idle cash.
+- **Holdings**: value at the latest committed close, profit and loss against
+  the total entered — a simple return on money in, ignoring fees already
+  paid, taxes, and anything since sold. A cost entered in the other currency
+  is converted at the rate implied by the two latest closes (the same BTC
+  priced in each), which is today's rate rather than the one paid. The
+  history line holds the BTC amount constant, since the purchase dates are
+  not known and inventing them would be worse than saying so.
 - **GBP re-denomination**: each daily close is divided by *that day's*
   GBP/USD rate and every metric recomputed from the converted series — a
   GBP holder's drawdown, volatility and monthly returns genuinely differ

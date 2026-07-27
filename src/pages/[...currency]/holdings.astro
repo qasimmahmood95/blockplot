@@ -1,0 +1,41 @@
+---
+import HoldingsPanel from '../../components/HoldingsPanel.astro';
+import Base from '../../layouts/Base.astro';
+import { fxNote, type Currency } from '../../lib/currency';
+import { currencyPaths } from '../../lib/routes';
+
+export const getStaticPaths = currencyPaths;
+
+const { currency } = Astro.props as { currency: Currency };
+---
+
+<Base
+  currency={currency}
+  title="blockplot · holdings"
+  description="Value your own BTC against the committed dataset. Stored only in your browser — the site is static and has no server to send it to."
+>
+  <h1 class="visually-hidden">Holdings</h1>
+
+  <section class="chart-section">
+    <h2>Your holdings · stored only in this browser</h2>
+    <p class="method-note privacy-note">
+      <strong>This stays on your device.</strong> What you enter is written to this browser's
+      <code>localStorage</code> and read back by this page. It is never transmitted: blockplot is a
+      static site with no server, no account, and no analytics, so there is nowhere for it to go
+      even in principle — the only network request any page makes is for the live BTC price, which
+      sends nothing but the request itself. Clearing your browser data, or the button below,
+      removes it. Anyone with access to this browser profile can read it, so treat it as you would
+      a note kept on the same machine.
+    </p>
+    <HoldingsPanel currency={currency} />
+    <p class="method-note">
+      Value is your BTC at the latest committed daily close, not a live price — the header ticker
+      is the live figure. Profit and loss compare that value against the total you entered, so it
+      is a simple return on money in, ignoring fees you have already paid, taxes, and anything you
+      have since sold. A cost entered in the other currency is converted at the rate implied by
+      today's two closes, which is today's rate rather than the one you actually paid.{
+        fxNote(currency)
+      }
+    </p>
+  </section>
+</Base>
