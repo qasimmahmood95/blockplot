@@ -75,14 +75,9 @@ describe('rollingCorrelation', () => {
 });
 
 describe('buildCorrelationDataset', () => {
-  // btc arrives 00:00-UTC dated and is re-dated onto the session it closes, so
-  // pass it a day later than the benchmarks: after the correction it is x, and
-  // btc-gold is again x against itself.
-  const xSnapshot = x.map(({ date, value }) => ({
-    date: new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10),
-    value,
-  }));
-  const series = { btc: xSnapshot, sp500: y, gold: x, dxy: y };
+  // Every leg arrives already session-close dated — the caller owns the BTC
+  // re-dating — so btc-gold is x against itself.
+  const series = { btc: x, sp500: y, gold: x, dxy: y };
   const dataset = buildCorrelationDataset(series, {
     fetchedAt: '2024-01-05T12:00:00.000Z',
     asOf: '2024-01-05',
@@ -133,6 +128,7 @@ describe('buildCorrelationDataset', () => {
       {
         regime: 'positive',
         startDate: '2024-01-04',
+        confirmedFrom: '2024-01-04',
         endDate: '2024-01-05',
         observations: 2,
         days: 2,

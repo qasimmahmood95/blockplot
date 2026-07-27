@@ -33,6 +33,7 @@ describe('classifyRegimes', () => {
       {
         regime: 'positive',
         startDate: '2024-01-01',
+        confirmedFrom: '2024-01-01',
         endDate: '2024-01-03',
         observations: 3,
         days: 3,
@@ -53,6 +54,7 @@ describe('classifyRegimes', () => {
       {
         regime: 'neutral',
         startDate: '2024-01-01',
+        confirmedFrom: '2024-01-01',
         endDate: '2024-01-03',
         observations: 3,
         days: 3,
@@ -61,6 +63,7 @@ describe('classifyRegimes', () => {
       {
         regime: 'positive',
         startDate: '2024-01-04',
+        confirmedFrom: '2024-01-04',
         endDate: '2024-01-09',
         observations: 6,
         days: 6,
@@ -69,6 +72,7 @@ describe('classifyRegimes', () => {
       {
         regime: 'neutral',
         startDate: '2024-01-10',
+        confirmedFrom: '2024-01-10',
         endDate: '2024-01-13',
         observations: 4,
         days: 4,
@@ -79,11 +83,23 @@ describe('classifyRegimes', () => {
 
   it('breaks a candidate run on a single reading back in the incumbent regime', () => {
     // Two positives, one neutral, two positives: never three consecutive, so
-    // no switch is ever confirmed and the series stays one segment.
+    // no switch is confirmed and the series stays one segment.
     const series = points([0.0, 0.3, 0.4, 0.1, 0.3, 0.0]);
     const segments = classifyRegimes(series, { threshold: 0.25, confirmDays: 3 });
     expect(segments).toHaveLength(1);
     expect(segments[0]?.regime).toBe('neutral');
+  });
+
+  it('breaks the run even when the incumbent is confirmed and the mean is high', () => {
+    // The assertion above turns partly on the mean, since nothing is confirmed
+    // there. Here the neutral opening IS confirmed, so the only thing keeping
+    // the series in one segment is the broken candidate run — and the mean
+    // sits well inside positive territory, which must not matter.
+    const series = points([...Array<number>(3).fill(0.0), 0.9, 0.9, 0.1, 0.9, 0.9, 0.1, 0.9, 0.9]);
+    const segments = classifyRegimes(series, { threshold: 0.25, confirmDays: 3 });
+    expect(segments).toHaveLength(1);
+    expect(segments[0]?.regime).toBe('neutral');
+    expect(segments[0]?.meanCorr).toBeGreaterThan(0.25);
   });
 
   it('carries a negative regime and its inclusive calendar span', () => {
@@ -92,6 +108,7 @@ describe('classifyRegimes', () => {
       {
         regime: 'negative',
         startDate: '2024-01-01',
+        confirmedFrom: '2024-01-01',
         endDate: '2024-01-03',
         observations: 3,
         days: 3,
@@ -129,12 +146,19 @@ describe('classifyRegimes', () => {
   });
 
   it('absorbs an unconfirmed opening even when it is long enough to stand', () => {
-    // Length is not confirmation: this opening runs 10 readings but only its
-    // first is neutral, so it was never confirmed and belongs to what follows.
-    const series = points([0.0, ...Array<number>(20).fill(0.6)]);
-    const segments = classifyRegimes(series);
+    // Length is not confirmation. This opening span runs five readings —
+    // comfortably past confirmDays — but its first three do not agree, so it
+    // was never confirmed and belongs to the regime that follows. A length-only
+    // rule keeps it as a separate segment; this pins the difference.
+    const series = points([0.0, 0.9, -0.9, 0.9, -0.9, 0.9, 0.9, 0.9]);
+    const segments = classifyRegimes(series, { threshold: 0.25, confirmDays: 3 });
     expect(segments).toHaveLength(1);
-    expect(segments[0]).toMatchObject({ regime: 'positive', startDate: '2024-01-01' });
+    expect(segments[0]).toMatchObject({
+      regime: 'positive',
+      startDate: '2024-01-01',
+      confirmedFrom: '2024-01-06',
+      observations: 8,
+    });
   });
 
   // The opening reading has no history to confirm against, so taking the

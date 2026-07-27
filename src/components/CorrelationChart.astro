@@ -41,6 +41,7 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
   type Segment = {
     regime: Regime;
     startDate: string;
+    confirmedFrom: string;
     endDate: string;
     observations: number;
     days: number;
@@ -195,8 +196,15 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
       name.textContent = REGIME_LABELS[segment.regime];
       name.className = `regime-${segment.regime}`;
       row.append(name);
+      // Where a segment absorbed an unconfirmed opening, `startDate` reaches
+      // back further than the readings the mean is taken over. Say so, or the
+      // observation count and the mean cannot be reconciled.
+      const from =
+        segment.confirmedFrom === segment.startDate
+          ? segment.startDate
+          : `${segment.startDate} (confirmed ${segment.confirmedFrom})`;
       for (const [value, numeric] of [
-        [segment.startDate, false],
+        [from, false],
         [segment.endDate, false],
         [String(segment.days), true],
         [String(segment.observations), true],

@@ -411,12 +411,23 @@ export type Regime = z.infer<typeof regimeSchema>;
 const regimeSegmentSchema = z.object({
   regime: regimeSchema,
   startDate: isoDate,
+  /**
+   * Where the regime was actually confirmed. Equal to `startDate` except on a
+   * segment that absorbed an unconfirmed opening, where `startDate` reaches
+   * back to the series start but the regime itself was only established here.
+   */
+  confirmedFrom: isoDate,
   endDate: isoDate,
   /** Correlation readings in the segment (shared trading days, not calendar days). */
   observations: z.number().int().positive(),
   /** Inclusive calendar-day span, so a one-observation segment is 1. */
   days: z.number().int().positive(),
-  /** Mean correlation across the segment, 2 dp. */
+  /**
+   * Mean correlation over `confirmedFrom`..`endDate`, 2 dp — the readings that
+   * established the regime, not the absorbed opening. Taking it over the whole
+   * span would let a row label itself inverse while reporting a co-moving
+   * average; `confirmedFrom` is published so the two numbers reconcile.
+   */
   meanCorr: z.number().min(-1).max(1),
 });
 

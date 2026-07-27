@@ -31,18 +31,6 @@ export const GBP_METHOD_NOTE =
  * converting it into GBP would be meaningless; it stays as quoted while BTC,
  * the S&P 500 and gold are re-denominated.
  */
-/**
- * Correlation-page caveat specific to depth: the GBP series can only start
- * where the rate record does, which is later than gold and DXY reach.
- */
-export const GBP_DEPTH_NOTE =
-  'GBP series also start no earlier than the GBP/USD record itself (2009), so where a benchmark ' +
-  'quotes further back than that, the GBP view is shorter than the USD one.';
-
-/** The depth caveat when the page is in GBP, otherwise nothing. */
-export const gbpDepthNote = (currency: Currency): string =>
-  currency === 'gbp' ? ` ${GBP_DEPTH_NOTE}` : '';
-
 export const GBP_DXY_NOTE =
   'The dollar index is a measure of the dollar and is left unconverted, so its pairs compare a ' +
   'GBP-denominated series against a dollar-denominated one — which is exactly the exposure a GBP ' +

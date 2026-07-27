@@ -157,6 +157,7 @@ describe('correlationDatasetSchema', () => {
           {
             regime: 'negative',
             startDate: '2024-03-08',
+            confirmedFrom: '2024-03-08',
             endDate: '2024-03-08',
             observations: 1,
             days: 1,

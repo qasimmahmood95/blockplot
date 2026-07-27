@@ -50,14 +50,24 @@ function dateMinusDays(date: string, days: number): string {
  * the most famous co-crash on record. Correcting the offset moves the trailing
  * BTC–S&P 500 correlation from +0.09 to +0.44.
  *
- * Only correlation needs this: it is the one metric that pairs observations
- * across two series. Volatility, drawdown and the Sharpe comparison aggregate
- * each series on its own, where a uniform one-day relabelling changes nothing.
+ * It must be applied BEFORE currency conversion, not after. Conversion is
+ * itself a per-date join of two series — the BTC close against that day's
+ * GBP/USD rate — so re-dating afterwards leaves the BTC leg carrying R(d)
+ * while the benchmark leg at the same label carries R(d−1), and the FX term
+ * stops cancelling between them. Measured on the committed data that put
+ * 0.16 of noise into GBP correlations, on a threshold of 0.25. Shifting first
+ * also stops the BTC leg being priced at a rate fixed hours after its own
+ * snapshot.
+ *
+ * Metrics that aggregate a single series — volatility, drawdown, the Sharpe
+ * comparison — need nothing here: a uniform relabelling changes none of them,
+ * which is why the committed BTC history stays 00:00-UTC dated and only the
+ * correlation input is re-dated.
  */
-export function toSessionClose(series: SeriesPoint[]): SeriesPoint[] {
-  return series.map(({ date, value }) => ({
-    date: new Date(Date.parse(`${date}T00:00:00Z`) - DAY_MS).toISOString().slice(0, 10),
-    value,
+export function toSessionClose<T extends { date: string }>(series: T[]): T[] {
+  return series.map((point) => ({
+    ...point,
+    date: new Date(Date.parse(`${point.date}T00:00:00Z`) - DAY_MS).toISOString().slice(0, 10),
   }));
 }
 
@@ -156,8 +166,9 @@ export function rollingCorrelation(
  * list, rolling correlation over each pair's whole shared history, with the
  * regime segmentation that history supports.
  *
- * `series.btc` must be the raw 00:00-UTC-dated series; this function re-dates
- * it onto the session it closes (see toSessionClose) before correlating.
+ * Every leg must already be dated on the session it closes. For BTC that means
+ * the caller has applied `toSessionClose` — and applied it before any currency
+ * conversion, for the reason given there.
  *
  * Pairs containing BTC carry their whole shared history: a 365-day view of a
  * 90-day correlation shows barely three independent windows — enough to read
@@ -183,17 +194,13 @@ export function buildCorrelationDataset(
   const regimeThreshold = opts.regimeThreshold ?? REGIME_THRESHOLD;
   const regimeConfirmDays = opts.regimeConfirmDays ?? REGIME_CONFIRM_DAYS;
   const nonBtcKeepDays = opts.nonBtcKeepDays ?? NON_BTC_KEEP_DAYS;
-  // The btc series arrives 00:00-UTC dated; every benchmark is a session
-  // close. Aligning them without this pairs BTC's move with the following
-  // day's market move — see toSessionClose.
-  const aligned = { ...series, btc: toSessionClose(series.btc) };
   const pairs: CorrelationDataset['pairs'] = [];
   for (let i = 0; i < CORRELATION_ASSETS.length; i++) {
     for (let j = i + 1; j < CORRELATION_ASSETS.length; j++) {
       const a = CORRELATION_ASSETS[i];
       const b = CORRELATION_ASSETS[j];
       if (!a || !b) continue;
-      const full = rollingCorrelation(aligned[a], aligned[b], windowDays, minObs);
+      const full = rollingCorrelation(series[a], series[b], windowDays, minObs);
       // Regimes are classified on the full series first: segmenting a clipped
       // one would date the opening regime at the clip rather than at the
       // change, and the clipped pairs are exactly where that would show.

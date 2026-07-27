@@ -92,8 +92,13 @@ export function classifyRegimes(
   // adjusting once the rest are known (see below), which is fiddly to do
   // against already-formatted dates.
   // `confirmedIdx` is where the regime itself was confirmed; `startIdx` can be
-  // pulled earlier by absorption. meanCorr is taken from the former so a row
-  // can never label itself inverse while reporting a co-moving average.
+  // pulled earlier by absorption. meanCorr is taken from the former, so an
+  // absorbed opening cannot drag a row's average across the threshold away
+  // from its own label. It does not make label and mean agree in general, and
+  // should not: a hysteretic regime is a state that persists until something
+  // unseats it, not a restatement of its own average. A confirmed regime whose
+  // later readings drift is still that regime — that is the whole point of
+  // confirming it.
   const spans: { regime: Regime; startIdx: number; confirmedIdx: number; endIdx: number }[] = [];
   const emit = (regime: Regime, startIdx: number, endIdx: number): void => {
     if (endIdx >= startIdx) spans.push({ regime, startIdx, confirmedIdx: startIdx, endIdx });
@@ -173,6 +178,7 @@ export function classifyRegimes(
     return {
       regime,
       startDate: start.date,
+      confirmedFrom: (series[confirmedIdx] as CorrPoint).date,
       endDate: end.date,
       observations: endIdx - startIdx + 1,
       days: daysBetween(start.date, end.date),

@@ -7,7 +7,7 @@ import {
   SP500_FRED_SERIES,
 } from './benchmarks';
 import { fetchBtcMarketChart, PRICE_RANGE_DAYS } from './coingecko';
-import { buildCorrelationDataset } from './correlation';
+import { buildCorrelationDataset, toSessionClose } from './correlation';
 import {
   accreteDominance,
   fetchDominanceSnapshot,
@@ -172,6 +172,13 @@ for (const currency of CURRENCIES) {
   const dir = currency === 'usd' ? 'data' : `data/${currency}`;
   const spot = series ? convertSeries(series, rates, currency) : null;
   const deep = history ? convertSeries(history, rates, currency) : null;
+  // Correlation gets its own BTC series: re-dated onto the session it closes
+  // and only then converted, so both legs of a GBP pair are priced at the same
+  // day's rate and the FX term cancels between them. The committed history
+  // stays 00:00-UTC dated, because every other metric aggregates one series.
+  const deepSession = history
+    ? convertSeries(toSessionClose(history), rates, currency)
+    : null;
   // convertSeries drops days with no rate, so a rate floor later than the BTC
   // start would quietly give GBP a shorter history than USD — the heatmap and
   // cycle overlay would begin later with nothing anywhere saying why.
@@ -191,10 +198,11 @@ for (const currency of CURRENCIES) {
   const sp = spAll ? recentWindow(spAll) : null;
   const au = auAll ? recentWindow(auAll) : null;
   const dxy = dxyAll ? recentWindow(dxyAll) : null;
-  // Unlike the BTC series, a benchmark reaching further back than the FX
-  // record is expected — gold quotes from 2004, the rates from 2009 — so this
-  // reports rather than throws. It still has to be visible: without it the GBP
-  // correlation view is years shorter than the USD one for no stated reason.
+  // A benchmark reaching further back than the FX record would silently
+  // shorten the GBP view. It cannot happen while Yahoo caps daily history at
+  // ten years — both routes currently start in 2016 — so this is a tripwire
+  // for a future depth change rather than a live condition, and it reports
+  // rather than throwing because the truncation would be expected, not a bug.
   if (currency !== 'usd') {
     for (const [label, converted, source] of [
       ['sp500', spAll, sp500],
@@ -289,7 +297,7 @@ for (const currency of CURRENCIES) {
       const correlations = correlationDatasetSchema.parse({
         ...buildCorrelationDataset(
           {
-            btc: deep.map(({ date, price }) => ({ date, value: price })),
+            btc: (deepSession ?? deep).map(({ date, price }) => ({ date, value: price })),
             sp500: toPoints(spAll),
             gold: toPoints(auAll),
             dxy: toPoints(dxyAll),

@@ -1,7 +1,7 @@
 ---
 import CorrelationChart from '../../components/CorrelationChart.astro';
 import Base from '../../layouts/Base.astro';
-import { dxyNote, fxNote, gbpDepthNote, type Currency } from '../../lib/currency';
+import { dxyNote, fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
 
@@ -110,7 +110,7 @@ const btcPairs = [
       matrix above, which reads one number from each, and at full depth they were more than half
       the dataset. Their regimes are still classified over the whole history, so a row may report
       a regime that began before the charted window and count observations the chart does not
-      show.{gbpDepthNote(currency)}
+      show.
     </p>
     <p class="method-note">
       <strong>Regimes.</strong> A reading of |corr| ≥ {regimeThreshold} counts as co-moving or
@@ -121,7 +121,9 @@ const btcPairs = [
       those readings, since that is when the change began rather than when it was confirmed. The
       cost of that rule is stated plainly: the last {regimeConfirmDays - 1} readings of a series
       cannot yet start a regime, so a turn in the past fortnight is shown as a continuation until
-      the data earns the change. Segments are contiguous and cover every reading.
+      the data earns the change. Segments are contiguous and cover every reading, and the mean is
+      taken over the readings that established the regime — where a segment reaches back over an
+      opening too short to confirm anything, the table says which date it was confirmed from.
     </p>
     <p class="method-note">
       BTC uses blockchain.com's daily series, the S&amp;P 500 FRED's, and gold and the dollar index
