@@ -144,9 +144,9 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
     <script is:inline type="application/json" id="header-latest" set:html={latestJson} />
     <script>
       import { valueHoldings } from '../../pipeline/holdings';
-      import type { Currency } from '../../pipeline/schema';
+      import type { Currency } from '../../pipeline/currencies';
       import { chartData } from '../lib/charts';
-      import { HOLDINGS_EVENT, readHoldings } from '../lib/holdings-store';
+      import { HOLDINGS_EVENT, readHoldings, watchOtherTabs } from '../lib/holdings-store';
 
       const headerLatest = chartData<Record<Currency, number>>('header-latest');
       const pageCurrency = (document.documentElement.dataset.currency ?? 'usd') as Currency;
@@ -200,7 +200,10 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
       function renderHoldings(): void {
         if (!holdingsEl || !holdingsValueEl || !holdingsPnlEl) return;
         const stored = readHoldings();
-        if (!stored || stored.btc <= 0) {
+        // `!stored`, not `btc <= 0`: a zero stack with a cost basis is a
+        // real position (fully sold), and the panel shows it — the two views
+        // must not disagree about whether it exists.
+        if (!stored) {
           holdingsEl.hidden = true;
           return;
         }
@@ -213,6 +216,7 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
       }
       renderHoldings();
       window.addEventListener(HOLDINGS_EVENT, renderHoldings);
+      watchOtherTabs();
 
       // Live spot ticker: one of the site's two sanctioned runtime fetches.
       // CoinGecko's simple-price endpoint is queried in the page's currency,

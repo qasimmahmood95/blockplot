@@ -1,5 +1,5 @@
-import type { Holdings } from '../../pipeline/holdings';
-import { CURRENCIES, type Currency } from '../../pipeline/schema';
+import { MAX_BTC, MAX_COST, type Holdings } from '../../pipeline/holdings';
+import { CURRENCIES, type Currency } from '../../pipeline/currencies';
 
 /**
  * Reading and writing the holdings a reader has entered.
@@ -34,14 +34,24 @@ export function parseHoldings(raw: string | null): Holdings | null {
   } catch {
     return null;
   }
-  if (typeof parsed !== 'object' || parsed === null) return null;
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
   const { btc, cost, costCurrency } = parsed as Record<string, unknown>;
-  // Finite and non-negative: Infinity and NaN both survive JSON round-trips as
-  // strings a hand edit could produce, and both render as garbage.
-  if (typeof btc !== 'number' || !Number.isFinite(btc) || btc < 0) return null;
-  if (cost !== null && (typeof cost !== 'number' || !Number.isFinite(cost) || cost < 0)) return null;
+  // Bounded, not merely finite: 1e999 parses to Infinity, and 1e308 is finite
+  // but overflows the moment it is multiplied by a price.
+  if (typeof btc !== 'number' || !Number.isFinite(btc) || btc < 0 || btc > MAX_BTC) return null;
   if (!isCurrency(costCurrency)) return null;
-  return { btc, cost: cost as number | null, costCurrency };
+  // Narrowed by the compiler rather than asserted, so a later edit to this
+  // guard cannot silently let a non-number through.
+  let checkedCost: number | null = null;
+  if (cost !== null) {
+    if (typeof cost !== 'number' || !Number.isFinite(cost) || cost < 0 || cost > MAX_COST) {
+      return null;
+    }
+    checkedCost = cost + 0;
+  }
+  // `+ 0` also normalises -0, which passes `< 0` and would otherwise leave the
+  // header (hidden at `btc <= 0`) disagreeing with the panel (which renders).
+  return { btc: btc + 0, cost: checkedCost, costCurrency };
 }
 
 /** Stored holdings, or null when unset, unparseable, or invalid. */
@@ -62,6 +72,18 @@ export function writeHoldings(holdings: Holdings): void {
     // The figures still render for this page view.
   }
   window.dispatchEvent(new Event(HOLDINGS_EVENT));
+}
+
+/**
+ * Mirror the browser's cross-tab `storage` event onto the same-tab one, so a
+ * second tab updates instead of showing a figure that is quietly stale. Fires
+ * only in tabs that did not make the change, which is exactly the gap the
+ * custom event leaves.
+ */
+export function watchOtherTabs(): void {
+  window.addEventListener('storage', (event) => {
+    if (event.key === HOLDINGS_KEY) window.dispatchEvent(new Event(HOLDINGS_EVENT));
+  });
 }
 
 /** Forget everything. The button that calls this is the point of the feature. */

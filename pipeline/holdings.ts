@@ -1,4 +1,5 @@
-import type { Currency, DailyPrice } from './schema';
+import type { Currency } from './currencies';
+import type { DailyPrice } from './schema';
 
 /**
  * Holdings maths: what a stack is worth, and how it has done against what was
@@ -38,6 +39,16 @@ export interface HoldingsValue {
   costConverted: boolean;
 }
 
+/**
+ * Bounds on what a reader can enter. 21 million is the supply cap, so no
+ * honest holding exceeds it; the cost bound is where doubles stop representing
+ * cents exactly. Both matter because `Number.isFinite` on the inputs does not
+ * stop their product overflowing — 1e308 BTC is finite and typeable, and
+ * printed "$∞" on every page before this.
+ */
+export const MAX_BTC = 21_000_000;
+export const MAX_COST = 1e15;
+
 const round2 = (value: number): number => {
   const rounded = Math.round(value * 100) / 100;
   return rounded === 0 ? 0 : rounded;
@@ -72,9 +83,17 @@ export function valueHoldings(
   currency: Currency,
   latest: Record<Currency, number>,
 ): HoldingsValue {
-  if (!(holdings.btc >= 0)) throw new Error('valueHoldings: btc must be non-negative');
+  if (!(holdings.btc >= 0) || holdings.btc > MAX_BTC) {
+    throw new Error(`valueHoldings: btc must be between 0 and ${MAX_BTC}`);
+  }
   if (!(price > 0)) throw new Error('valueHoldings: price must be positive');
+  if (holdings.cost !== null && (!(holdings.cost >= 0) || holdings.cost > MAX_COST)) {
+    throw new Error(`valueHoldings: cost must be between 0 and ${MAX_COST}`);
+  }
   const value = holdings.btc * price;
+  // Backstop: the bounds above make this unreachable, but a figure that is not
+  // finite must never reach a formatter, where it renders as "$∞".
+  if (!Number.isFinite(value)) throw new Error('valueHoldings: value overflowed');
   const costConverted = holdings.cost !== null && holdings.costCurrency !== currency;
   const cost =
     holdings.cost === null
@@ -98,14 +117,21 @@ export function valueHoldings(
  * bought, so this is a "what this much BTC was worth" line, not a reconstruction
  * of the reader's actual position. The page says so — a line implying a purchase
  * history the data cannot support would be worse than no line.
+ *
+ * Unrounded, for the same reason `convertSeries` is: BTC opens at $0.07, so
+ * rounding to 2 dp zeroes every value under half a cent, and the chart's log
+ * axis then drops those days entirely. Precision is kept here and spent at
+ * format time.
  */
 export function holdingsSeries(
   history: DailyPrice[],
   btc: number,
   from?: string,
 ): { date: string; value: number }[] {
-  if (!(btc >= 0)) throw new Error('holdingsSeries: btc must be non-negative');
+  if (!(btc >= 0) || btc > MAX_BTC) {
+    throw new Error(`holdingsSeries: btc must be between 0 and ${MAX_BTC}`);
+  }
   return history
     .filter((point) => from === undefined || point.date >= from)
-    .map(({ date, price }) => ({ date, value: round2(btc * price) }));
+    .map(({ date, price }) => ({ date, value: btc * price }));
 }

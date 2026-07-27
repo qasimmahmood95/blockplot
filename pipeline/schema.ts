@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CURRENCIES, type Currency } from './currencies';
 
 /** Raw response shape of CoinGecko `/coins/{id}/market_chart`. */
 export const marketChartSchema = z.object({
@@ -14,12 +15,9 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
  * files are rebuilt from closes converted at each day's rate, so every
  * percentage metric in them is genuinely GBP-denominated, not relabelled.
  */
-export const currencySchema = z.enum(['usd', 'gbp']);
+export const currencySchema = z.enum(CURRENCIES);
 
-/** The supported currencies, derived from the schema so the two cannot drift. */
-export const CURRENCIES = currencySchema.options;
-
-export type Currency = z.infer<typeof currencySchema>;
+export { CURRENCIES, type Currency };
 
 /** Raw response shape of Frankfurter's ECB time-series endpoint. */
 export const frankfurterSchema = z.object({

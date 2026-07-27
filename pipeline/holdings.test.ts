@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { holdingsSeries, impliedRate, valueHoldings } from './holdings';
+import { holdingsSeries, impliedRate, MAX_BTC, MAX_COST, valueHoldings } from './holdings';
 
 // Latest BTC close in each currency, from the committed datasets. Their ratio
 // is the implied GBP/USD rate.
@@ -105,10 +105,29 @@ describe('valueHoldings', () => {
     expect(nothing.avgEntry).toBeNull();
   });
 
+  it('rejects a holding beyond the supply cap, which would overflow to Infinity', () => {
+    // 1e308 is finite and typeable into a number field; 1e308 × a price is not.
+    // Before the bound this printed "$∞" in the header of every page.
+    expect(() =>
+      valueHoldings({ btc: 1e308, cost: null, costCurrency: 'usd' }, 65042.86, 'usd', latest),
+    ).toThrow('between 0 and');
+    expect(() =>
+      valueHoldings({ btc: 1, cost: 1e308, costCurrency: 'usd' }, 65042.86, 'usd', latest),
+    ).toThrow('between 0 and');
+    expect(MAX_BTC).toBe(21_000_000);
+    expect(MAX_COST).toBe(1e15);
+    // The cap itself is allowed, and still finite.
+    expect(
+      Number.isFinite(
+        valueHoldings({ btc: MAX_BTC, cost: null, costCurrency: 'usd' }, 65042.86, 'usd', latest).value,
+      ),
+    ).toBe(true);
+  });
+
   it('rejects impossible inputs rather than printing NaN', () => {
     expect(() =>
       valueHoldings({ btc: -1, cost: null, costCurrency: 'usd' }, 65042.86, 'usd', latest),
-    ).toThrow('btc must be non-negative');
+    ).toThrow('between 0 and');
     expect(() =>
       valueHoldings({ btc: 1, cost: null, costCurrency: 'usd' }, 0, 'usd', latest),
     ).toThrow('price must be positive');
@@ -130,6 +149,14 @@ describe('holdingsSeries', () => {
     ]);
   });
 
+  it('keeps sub-cent values rather than rounding them to zero', () => {
+    // BTC opens at $0.07: rounding to 2 dp zeroes every early day for a small
+    // stack, and the log axis then drops them off the chart entirely.
+    const early = [{ date: '2010-07-18', price: 0.07 }];
+    expect(holdingsSeries(early, 0.001)[0]?.value).toBeCloseTo(0.00007, 12);
+    expect(holdingsSeries(early, 0.001)[0]?.value).toBeGreaterThan(0);
+  });
+
   it('clips to a start date', () => {
     expect(holdingsSeries(history, 0.25, '2024-01-02').map((p) => p.date)).toEqual([
       '2024-01-02',
@@ -139,6 +166,6 @@ describe('holdingsSeries', () => {
 
   it('is flat at zero and rejects a negative stack', () => {
     expect(holdingsSeries(history, 0).every((p) => p.value === 0)).toBe(true);
-    expect(() => holdingsSeries(history, -0.1)).toThrow('non-negative');
+    expect(() => holdingsSeries(history, -0.1)).toThrow('between 0 and');
   });
 });

@@ -57,6 +57,34 @@ describe('parseHoldings', () => {
     expect(parseHoldings('{"btc":1,"cost":1,"costCurrency":null}')).toBeNull();
   });
 
+  it('rejects values that are finite but overflow once multiplied', () => {
+    // 1e308 passes Number.isFinite and is typeable into a number field; times
+    // a price it is Infinity, which rendered as "$∞" in the header.
+    expect(parseHoldings('{"btc":1e308,"cost":null,"costCurrency":"usd"}')).toBeNull();
+    expect(parseHoldings('{"btc":21000001,"cost":null,"costCurrency":"usd"}')).toBeNull();
+    expect(parseHoldings('{"btc":1,"cost":1e308,"costCurrency":"usd"}')).toBeNull();
+    // The supply cap itself is a legitimate entry.
+    expect(parseHoldings('{"btc":21000000,"cost":null,"costCurrency":"usd"}')?.btc).toBe(21000000);
+  });
+
+  it('normalises -0, which would split the header from the panel', () => {
+    // -0 < 0 is false, so it passed the guard; the header hides at btc <= 0
+    // while the panel renders, leaving the two views disagreeing.
+    const parsed = parseHoldings('{"btc":-0,"cost":-0,"costCurrency":"usd"}');
+    expect(Object.is(parsed?.btc, -0)).toBe(false);
+    expect(Object.is(parsed?.cost, -0)).toBe(false);
+    expect(parsed?.btc).toBe(0);
+  });
+
+  it('rejects an array, which is an object to typeof', () => {
+    expect(parseHoldings('[]')).toBeNull();
+  });
+
+  it('does not pollute the prototype', () => {
+    parseHoldings('{"btc":1,"cost":null,"costCurrency":"usd","__proto__":{"polluted":true}}');
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
   it('accepts zero for both figures', () => {
     // Zero BTC and zero cost are legitimate entries, not empty ones.
     expect(parseHoldings('{"btc":0,"cost":0,"costCurrency":"usd"}')).toEqual({

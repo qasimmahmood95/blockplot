@@ -31,7 +31,7 @@ const payload = {
 
 <script is:inline type="application/json" id="holdings-data" set:html={toJsonScript(payload)} />
 
-<form class="sim-form" id="holdings-form">
+<form class="sim-form" id="holdings-form" onsubmit="return false">
   <label>
     <span>BTC held</span>
     <input type="number" name="btc" min="0" step="0.00000001" placeholder="0.25" />
@@ -64,13 +64,21 @@ const payload = {
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { holdingsSeries, valueHoldings, type Holdings } from '../../pipeline/holdings';
-  import type { Currency } from '../../pipeline/schema';
+  import {
+    holdingsSeries,
+    impliedRate,
+    MAX_BTC,
+    MAX_COST,
+    valueHoldings,
+    type Holdings,
+  } from '../../pipeline/holdings';
+  import type { Currency } from '../../pipeline/currencies';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
   import {
     clearHoldings,
     HOLDINGS_EVENT,
     readHoldings,
+    watchOtherTabs,
     writeHoldings,
   } from '../lib/holdings-store';
 
@@ -101,6 +109,16 @@ const payload = {
     maximumFractionDigits: 2,
   });
   const signedPct = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+  /** Sub-dollar ticks need decimals; above a dollar they are noise. */
+  const axisMoney = (v: number): string =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: data.code,
+      maximumFractionDigits: v < 1 ? 4 : 0,
+    }).format(v);
+  /** BTC amounts in prose: 8 dp is the smallest unit, and never e-notation. */
+  const btcAmount = (v: number): string =>
+    new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 }).format(v);
 
   /**
    * What the form currently says, or null when there is nothing to value.
@@ -111,23 +129,31 @@ const payload = {
    * over — shown converted, and flagged as converted. Typing a figure here
    * replaces it with one denominated in this currency.
    */
+  /**
+   * Whether the reader has touched the cost field this visit. Until they do,
+   * the field is showing a stored figure — possibly converted from the other
+   * currency — and editing the BTC amount must not re-denominate it. Once they
+   * type in it, the number is theirs and is in this page's currency.
+   */
+  let costEdited = false;
+
   function formHoldings(): Holdings | null {
     if (!form) return null;
     const raw = new FormData(form);
     const btcRaw = String(raw.get('btc') ?? '').trim();
     const btc = Number(btcRaw);
-    if (btcRaw === '' || !Number.isFinite(btc) || btc < 0) return null;
+    if (btcRaw === '' || !Number.isFinite(btc) || btc < 0 || btc > MAX_BTC) return null;
     const costRaw = String(raw.get('cost') ?? '').trim();
-    if (costRaw === '') {
+    if (!costEdited) {
+      // Keep the stored cost in its own currency; the field is only displaying it.
       const stored = readHoldings();
-      const carried =
-        stored && stored.cost !== null && stored.costCurrency !== data.currency
-          ? { cost: stored.cost, costCurrency: stored.costCurrency }
-          : { cost: null, costCurrency: data.currency };
-      return { btc, ...carried };
+      return stored?.cost != null
+        ? { btc, cost: stored.cost, costCurrency: stored.costCurrency }
+        : { btc, cost: null, costCurrency: data.currency };
     }
+    if (costRaw === '') return { btc, cost: null, costCurrency: data.currency };
     const cost = Number(costRaw);
-    if (!Number.isFinite(cost) || cost < 0) return null;
+    if (!Number.isFinite(cost) || cost < 0 || cost > MAX_COST) return null;
     return { btc, cost, costCurrency: data.currency };
   }
 
@@ -152,13 +178,19 @@ const payload = {
       chartSection.hidden = true;
       return;
     }
+    const points = holdingsSeries(data.series, btc)
+      // A log axis cannot plot a non-positive value; at very small stacks the
+      // early days underflow to zero. Dropping them here lets the note say how
+      // many survived instead of rendering an empty frame.
+      .filter((p) => p.value > 0)
+      .map((p) => ({ date: new Date(p.date), value: p.value }));
+    if (points.length === 0) {
+      chartSection.hidden = true;
+      return;
+    }
     chartSection.hidden = false;
-    const points = holdingsSeries(data.series, btc).map((p) => ({
-      date: new Date(p.date),
-      value: p.value,
-    }));
     chartNote.textContent =
-      `${btc} BTC valued at every daily close since ${data.series[0]?.date}. This holds the amount ` +
+      `${btcAmount(btc)} BTC valued at every daily close since ${points[0]?.date.toISOString().slice(0, 10)}. This holds the amount ` +
       'constant — the site does not know when any of it was bought, so this is what this much BTC ' +
       'was worth, not a reconstruction of a position. Prices are blockchain.com daily closes.';
     container.replaceChildren(
@@ -167,7 +199,7 @@ const payload = {
         height: 300,
         marginLeft: 70,
         x: { label: null },
-        y: { label: null, grid: true, type: 'log', tickFormat: (v: number) => money.format(v) },
+        y: { label: null, grid: true, type: 'log', tickFormat: axisMoney },
         marks: [
           Plot.lineY(points, {
             x: 'date',
@@ -181,7 +213,7 @@ const payload = {
               x: 'date',
               y: 'value',
               title: (d: { date: Date; value: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\n${money.format(d.value)}`,
+                `${d.date.toISOString().slice(0, 10)}\n${axisMoney(d.value)}`,
             }),
           ),
         ],
@@ -201,7 +233,7 @@ const payload = {
     if (!holdings) {
       stats.replaceChildren();
       if (chartSection) chartSection.hidden = true;
-      if (status) status.textContent = '';
+      setStatus('');
       return;
     }
     const result = valueHoldings(
@@ -214,7 +246,7 @@ const payload = {
       tile(
         'Value',
         money.format(result.value),
-        `${holdings.btc} BTC · close ${data.latestDate}`,
+        `${btcAmount(holdings.btc)} BTC · close ${data.latestDate}`,
       ),
     ];
     if (result.pnl !== null && result.cost !== null) {
@@ -223,7 +255,7 @@ const payload = {
         tile(
           'Profit / loss',
           money.format(result.pnl),
-          result.pnlPct === null ? 'no cost to compare' : signedPct(result.pnlPct),
+          result.pnlPct === null ? 'no return against a zero cost' : signedPct(result.pnlPct),
           tone,
         ),
         tile(
@@ -240,11 +272,29 @@ const payload = {
     renderChart(holdings.btc);
   }
 
-  /** Persist, then re-render every holdings-aware island on the page. */
-  function save(): void {
+  function setStatus(message: string): void {
+    if (status) status.textContent = message;
+  }
+
+  /**
+   * Persist, then re-render every holdings-aware island on the page.
+   *
+   * An emptied BTC field means the reader deleted their holdings, so it clears
+   * storage: leaving the stored value behind made the header tile keep showing
+   * a figure the panel no longer displayed, and a reload brought it all back.
+   * A non-empty but invalid entry leaves storage alone and says so, rather than
+   * destroying good data on the way to a typo.
+   */
+  function save(): string {
+    const btcRaw = String(new FormData(form as HTMLFormElement).get('btc') ?? '').trim();
+    if (btcRaw === '') {
+      clearHoldings();
+      return '';
+    }
     const holdings = formHoldings();
-    if (holdings) writeHoldings(holdings);
-    if (status) status.textContent = holdings ? 'saved in this browser' : '';
+    if (!holdings) return 'not a valid amount — nothing saved';
+    writeHoldings(holdings);
+    return 'saved in this browser';
   }
 
   function load(): void {
@@ -253,24 +303,33 @@ const payload = {
     const btcInput = form.elements.namedItem('btc') as HTMLInputElement | null;
     const costInput = form.elements.namedItem('cost') as HTMLInputElement | null;
     if (btcInput) btcInput.value = String(stored.btc);
-    // A cost entered in the other currency is shown converted in the stats but
-    // left out of the field, which is labelled in this page's currency.
-    if (costInput && stored.cost !== null && stored.costCurrency === data.currency) {
-      costInput.value = String(stored.cost);
+    if (costInput && stored.cost !== null) {
+      // Converted when it was entered on the other route, so the field is
+      // always in the currency its label claims — and always clearable.
+      const shown =
+        stored.costCurrency === data.currency
+          ? stored.cost
+          : stored.cost * impliedRate(data.latest, stored.costCurrency, data.currency);
+      costInput.value = String(Math.round(shown * 100) / 100);
     }
-    if (status) status.textContent = 'loaded from this browser';
+    setStatus('loaded from this browser');
   }
 
-  form?.addEventListener('input', () => {
-    save();
+  form?.addEventListener('input', (event) => {
+    if ((event.target as HTMLElement | null)?.getAttribute('name') === 'cost') costEdited = true;
+    const message = save();
     render();
+    // After render(), which clears the status when there is nothing to show.
+    setStatus(message);
   });
 
   clearButton?.addEventListener('click', () => {
     clearHoldings();
     form?.reset();
-    if (status) status.textContent = 'cleared';
+    costEdited = false;
     render();
+    // After render(): it blanks the status, which swallowed this confirmation.
+    setStatus('cleared — nothing is stored for this browser');
   });
 
   // Another island on the page (the header tile) can change the stored value.
@@ -281,5 +340,6 @@ const payload = {
   });
 
   load();
+  watchOtherTabs();
   responsiveChart(render);
 </script>
