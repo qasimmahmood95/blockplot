@@ -61,6 +61,13 @@ function dateMinusDays(date: string, days: number): string {
  * also stops the BTC leg being priced at a rate fixed hours after its own
  * snapshot.
  *
+ * The test for this is exact cancellation — that the GBP-minus-USD return
+ * difference is identical on both legs — and NOT that GBP correlations end up
+ * near the USD ones. The bug injected independent noise into one leg, which
+ * attenuates a correlation toward zero rather than displacing it, so removing
+ * it un-attenuates GBP while leaving intact the genuine common-FX component a
+ * GBP investor really does experience.
+ *
  * Metrics that aggregate a single series — volatility, drawdown, the Sharpe
  * comparison — need nothing here: a uniform relabelling changes none of them,
  * which is why the committed BTC history stays 00:00-UTC dated and only the
