@@ -16,11 +16,19 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
  */
 export const currencySchema = z.enum(['usd', 'gbp']);
 
+/** Raw response shape of Frankfurter's ECB time-series endpoint. */
+export const frankfurterSchema = z.object({
+  rates: z.record(
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    z.object({ USD: z.number().positive() }),
+  ),
+});
+
 /** Versioned on-disk format of data/fx-gbpusd.json. */
 export const fxDatasetSchema = z.object({
   schemaVersion: z.literal(1),
   pair: z.literal('GBPUSD'),
-  source: z.enum(['yahoo', 'fred']),
+  source: z.literal('merged'),
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
   /** USD per GBP, one entry per quoted weekday. */

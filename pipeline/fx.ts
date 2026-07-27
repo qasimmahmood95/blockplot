@@ -1,6 +1,6 @@
 import { fetchYahooDaily, parseFredCsv } from './benchmarks';
-import { getText } from './http';
-import type { BenchmarkDay, DailyPrice } from './schema';
+import { getJson, getText } from './http';
+import { frankfurterSchema, type BenchmarkDay, type DailyPrice } from './schema';
 
 /**
  * GBP/USD daily history, for re-denominating BTC metrics into GBP.
@@ -17,6 +17,8 @@ export const GBPUSD_YAHOO_TICKERS = ['GBPUSD=X'];
 export const GBPUSD_FRED_SERIES = 'DEXUSUK';
 
 const FRED_CSV_URL = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${GBPUSD_FRED_SERIES}`;
+/** ECB reference rates via Frankfurter: keyless and published every business day. */
+const FRANKFURTER_URL = 'https://api.frankfurter.app/1999-01-04..?from=GBP&to=USD';
 
 /** Supported display currencies. USD is the source currency and needs no rate. */
 export const CURRENCIES = ['usd', 'gbp'] as const;
@@ -111,10 +113,23 @@ export function fxLagDays(rates: BenchmarkDay[], throughDate: string): number {
   );
 }
 
+/** Parse Frankfurter's `{ rates: { 'YYYY-MM-DD': { USD: n } } }` time series. */
+export function parseFrankfurter(payload: unknown): BenchmarkDay[] {
+  const { rates } = frankfurterSchema.parse(payload);
+  const out = Object.entries(rates)
+    .map(([date, quote]) => ({ date, close: quote.USD }))
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+  if (out.length === 0) throw new Error('parseFrankfurter: no rates');
+  return out;
+}
+
 /**
- * Yahoo's `range=max` reaches back to 1971 but its tail can lag by over a
- * week, so a second `range=2y` request supplies the fresh end and the two
- * are merged — deep history from one, current rates from the other.
+ * Rates come from three keyless sources because none is both deep and fresh:
+ * Yahoo `range=max` reaches back to 1971 but its tail ran ten days stale on
+ * the first live run, and FRED's `DEXUSUK` is published with a similar lag.
+ * ECB reference rates (via Frankfurter) are published every business day and
+ * supply the fresh end. Later sources win per date, so the merged series is
+ * deep at the start and current at the tail.
  */
 export async function fetchGbpUsd(): Promise<BenchmarkDay[]> {
   const parts: BenchmarkDay[][] = [];
@@ -122,20 +137,17 @@ export async function fetchGbpUsd(): Promise<BenchmarkDay[]> {
     const deep = await fetchYahooDaily(GBPUSD_YAHOO_TICKERS, { range: 'max' });
     if (deep.series.length >= MIN_FX_DAYS) parts.push(deep.series);
   } catch {
-    // deep history is optional if the recent window and FRED cover enough
+    // deep history is optional if the fresher sources cover enough
   }
   try {
-    const recent = await fetchYahooDaily(GBPUSD_YAHOO_TICKERS);
-    parts.push(recent.series);
+    parts.push(parseFredCsv(await getText(FRED_CSV_URL), GBPUSD_FRED_SERIES));
   } catch {
-    // fall through to FRED for the tail
+    // optional middle source
   }
-  if (parts.length === 0 || fxLagDays(mergeRates(...parts), new Date().toISOString().slice(0, 10)) > MAX_FX_LAG_DAYS) {
-    try {
-      parts.push(parseFredCsv(await getText(FRED_CSV_URL), GBPUSD_FRED_SERIES));
-    } catch {
-      // keep whatever Yahoo returned
-    }
+  try {
+    parts.push(parseFrankfurter(await getJson(FRANKFURTER_URL)));
+  } catch {
+    // optional; the lag guard in run.ts surfaces a stale tail
   }
   const merged = mergeRates(...parts);
   if (merged.length < 365) {

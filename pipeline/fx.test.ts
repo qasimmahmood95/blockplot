@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { convertBenchmark, convertSeries, fxLagDays, mergeRates, rateLookup } from './fx';
+import {
+  convertBenchmark,
+  convertSeries,
+  fxLagDays,
+  mergeRates,
+  parseFrankfurter,
+  rateLookup,
+} from './fx';
 
 // FX quotes Fri 03-01 and Mon 03-04; the weekend carries Friday's rate.
 const rates = [
@@ -99,5 +106,28 @@ describe('convertBenchmark', () => {
       { date: '2024-03-04', close: 4000 }, // 5120 / 1.28
     ]);
     expect(convertBenchmark(sp500, rates, 'usd')).toBe(sp500);
+  });
+});
+
+describe('parseFrankfurter', () => {
+  it('flattens the ECB time series into ascending daily rates', () => {
+    expect(
+      parseFrankfurter({
+        base: 'GBP',
+        rates: {
+          '2024-03-04': { USD: 1.28 },
+          '2024-03-01': { USD: 1.25 },
+        },
+      }),
+    ).toEqual([
+      { date: '2024-03-01', close: 1.25 },
+      { date: '2024-03-04', close: 1.28 },
+    ]);
+  });
+
+  it('rejects a malformed or empty payload', () => {
+    expect(() => parseFrankfurter({ rates: { '2024-03-01': { EUR: 1.17 } } })).toThrow();
+    expect(() => parseFrankfurter({})).toThrow();
+    expect(() => parseFrankfurter({ rates: {} })).toThrow('no rates');
   });
 });

@@ -132,7 +132,7 @@ if (fxRates) {
   const fx = fxDatasetSchema.parse({
     schemaVersion: 1,
     pair: 'GBPUSD',
-    source: 'yahoo',
+    source: 'merged',
     fetchedAt,
     series: fxRates,
   });
