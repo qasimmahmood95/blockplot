@@ -15,28 +15,48 @@ import gbpRisk from '../../data/gbp/risk-metrics.json';
 import dominanceDataset from '../../data/dominance.json';
 import networkDataset from '../../data/network.json';
 import stablecoinDataset from '../../data/stablecoins.json';
+import {
+  benchmarkDatasetSchema,
+  correlationDatasetSchema,
+  dominanceDatasetSchema,
+  halvingDatasetSchema,
+  historyDatasetSchema,
+  monthlyDatasetSchema,
+  networkDatasetSchema,
+  priceDatasetSchema,
+  riskDatasetSchema,
+  stablecoinDatasetSchema,
+} from '../../pipeline/schema';
 import type {
   BenchmarkDataset,
   CorrelationDataset,
-  DominanceDataset,
   HalvingDataset,
   HistoryDataset,
   MonthlyDataset,
-  NetworkDataset,
   PriceDataset,
   RiskDataset,
-  StablecoinDataset,
 } from '../../pipeline/schema';
 import type { Currency } from './currency';
+
+/**
+ * Every dataset is PARSED, not cast. A cast would let a `/data` tree that has
+ * drifted from the code — a rename landing before the pipeline has
+ * regenerated, a hand edit, a bad merge — build clean and publish `$NaN`,
+ * because a missing field is `undefined` all the way to `Intl.format`. Parsing
+ * turns that into a build failure, which is what CLAUDE.md means by the site
+ * building from zod-validated JSON. It costs a few hundred ms at build time
+ * and nothing at runtime: this runs in Astro's server phase, and no island
+ * imports it, so zod never reaches a client bundle.
+ */
 
 /**
  * Currency-free datasets: stablecoin supply and total market cap are
  * USD-pegged by definition, and network metrics are denominated in hashes,
  * transactions and sat/vB.
  */
-export const dominance = dominanceDataset as DominanceDataset;
-export const stablecoins = stablecoinDataset as StablecoinDataset;
-export const network = networkDataset as NetworkDataset;
+export const dominance = dominanceDatasetSchema.parse(dominanceDataset);
+export const stablecoins = stablecoinDatasetSchema.parse(stablecoinDataset);
+export const network = networkDatasetSchema.parse(networkDataset);
 
 interface CurrencyData {
   btcDaily: PriceDataset;
@@ -48,25 +68,49 @@ interface CurrencyData {
   monthlyReturns: MonthlyDataset;
 }
 
+/** Parse one currency's tree, naming the currency in any validation failure. */
+const parseCurrency = (
+  currency: Currency,
+  raw: Record<keyof CurrencyData, unknown>,
+): CurrencyData => {
+  try {
+    return {
+      btcDaily: priceDatasetSchema.parse(raw.btcDaily),
+      benchmarksDaily: benchmarkDatasetSchema.parse(raw.benchmarksDaily),
+      riskMetrics: riskDatasetSchema.parse(raw.riskMetrics),
+      halvingCycles: halvingDatasetSchema.parse(raw.halvingCycles),
+      correlations: correlationDatasetSchema.parse(raw.correlations),
+      btcHistory: historyDatasetSchema.parse(raw.btcHistory),
+      monthlyReturns: monthlyDatasetSchema.parse(raw.monthlyReturns),
+    };
+  } catch (err) {
+    throw new Error(
+      `data/${currency === 'usd' ? '' : `${currency}/`}: dataset failed validation — ` +
+        'run the pipeline to regenerate it.',
+      { cause: err },
+    );
+  }
+};
+
 const BY_CURRENCY: Record<Currency, CurrencyData> = {
-  usd: {
-    btcDaily: usdPrice as PriceDataset,
-    benchmarksDaily: usdBenchmarks as BenchmarkDataset,
-    riskMetrics: usdRisk as RiskDataset,
-    halvingCycles: usdHalvings as HalvingDataset,
-    correlations: usdCorrelations as CorrelationDataset,
-    btcHistory: usdHistory as HistoryDataset,
-    monthlyReturns: usdMonthly as MonthlyDataset,
-  },
-  gbp: {
-    btcDaily: gbpPrice as PriceDataset,
-    benchmarksDaily: gbpBenchmarks as BenchmarkDataset,
-    riskMetrics: gbpRisk as RiskDataset,
-    halvingCycles: gbpHalvings as HalvingDataset,
-    correlations: gbpCorrelations as CorrelationDataset,
-    btcHistory: gbpHistory as HistoryDataset,
-    monthlyReturns: gbpMonthly as MonthlyDataset,
-  },
+  usd: parseCurrency('usd', {
+    btcDaily: usdPrice,
+    benchmarksDaily: usdBenchmarks,
+    riskMetrics: usdRisk,
+    halvingCycles: usdHalvings,
+    correlations: usdCorrelations,
+    btcHistory: usdHistory,
+    monthlyReturns: usdMonthly,
+  }),
+  gbp: parseCurrency('gbp', {
+    btcDaily: gbpPrice,
+    benchmarksDaily: gbpBenchmarks,
+    riskMetrics: gbpRisk,
+    halvingCycles: gbpHalvings,
+    correlations: gbpCorrelations,
+    btcHistory: gbpHistory,
+    monthlyReturns: gbpMonthly,
+  }),
 };
 
 /**

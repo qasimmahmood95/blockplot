@@ -23,8 +23,12 @@ const FRED_CSV_URL = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${GBPUS
 /** ECB reference rates via Frankfurter: keyless and published every business day. */
 const FRANKFURTER_URL = 'https://api.frankfurter.app/1999-01-04..?from=GBP&to=USD';
 
-/** Fetch-level floor: FX history should cover the BTC series with room to spare. */
-const MIN_FX_DAYS = 3650;
+/**
+ * Depth floor for the *Yahoo* leg alone: a short response there means the
+ * ticker is being throttled or has changed shape, so it is dropped rather
+ * than merged. FRED and ECB carry their own depth and are not gated by it.
+ */
+const MIN_YAHOO_FX_DAYS = 3650;
 
 /**
  * Days the rate series may lag the BTC series before the carry-forward rule
@@ -32,6 +36,24 @@ const MIN_FX_DAYS = 3650;
  * at a stale rate. A long weekend plus a bank holiday is 4 days.
  */
 export const MAX_FX_LAG_DAYS = 5;
+
+/**
+ * Earliest rate worth committing. FRED reaches 1971, but BTC has no price
+ * before late 2009 and blockchain.com's history starts in 2010, so everything
+ * earlier is 800 KB of permanently committed JSON that can never convert a
+ * close. The floor keeps a year of headroom in case a deeper BTC source ever
+ * appears — days before the first quoted rate are dropped, not converted, so
+ * the headroom is what stops a source change silently truncating history.
+ */
+export const FX_HISTORY_FROM = '2009-01-01';
+
+/**
+ * Total order on dates. Returning 0 for a tie matters: with `-1 : 1` the
+ * comparator claims a > b for equal dates, so duplicates sort arbitrarily and
+ * the lookup below stops being order-independent.
+ */
+const byDate = (a: { date: string }, b: { date: string }): number =>
+  a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
 
 /**
  * Rate to divide a USD figure by, per date. FX markets close at weekends and
@@ -44,7 +66,7 @@ export const MAX_FX_LAG_DAYS = 5;
  * queried out of order. Order-independence removes that class of bug.
  */
 export function rateLookup(rates: BenchmarkDay[]): (date: string) => number | null {
-  const sorted = [...rates].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const sorted = [...rates].sort(byDate);
   return (date: string): number | null => {
     let lo = 0;
     let hi = sorted.length - 1;
@@ -133,7 +155,7 @@ export function parseFrankfurter(payload: unknown): BenchmarkDay[] {
   const { rates } = frankfurterSchema.parse(payload);
   const out = Object.entries(rates)
     .map(([date, quote]) => ({ date, close: quote.USD }))
-    .sort((a, b) => (a.date < b.date ? -1 : 1));
+    .sort(byDate);
   if (out.length === 0) throw new Error('parseFrankfurter: no rates');
   return out;
 }
@@ -145,19 +167,20 @@ export interface FxFetch {
 }
 
 /**
- * Rates come from three keyless sources because none is both deep and fresh:
- * Yahoo `range=max` reaches back to 1971 but its tail ran ten days stale on
- * the first live run, and FRED's `DEXUSUK` is published with a similar lag.
- * ECB reference rates (via Frankfurter) are published every business day and
- * supply the fresh end. Later sources win per date, so the merged series is
- * deep at the start and current at the tail.
+ * Rates come from three keyless sources because none is both deep and fresh.
+ * FRED's `DEXUSUK` reaches back to 1971 and Yahoo `range=max` matches it, but
+ * both publish with a lag — Yahoo's tail ran ten days stale on the first live
+ * run. ECB reference rates (via Frankfurter) start in 1999 but are published
+ * every business day, supplying the fresh end. Later sources win per date, so
+ * the merged series is deep at the start and current at the tail. Each leg is
+ * individually optional; `sources` records which ones a given run got.
  */
 export async function fetchGbpUsd(): Promise<FxFetch> {
   const parts: BenchmarkDay[][] = [];
   const sources: FxSource[] = [];
   try {
     const deep = await fetchYahooDaily(GBPUSD_YAHOO_TICKERS, { range: 'max' });
-    if (deep.series.length >= MIN_FX_DAYS) {
+    if (deep.series.length >= MIN_YAHOO_FX_DAYS) {
       parts.push(deep.series);
       sources.push('yahoo');
     }
@@ -176,7 +199,7 @@ export async function fetchGbpUsd(): Promise<FxFetch> {
   } catch {
     // optional; the lag guard in run.ts surfaces a stale tail
   }
-  const series = mergeRates(...parts);
+  const series = mergeRates(...parts).filter(({ date }) => date >= FX_HISTORY_FROM);
   if (series.length < 365) {
     throw new Error(`fetchGbpUsd: only ${series.length} rate days available`);
   }

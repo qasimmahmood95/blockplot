@@ -16,8 +16,9 @@ converts each daily close at that day's GBP/USD rate and recomputes every
 metric from the converted series, so drawdowns, volatility and monthly
 returns are the ones a GBP holder actually experienced. Each file carries a
 `currency` field naming which it is, and money fields are named for the
-quantity (`price`, `latestPrice`, `basePrice`) rather than a currency, since
-the same key holds dollars at the root and pounds under `gbp/`.
+quantity (`price`, `latestPrice`, `rangeHigh`, `basePrice`) rather than a
+currency, since the same key holds dollars at the root and pounds under
+`gbp/`.
 
 | File | Contents |
 | ---- | -------- |
@@ -52,10 +53,13 @@ conflicts on it must be resolved by keeping the union of days (never by
 discarding one side's points).
 
 `fx-gbpusd.json` merges three feeds because none is both deep and fresh —
-Yahoo reaches back to 1971 but its tail can run over a week stale, FRED lags
-similarly, and ECB rates are published every business day but start in 1999.
-Later sources win per date, and the `sources` field records which feeds
-actually contributed to a given file.
+FRED `DEXUSUK` and Yahoo both reach 1971 but publish with a lag (Yahoo's tail
+has run over a week stale), while ECB rates are published every business day
+but start in 1999. Later sources win per date, and the `sources` field
+records which feeds actually contributed to a given file. The committed
+series is cut at 2009-01-01: FRED goes back to 1971, but BTC has no price
+before then, so earlier rates are permanently committed JSON that can never
+convert a close.
 
 FX markets close at weekends and on bank holidays while BTC trades every
 day, so the last quote is **carried forward** — the standard convention, and

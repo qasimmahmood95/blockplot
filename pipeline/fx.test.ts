@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   convertBenchmark,
   convertSeries,
+  FX_HISTORY_FROM,
   fxLagDays,
   mergeRates,
   parseFrankfurter,
@@ -41,6 +42,26 @@ describe('rateLookup', () => {
 
   it('sorts unsorted input rather than trusting order', () => {
     expect(rateLookup(unsortedRates)('2024-03-02')).toBe(1.25);
+  });
+
+  // The trap this lookup was rewritten to remove: a forward cursor that never
+  // rewinds answers a later query correctly and then hands back that same
+  // (too-late) rate for an earlier date. Every other case here queries in
+  // ascending order, which the buggy version also passes.
+  it('rewinds when a caller queries out of order', () => {
+    const lookup = rateLookup(rates);
+    expect(lookup('2024-03-04')).toBe(1.28);
+    expect(lookup('2024-03-01')).toBe(1.25);
+  });
+
+  it('resolves a duplicated date the same way regardless of input order', () => {
+    const dupA = [
+      { date: '2024-03-01', close: 1.25 },
+      { date: '2024-03-01', close: 1.25 },
+      { date: '2024-03-04', close: 1.28 },
+    ];
+    expect(rateLookup(dupA)('2024-03-02')).toBe(1.25);
+    expect(rateLookup([...dupA].reverse())('2024-03-02')).toBe(1.25);
   });
 });
 
@@ -143,5 +164,13 @@ describe('parseFrankfurter', () => {
     expect(() => parseFrankfurter({ rates: { '2024-03-01': { EUR: 1.17 } } })).toThrow();
     expect(() => parseFrankfurter({})).toThrow();
     expect(() => parseFrankfurter({ rates: {} })).toThrow('no rates');
+  });
+});
+
+describe('FX_HISTORY_FROM', () => {
+  it('sits a year before any BTC price, so no close loses its rate', () => {
+    // blockchain.com's history starts 2010-07-17 at the earliest; the floor
+    // must be earlier than that, and earlier than BTC's first traded price.
+    expect(FX_HISTORY_FROM < '2010-01-01').toBe(true);
   });
 });

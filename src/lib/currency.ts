@@ -22,7 +22,7 @@ export const CURRENCY_META: Record<Currency, CurrencyMeta> = {
  */
 export const GBP_METHOD_NOTE =
   'GBP figures are not converted USD: each daily close is converted at that day’s GBP/USD rate ' +
-  '(ECB reference rates, with the last quote carried across weekends and holidays) and every ' +
+  '(central-bank reference rates, with the last quote carried across weekends and holidays) and every ' +
   'metric recomputed from the converted series, so a GBP reader sees the returns they actually ' +
   'experienced.';
 

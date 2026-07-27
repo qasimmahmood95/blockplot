@@ -1,7 +1,9 @@
 import type { DailyPrice, PriceStats } from './schema';
 
 /**
- * Collapse raw CoinGecko [unixMs, priceUsd] points into one entry per UTC day.
+ * Collapse raw CoinGecko [unixMs, price] points into one entry per UTC day.
+ * The feed is USD; conversion into other display currencies happens later, in
+ * `fx.ts`, so nothing downstream of here is currency-specific.
  * The feed's midnight points and its trailing "now" point can share a date;
  * the chronologically last value for each day wins.
  */

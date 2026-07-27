@@ -85,8 +85,10 @@ fixed fixtures with exact, independently derived expected values.
   GBP/USD rate and every metric recomputed from the converted series — a
   GBP holder's drawdown, volatility and monthly returns genuinely differ
   from the USD ones, so converting the finished figures at today's rate
-  would be wrong. Rates merge Yahoo (deep), FRED `DEXUSUK` and ECB
-  reference rates (fresh), later sources winning per date. FX markets close
+  would be wrong. Rates merge FRED `DEXUSUK` and Yahoo (both reach 1971,
+  both publish with a lag) with ECB reference rates (from 1999, published
+  every business day), later sources winning per date; each leg is
+  optional and the file records which ones a run actually got. FX markets close
   at weekends and on bank holidays while BTC does not, so the last quote is
   carried forward; days before the first quoted rate are dropped rather
   than converted, and the pipeline warns if the rate tail lags BTC by more
