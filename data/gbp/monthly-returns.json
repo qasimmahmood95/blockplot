@@ -2,93 +2,93 @@
   "schemaVersion": 1,
   "source": "blockchain.info",
   "currency": "gbp",
-  "fetchedAt": "2026-07-27T12:18:41.257Z",
+  "fetchedAt": "2026-07-27T12:51:51.640Z",
   "asOf": "2026-07-27",
   "months": [
     {
       "year": 2010,
       "month": 9,
-      "returnPct": -20
+      "returnPct": -16.98
     },
     {
       "year": 2010,
       "month": 10,
-      "returnPct": 200
+      "returnPct": 215.04
     },
     {
       "year": 2010,
       "month": 11,
-      "returnPct": 50
+      "returnPct": 51.51
     },
     {
       "year": 2010,
       "month": 12,
-      "returnPct": 5.56
+      "returnPct": 7.09
     },
     {
       "year": 2011,
       "month": 1,
-      "returnPct": 57.89
+      "returnPct": 56.18
     },
     {
       "year": 2011,
       "month": 2,
-      "returnPct": 96.67
+      "returnPct": 96.08
     },
     {
       "year": 2011,
       "month": 3,
-      "returnPct": -15.25
+      "returnPct": -15.92
     },
     {
       "year": 2011,
       "month": 4,
-      "returnPct": 266
+      "returnPct": 267.8
     },
     {
       "year": 2011,
       "month": 5,
-      "returnPct": 202.19
+      "returnPct": 202.08
     },
     {
       "year": 2011,
       "month": 6,
-      "returnPct": 95.84
+      "returnPct": 95.97
     },
     {
       "year": 2011,
       "month": 7,
-      "returnPct": -20.31
+      "returnPct": -20.38
     },
     {
       "year": 2011,
       "month": 8,
-      "returnPct": -35.34
+      "returnPct": -35.27
     },
     {
       "year": 2011,
       "month": 9,
-      "returnPct": -43.19
+      "returnPct": -43.21
     },
     {
       "year": 2011,
       "month": 10,
-      "returnPct": -29.34
+      "returnPct": -29.39
     },
     {
       "year": 2011,
       "month": 11,
-      "returnPct": -15.18
+      "returnPct": -15.1
     },
     {
       "year": 2011,
       "month": 12,
-      "returnPct": 52.11
+      "returnPct": 51.83
     },
     {
       "year": 2012,
       "month": 1,
-      "returnPct": 23.18
+      "returnPct": 23.21
     },
     {
       "year": 2012,
@@ -98,47 +98,47 @@
     {
       "year": 2012,
       "month": 3,
-      "returnPct": -3.19
+      "returnPct": -2.93
     },
     {
       "year": 2012,
       "month": 4,
-      "returnPct": 1.65
+      "returnPct": 1.58
     },
     {
       "year": 2012,
       "month": 5,
-      "returnPct": 8.44
+      "returnPct": 8.38
     },
     {
       "year": 2012,
       "month": 6,
-      "returnPct": 27.84
+      "returnPct": 27.95
     },
     {
       "year": 2012,
       "month": 7,
-      "returnPct": 37.7
+      "returnPct": 37.67
     },
     {
       "year": 2012,
       "month": 8,
-      "returnPct": 17.01
+      "returnPct": 16.92
     },
     {
       "year": 2012,
       "month": 9,
-      "returnPct": 12.06
+      "returnPct": 12.05
     },
     {
       "year": 2012,
       "month": 10,
-      "returnPct": -12.06
+      "returnPct": -12.08
     },
     {
       "year": 2012,
       "month": 11,
-      "returnPct": 16.08
+      "returnPct": 16.16
     },
     {
       "year": 2012,
@@ -148,17 +148,17 @@
     {
       "year": 2013,
       "month": 1,
-      "returnPct": 51.61
+      "returnPct": 51.53
     },
     {
       "year": 2013,
       "month": 2,
-      "returnPct": 61.56
+      "returnPct": 61.61
     },
     {
       "year": 2013,
       "month": 3,
-      "returnPct": 196.25
+      "returnPct": 196.2
     },
     {
       "year": 2013,
@@ -168,7 +168,7 @@
     {
       "year": 2013,
       "month": 5,
-      "returnPct": -9.38
+      "returnPct": -9.39
     },
     {
       "year": 2013,
@@ -178,7 +178,7 @@
     {
       "year": 2013,
       "month": 7,
-      "returnPct": 13.96
+      "returnPct": 13.95
     },
     {
       "year": 2013,
@@ -198,7 +198,7 @@
     {
       "year": 2013,
       "month": 11,
-      "returnPct": 440.31
+      "returnPct": 440.3
     },
     {
       "year": 2013,
@@ -218,7 +218,7 @@
     {
       "year": 2014,
       "month": 3,
-      "returnPct": -21.01
+      "returnPct": -21
     },
     {
       "year": 2014,
@@ -303,7 +303,7 @@
     {
       "year": 2015,
       "month": 8,
-      "returnPct": -20
+      "returnPct": -19.99
     },
     {
       "year": 2015,
@@ -348,7 +348,7 @@
     {
       "year": 2016,
       "month": 5,
-      "returnPct": 15.24
+      "returnPct": 15.25
     },
     {
       "year": 2016,
@@ -964,19 +964,19 @@
   "years": [
     {
       "year": 2010,
-      "returnPct": 280.02
+      "returnPct": 324.36
     },
     {
       "year": 2011,
-      "returnPct": 1421.21
+      "returnPct": 1393.5
     },
     {
       "year": 2012,
-      "returnPct": 190.31
+      "returnPct": 190.87
     },
     {
       "year": 2013,
-      "returnPct": 5207.59
+      "returnPct": 5204.39
     },
     {
       "year": 2014,
@@ -984,11 +984,11 @@
     },
     {
       "year": 2015,
-      "returnPct": 44.68
+      "returnPct": 44.7
     },
     {
       "year": 2016,
-      "returnPct": 169.56
+      "returnPct": 169.58
     },
     {
       "year": 2017,

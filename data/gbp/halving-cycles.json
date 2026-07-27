@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "source": "blockchain.info",
   "currency": "gbp",
-  "fetchedAt": "2026-07-27T12:18:41.257Z",
+  "fetchedAt": "2026-07-27T12:51:51.640Z",
   "asOf": "2026-07-27",
   "cycles": [
     {
       "cycle": 1,
       "halvingDate": "2012-11-28",
       "endDate": "2016-07-09",
-      "basePriceUsd": 7.82,
+      "basePrice": 7.823746635788947,
       "series": [
         {
           "day": 0,
@@ -17,43 +17,43 @@
         },
         {
           "day": 1,
-          "multiple": 0.9936
+          "multiple": 0.9926
         },
         {
           "day": 2,
-          "multiple": 1.0064
+          "multiple": 1.0063
         },
         {
           "day": 3,
-          "multiple": 1.0102
+          "multiple": 1.0103
         },
         {
           "day": 4,
-          "multiple": 1.0128
+          "multiple": 1.0127
         },
         {
           "day": 5,
-          "multiple": 1.009
+          "multiple": 1.008
         },
         {
           "day": 6,
-          "multiple": 1.0115
+          "multiple": 1.0111
         },
         {
           "day": 7,
-          "multiple": 1.0396
+          "multiple": 1.0397
         },
         {
           "day": 8,
-          "multiple": 1.0754
+          "multiple": 1.075
         },
         {
           "day": 9,
-          "multiple": 1.0934
+          "multiple": 1.093
         },
         {
           "day": 10,
-          "multiple": 1.0908
+          "multiple": 1.0898
         },
         {
           "day": 11,
@@ -61,71 +61,71 @@
         },
         {
           "day": 12,
-          "multiple": 1.0767
+          "multiple": 1.0759
         },
         {
           "day": 13,
-          "multiple": 1.078
+          "multiple": 1.0778
         },
         {
           "day": 14,
-          "multiple": 1.0806
+          "multiple": 1.0799
         },
         {
           "day": 15,
-          "multiple": 1.0934
+          "multiple": 1.0926
         },
         {
           "day": 16,
-          "multiple": 1.0959
+          "multiple": 1.0958
         },
         {
           "day": 17,
-          "multiple": 1.0997
+          "multiple": 1.0998
         },
         {
           "day": 18,
-          "multiple": 1.0908
+          "multiple": 1.0902
         },
         {
           "day": 19,
-          "multiple": 1.0754
+          "multiple": 1.0749
         },
         {
           "day": 20,
-          "multiple": 1.0627
+          "multiple": 1.0619
         },
         {
           "day": 21,
-          "multiple": 1.0512
+          "multiple": 1.0508
         },
         {
           "day": 22,
-          "multiple": 1.0601
+          "multiple": 1.0596
         },
         {
           "day": 23,
-          "multiple": 1.0793
+          "multiple": 1.0794
         },
         {
           "day": 24,
-          "multiple": 1.0742
+          "multiple": 1.0739
         },
         {
           "day": 25,
-          "multiple": 1.0691
+          "multiple": 1.0684
         },
         {
           "day": 26,
-          "multiple": 1.0665
+          "multiple": 1.0656
         },
         {
           "day": 27,
-          "multiple": 1.0639
+          "multiple": 1.0632
         },
         {
           "day": 28,
-          "multiple": 1.0665
+          "multiple": 1.0658
         },
         {
           "day": 29,
@@ -133,27 +133,27 @@
         },
         {
           "day": 30,
-          "multiple": 1.0703
+          "multiple": 1.0701
         },
         {
           "day": 31,
-          "multiple": 1.0818
+          "multiple": 1.0812
         },
         {
           "day": 32,
-          "multiple": 1.0818
+          "multiple": 1.0812
         },
         {
           "day": 33,
-          "multiple": 1.0729
+          "multiple": 1.0728
         },
         {
           "day": 34,
-          "multiple": 1.0742
+          "multiple": 1.0736
         },
         {
           "day": 35,
-          "multiple": 1.0614
+          "multiple": 1.0607
         },
         {
           "day": 36,
@@ -161,35 +161,35 @@
         },
         {
           "day": 37,
-          "multiple": 1.0754
+          "multiple": 1.0748
         },
         {
           "day": 38,
-          "multiple": 1.078
+          "multiple": 1.0772
         },
         {
           "day": 39,
-          "multiple": 1.0806
+          "multiple": 1.0804
         },
         {
           "day": 40,
-          "multiple": 1.0767
+          "multiple": 1.0765
         },
         {
           "day": 41,
-          "multiple": 1.0831
+          "multiple": 1.0828
         },
         {
           "day": 42,
-          "multiple": 1.1049
+          "multiple": 1.1043
         },
         {
           "day": 43,
-          "multiple": 1.1151
+          "multiple": 1.1144
         },
         {
           "day": 44,
-          "multiple": 1.1355
+          "multiple": 1.1351
         },
         {
           "day": 45,
@@ -197,59 +197,59 @@
         },
         {
           "day": 46,
-          "multiple": 1.1368
+          "multiple": 1.1367
         },
         {
           "day": 47,
-          "multiple": 1.1407
+          "multiple": 1.1396
         },
         {
           "day": 48,
-          "multiple": 1.1419
+          "multiple": 1.1418
         },
         {
           "day": 49,
-          "multiple": 1.1611
+          "multiple": 1.1612
         },
         {
           "day": 50,
-          "multiple": 1.1854
+          "multiple": 1.1851
         },
         {
           "day": 51,
-          "multiple": 1.2481
+          "multiple": 1.2472
         },
         {
           "day": 52,
-          "multiple": 1.2813
+          "multiple": 1.281
         },
         {
           "day": 53,
-          "multiple": 1.2737
+          "multiple": 1.2729
         },
         {
           "day": 54,
-          "multiple": 1.3005
+          "multiple": 1.2999
         },
         {
           "day": 55,
-          "multiple": 1.3811
+          "multiple": 1.3805
         },
         {
           "day": 56,
-          "multiple": 1.4182
+          "multiple": 1.4179
         },
         {
           "day": 57,
-          "multiple": 1.4527
+          "multiple": 1.4521
         },
         {
           "day": 58,
-          "multiple": 1.5435
+          "multiple": 1.5432
         },
         {
           "day": 59,
-          "multiple": 1.4987
+          "multiple": 1.4979
         },
         {
           "day": 60,
@@ -257,5035 +257,5035 @@
         },
         {
           "day": 61,
-          "multiple": 1.4719
+          "multiple": 1.4713
         },
         {
           "day": 62,
-          "multiple": 1.5256
+          "multiple": 1.5245
         },
         {
           "day": 63,
-          "multiple": 1.6036
+          "multiple": 1.6025
         },
         {
           "day": 64,
-          "multiple": 1.6266
+          "multiple": 1.6257
         },
         {
           "day": 65,
-          "multiple": 1.7289
+          "multiple": 1.7275
         },
         {
           "day": 66,
-          "multiple": 1.7161
+          "multiple": 1.7154
         },
         {
           "day": 67,
-          "multiple": 1.6957
+          "multiple": 1.6952
         },
         {
           "day": 68,
-          "multiple": 1.6893
+          "multiple": 1.6884
         },
         {
           "day": 69,
-          "multiple": 1.7046
+          "multiple": 1.7042
         },
         {
           "day": 70,
-          "multiple": 1.7084
+          "multiple": 1.7074
         },
         {
           "day": 71,
-          "multiple": 1.7532
+          "multiple": 1.752
         },
         {
           "day": 72,
-          "multiple": 1.7928
+          "multiple": 1.7916
         },
         {
           "day": 73,
-          "multiple": 1.8939
+          "multiple": 1.8927
         },
         {
           "day": 74,
-          "multiple": 1.9284
+          "multiple": 1.9275
         },
         {
           "day": 75,
-          "multiple": 1.954
+          "multiple": 1.9527
         },
         {
           "day": 76,
-          "multiple": 2.0205
+          "multiple": 2.0199
         },
         {
           "day": 77,
-          "multiple": 2.0665
+          "multiple": 2.0651
         },
         {
           "day": 78,
-          "multiple": 2.0038
+          "multiple": 2.0029
         },
         {
           "day": 79,
-          "multiple": 2.2455
+          "multiple": 2.2448
         },
         {
           "day": 80,
-          "multiple": 2.2519
+          "multiple": 2.2506
         },
         {
           "day": 81,
-          "multiple": 2.2621
+          "multiple": 2.2605
         },
         {
           "day": 82,
-          "multiple": 2.2212
+          "multiple": 2.2203
         },
         {
           "day": 83,
-          "multiple": 2.2302
+          "multiple": 2.2297
         },
         {
           "day": 84,
-          "multiple": 2.4629
+          "multiple": 2.4611
         },
         {
           "day": 85,
-          "multiple": 2.4962
+          "multiple": 2.4955
         },
         {
           "day": 86,
-          "multiple": 2.4872
+          "multiple": 2.486
         },
         {
           "day": 87,
-          "multiple": 2.5512
+          "multiple": 2.5503
         },
         {
           "day": 88,
-          "multiple": 2.491
+          "multiple": 2.4901
         },
         {
           "day": 89,
-          "multiple": 2.523
+          "multiple": 2.5222
         },
         {
           "day": 90,
-          "multiple": 2.5665
+          "multiple": 2.5651
         },
         {
           "day": 91,
-          "multiple": 2.6317
+          "multiple": 2.6309
         },
         {
           "day": 92,
-          "multiple": 2.6279
+          "multiple": 2.6272
         },
         {
           "day": 93,
-          "multiple": 2.8376
+          "multiple": 2.8362
         },
         {
           "day": 94,
-          "multiple": 2.9348
+          "multiple": 2.9331
         },
         {
           "day": 95,
-          "multiple": 2.913
+          "multiple": 2.9119
         },
         {
           "day": 96,
-          "multiple": 2.9092
+          "multiple": 2.908
         },
         {
           "day": 97,
-          "multiple": 3.0703
+          "multiple": 3.0691
         },
         {
           "day": 98,
-          "multiple": 3.4476
+          "multiple": 3.4454
         },
         {
           "day": 99,
-          "multiple": 3.5716
+          "multiple": 3.5693
         },
         {
           "day": 100,
-          "multiple": 3.6714
+          "multiple": 3.6697
         },
         {
           "day": 101,
-          "multiple": 3.7442
+          "multiple": 3.742
         },
         {
           "day": 102,
-          "multiple": 3.9936
+          "multiple": 3.9912
         },
         {
           "day": 103,
-          "multiple": 3.9194
+          "multiple": 3.9175
         },
         {
           "day": 104,
-          "multiple": 4.1381
+          "multiple": 4.1358
         },
         {
           "day": 105,
-          "multiple": 3.789
+          "multiple": 3.7869
         },
         {
           "day": 106,
-          "multiple": 4.0281
+          "multiple": 4.0259
         },
         {
           "day": 107,
-          "multiple": 3.9565
+          "multiple": 3.9545
         },
         {
           "day": 108,
-          "multiple": 3.9604
+          "multiple": 3.9579
         },
         {
           "day": 109,
-          "multiple": 3.9898
+          "multiple": 3.9874
         },
         {
           "day": 110,
-          "multiple": 4.0128
+          "multiple": 4.0105
         },
         {
           "day": 111,
-          "multiple": 4.4066
+          "multiple": 4.4048
         },
         {
           "day": 112,
-          "multiple": 5.0294
+          "multiple": 5.0267
         },
         {
           "day": 113,
-          "multiple": 5.5614
+          "multiple": 5.559
         },
         {
           "day": 114,
-          "multiple": 5.9169
+          "multiple": 5.9139
         },
         {
           "day": 115,
-          "multiple": 5.9169
+          "multiple": 5.9139
         },
         {
           "day": 116,
-          "multiple": 5.3913
+          "multiple": 5.3886
         },
         {
           "day": 117,
-          "multiple": 6.0563
+          "multiple": 6.0529
         },
         {
           "day": 118,
-          "multiple": 6.2558
+          "multiple": 6.2524
         },
         {
           "day": 119,
-          "multiple": 6.6688
+          "multiple": 6.6662
         },
         {
           "day": 120,
-          "multiple": 7.4987
+          "multiple": 7.4953
         },
         {
           "day": 121,
-          "multiple": 7.3645
+          "multiple": 7.3612
         },
         {
           "day": 122,
-          "multiple": 7.5793
+          "multiple": 7.5757
         },
         {
           "day": 123,
-          "multiple": 7.7852
+          "multiple": 7.7819
         },
         {
           "day": 124,
-          "multiple": 7.8286
+          "multiple": 7.8249
         },
         {
           "day": 125,
-          "multiple": 8.7724
+          "multiple": 8.7678
         },
         {
           "day": 126,
-          "multiple": 9.9246
+          "multiple": 9.9193
         },
         {
           "day": 127,
-          "multiple": 11.0754
+          "multiple": 11.0703
         },
         {
           "day": 128,
-          "multiple": 11.1573
+          "multiple": 11.1516
         },
         {
           "day": 129,
-          "multiple": 11.9207
+          "multiple": 11.9146
         },
         {
           "day": 130,
-          "multiple": 12.0473
+          "multiple": 12.0412
         },
         {
           "day": 131,
-          "multiple": 13.6445
+          "multiple": 13.6385
         },
         {
           "day": 132,
-          "multiple": 15.6164
+          "multiple": 15.6084
         },
         {
           "day": 133,
-          "multiple": 19.2992
+          "multiple": 19.2905
         },
         {
           "day": 134,
-          "multiple": 13.2775
+          "multiple": 13.2713
         },
         {
           "day": 135,
-          "multiple": 10.3977
+          "multiple": 10.3927
         },
         {
           "day": 136,
-          "multiple": 10.2059
+          "multiple": 10.2013
         },
         {
           "day": 137,
-          "multiple": 8.3248
+          "multiple": 8.3208
         },
         {
           "day": 138,
-          "multiple": 8.3376
+          "multiple": 8.3338
         },
         {
           "day": 139,
-          "multiple": 5.6841
+          "multiple": 5.6809
         },
         {
           "day": 140,
-          "multiple": 5.7046
+          "multiple": 5.702
         },
         {
           "day": 141,
-          "multiple": 7.8683
+          "multiple": 7.8644
         },
         {
           "day": 142,
-          "multiple": 9.2468
+          "multiple": 9.2427
         },
         {
           "day": 143,
-          "multiple": 9.9066
+          "multiple": 9.9022
         },
         {
           "day": 144,
-          "multiple": 10.6215
+          "multiple": 10.6166
         },
         {
           "day": 145,
-          "multiple": 9.9949
+          "multiple": 9.9902
         },
         {
           "day": 146,
-          "multiple": 10.6471
+          "multiple": 10.6423
         },
         {
           "day": 147,
-          "multiple": 11.945
+          "multiple": 11.9388
         },
         {
           "day": 148,
-          "multiple": 12.8223
+          "multiple": 12.8163
         },
         {
           "day": 149,
-          "multiple": 11.7327
+          "multiple": 11.7277
         },
         {
           "day": 150,
-          "multiple": 11.321
+          "multiple": 11.3155
         },
         {
           "day": 151,
-          "multiple": 10.6189
+          "multiple": 10.6135
         },
         {
           "day": 152,
-          "multiple": 11.0652
+          "multiple": 11.0598
         },
         {
           "day": 153,
-          "multiple": 11.9373
+          "multiple": 11.9321
         },
         {
           "day": 154,
-          "multiple": 11.4105
+          "multiple": 11.4048
         },
         {
           "day": 155,
-          "multiple": 9.6023
+          "multiple": 9.5979
         },
         {
           "day": 156,
-          "multiple": 8.4923
+          "multiple": 8.4882
         },
         {
           "day": 157,
-          "multiple": 7.9578
+          "multiple": 7.9541
         },
         {
           "day": 158,
-          "multiple": 9.298
+          "multiple": 9.2935
         },
         {
           "day": 159,
-          "multiple": 9.5396
+          "multiple": 9.5356
         },
         {
           "day": 160,
-          "multiple": 9.2494
+          "multiple": 9.245
         },
         {
           "day": 161,
-          "multiple": 9.2097
+          "multiple": 9.2051
         },
         {
           "day": 162,
-          "multiple": 9.312
+          "multiple": 9.308
         },
         {
           "day": 163,
-          "multiple": 9.3683
+          "multiple": 9.3633
         },
         {
           "day": 164,
-          "multiple": 9.743
+          "multiple": 9.738
         },
         {
           "day": 165,
-          "multiple": 9.6164
+          "multiple": 9.6117
         },
         {
           "day": 166,
-          "multiple": 9.5767
+          "multiple": 9.5723
         },
         {
           "day": 167,
-          "multiple": 9.8619
+          "multiple": 9.8569
         },
         {
           "day": 168,
-          "multiple": 9.4233
+          "multiple": 9.4193
         },
         {
           "day": 169,
-          "multiple": 9.5806
+          "multiple": 9.5763
         },
         {
           "day": 170,
-          "multiple": 9.8555
+          "multiple": 9.8509
         },
         {
           "day": 171,
-          "multiple": 10.3517
+          "multiple": 10.3468
         },
         {
           "day": 172,
-          "multiple": 10.3504
+          "multiple": 10.3451
         },
         {
           "day": 173,
-          "multiple": 10.2634
+          "multiple": 10.2581
         },
         {
           "day": 174,
-          "multiple": 10.298
+          "multiple": 10.2924
         },
         {
           "day": 175,
-          "multiple": 10.39
+          "multiple": 10.3847
         },
         {
           "day": 176,
-          "multiple": 10.4361
+          "multiple": 10.4315
         },
         {
           "day": 177,
-          "multiple": 10.7302
+          "multiple": 10.7254
         },
         {
           "day": 178,
-          "multiple": 11.3056
+          "multiple": 11.3002
         },
         {
           "day": 179,
-          "multiple": 11.179
+          "multiple": 11.1732
         },
         {
           "day": 180,
-          "multiple": 11.289
+          "multiple": 11.2831
         },
         {
           "day": 181,
-          "multiple": 10.9693
+          "multiple": 10.9641
         },
         {
           "day": 182,
-          "multiple": 10.9143
+          "multiple": 10.9093
         },
         {
           "day": 183,
-          "multiple": 11.1841
+          "multiple": 11.1787
         },
         {
           "day": 184,
-          "multiple": 10.8171
+          "multiple": 10.8118
         },
         {
           "day": 185,
-          "multiple": 10.8286
+          "multiple": 10.8236
         },
         {
           "day": 186,
-          "multiple": 10.8517
+          "multiple": 10.8471
         },
         {
           "day": 187,
-          "multiple": 10.2519
+          "multiple": 10.2464
         },
         {
           "day": 188,
-          "multiple": 10.2008
+          "multiple": 10.1957
         },
         {
           "day": 189,
-          "multiple": 10.1125
+          "multiple": 10.1077
         },
         {
           "day": 190,
-          "multiple": 10.0895
+          "multiple": 10.0853
         },
         {
           "day": 191,
-          "multiple": 9.7673
+          "multiple": 9.7626
         },
         {
           "day": 192,
-          "multiple": 9.1535
+          "multiple": 9.1496
         },
         {
           "day": 193,
-          "multiple": 8.8657
+          "multiple": 8.8616
         },
         {
           "day": 194,
-          "multiple": 8.2494
+          "multiple": 8.2451
         },
         {
           "day": 195,
-          "multiple": 8.7289
+          "multiple": 8.7244
         },
         {
           "day": 196,
-          "multiple": 8.9054
+          "multiple": 8.9011
         },
         {
           "day": 197,
-          "multiple": 8.8197
+          "multiple": 8.8152
         },
         {
           "day": 198,
-          "multiple": 8.5038
+          "multiple": 8.5003
         },
         {
           "day": 199,
-          "multiple": 8.1841
+          "multiple": 8.1796
         },
         {
           "day": 200,
-          "multiple": 8.1598
+          "multiple": 8.1559
         },
         {
           "day": 201,
-          "multiple": 8.1189
+          "multiple": 8.1144
         },
         {
           "day": 202,
-          "multiple": 8.3465
+          "multiple": 8.3424
         },
         {
           "day": 203,
-          "multiple": 8.766
+          "multiple": 8.7623
         },
         {
           "day": 204,
-          "multiple": 8.913
+          "multiple": 8.9094
         },
         {
           "day": 205,
-          "multiple": 9.1995
+          "multiple": 9.1952
         },
         {
           "day": 206,
-          "multiple": 9.0959
+          "multiple": 9.0918
         },
         {
           "day": 207,
-          "multiple": 8.9706
+          "multiple": 8.966
         },
         {
           "day": 208,
-          "multiple": 8.9821
+          "multiple": 8.9772
         },
         {
           "day": 209,
-          "multiple": 8.509
+          "multiple": 8.5045
         },
         {
           "day": 210,
-          "multiple": 8.6522
+          "multiple": 8.6479
         },
         {
           "day": 211,
-          "multiple": 8.7059
+          "multiple": 8.7018
         },
         {
           "day": 212,
-          "multiple": 8.5294
+          "multiple": 8.5247
         },
         {
           "day": 213,
-          "multiple": 7.9322
+          "multiple": 7.9283
         },
         {
           "day": 214,
-          "multiple": 7.9604
+          "multiple": 7.9568
         },
         {
           "day": 215,
-          "multiple": 8.1675
+          "multiple": 8.1637
         },
         {
           "day": 216,
-          "multiple": 7.3325
+          "multiple": 7.3288
         },
         {
           "day": 217,
-          "multiple": 7.6304
+          "multiple": 7.6262
         },
         {
           "day": 218,
-          "multiple": 6.6151
+          "multiple": 6.6113
         },
         {
           "day": 219,
-          "multiple": 6.8363
+          "multiple": 6.8335
         },
         {
           "day": 220,
-          "multiple": 5.8824
+          "multiple": 5.879
         },
         {
           "day": 221,
-          "multiple": 6.0026
+          "multiple": 5.9994
         },
         {
           "day": 222,
-          "multiple": 6.4309
+          "multiple": 6.4277
         },
         {
           "day": 223,
-          "multiple": 6.5806
+          "multiple": 6.5774
         },
         {
           "day": 224,
-          "multiple": 6.5844
+          "multiple": 6.5817
         },
         {
           "day": 225,
-          "multiple": 7.4361
+          "multiple": 7.4325
         },
         {
           "day": 226,
-          "multiple": 7.5243
+          "multiple": 7.5211
         },
         {
           "day": 227,
-          "multiple": 7.9552
+          "multiple": 7.9517
         },
         {
           "day": 228,
-          "multiple": 8.2954
+          "multiple": 8.291
         },
         {
           "day": 229,
-          "multiple": 8.0473
+          "multiple": 8.0429
         },
         {
           "day": 230,
-          "multiple": 8.3389
+          "multiple": 8.3347
         },
         {
           "day": 231,
-          "multiple": 8.1547
+          "multiple": 8.1507
         },
         {
           "day": 232,
-          "multiple": 8.3069
+          "multiple": 8.3031
         },
         {
           "day": 233,
-          "multiple": 7.5499
+          "multiple": 7.5467
         },
         {
           "day": 234,
-          "multiple": 7.7097
+          "multiple": 7.7058
         },
         {
           "day": 235,
-          "multiple": 7.491
+          "multiple": 7.4872
         },
         {
           "day": 236,
-          "multiple": 7.5729
+          "multiple": 7.5687
         },
         {
           "day": 237,
-          "multiple": 7.6714
+          "multiple": 7.6678
         },
         {
           "day": 238,
-          "multiple": 7.9578
+          "multiple": 7.954
         },
         {
           "day": 239,
-          "multiple": 7.9066
+          "multiple": 7.9031
         },
         {
           "day": 240,
-          "multiple": 8.055
+          "multiple": 8.0507
         },
         {
           "day": 241,
-          "multiple": 7.9731
+          "multiple": 7.9694
         },
         {
           "day": 242,
-          "multiple": 7.8159
+          "multiple": 7.8117
         },
         {
           "day": 243,
-          "multiple": 8.2123
+          "multiple": 8.2084
         },
         {
           "day": 244,
-          "multiple": 8.4731
+          "multiple": 8.4688
         },
         {
           "day": 245,
-          "multiple": 9.0716
+          "multiple": 9.0666
         },
         {
           "day": 246,
-          "multiple": 8.9182
+          "multiple": 8.9139
         },
         {
           "day": 247,
-          "multiple": 8.8299
+          "multiple": 8.8253
         },
         {
           "day": 248,
-          "multiple": 8.8197
+          "multiple": 8.8152
         },
         {
           "day": 249,
-          "multiple": 8.8568
+          "multiple": 8.8531
         },
         {
           "day": 250,
-          "multiple": 8.7992
+          "multiple": 8.7944
         },
         {
           "day": 251,
-          "multiple": 8.8964
+          "multiple": 8.8927
         },
         {
           "day": 252,
-          "multiple": 8.8031
+          "multiple": 8.7991
         },
         {
           "day": 253,
-          "multiple": 8.7455
+          "multiple": 8.7407
         },
         {
           "day": 254,
-          "multiple": 8.4847
+          "multiple": 8.4802
         },
         {
           "day": 255,
-          "multiple": 8.4668
+          "multiple": 8.4629
         },
         {
           "day": 256,
-          "multiple": 8.4834
+          "multiple": 8.4794
         },
         {
           "day": 257,
-          "multiple": 8.6816
+          "multiple": 8.677
         },
         {
           "day": 258,
-          "multiple": 8.8197
+          "multiple": 8.8154
         },
         {
           "day": 259,
-          "multiple": 9.0217
+          "multiple": 9.0172
         },
         {
           "day": 260,
-          "multiple": 8.1394
+          "multiple": 8.1358
         },
         {
           "day": 261,
-          "multiple": 8.023
+          "multiple": 8.0185
         },
         {
           "day": 262,
-          "multiple": 8.0358
+          "multiple": 8.0324
         },
         {
           "day": 263,
-          "multiple": 8.156
+          "multiple": 8.1518
         },
         {
           "day": 264,
-          "multiple": 8.1164
+          "multiple": 8.1126
         },
         {
           "day": 265,
-          "multiple": 8.3964
+          "multiple": 8.3919
         },
         {
           "day": 266,
-          "multiple": 8.5473
+          "multiple": 8.5433
         },
         {
           "day": 267,
-          "multiple": 9.0627
+          "multiple": 9.0583
         },
         {
           "day": 268,
-          "multiple": 9.0256
+          "multiple": 9.0207
         },
         {
           "day": 269,
-          "multiple": 8.8555
+          "multiple": 8.8513
         },
         {
           "day": 270,
-          "multiple": 8.9693
+          "multiple": 8.9656
         },
         {
           "day": 271,
-          "multiple": 9.3082
+          "multiple": 9.3035
         },
         {
           "day": 272,
-          "multiple": 9.2276
+          "multiple": 9.2226
         },
         {
           "day": 273,
-          "multiple": 9.7366
+          "multiple": 9.7313
         },
         {
           "day": 274,
-          "multiple": 9.7174
+          "multiple": 9.7126
         },
         {
           "day": 275,
-          "multiple": 9.7775
+          "multiple": 9.7724
         },
         {
           "day": 276,
-          "multiple": 10.3005
+          "multiple": 10.2952
         },
         {
           "day": 277,
-          "multiple": 10.6036
+          "multiple": 10.5987
         },
         {
           "day": 278,
-          "multiple": 10.7263
+          "multiple": 10.7207
         },
         {
           "day": 279,
-          "multiple": 10.7008
+          "multiple": 10.6957
         },
         {
           "day": 280,
-          "multiple": 10.5793
+          "multiple": 10.574
         },
         {
           "day": 281,
-          "multiple": 9.9847
+          "multiple": 9.9802
         },
         {
           "day": 282,
-          "multiple": 10.0665
+          "multiple": 10.0617
         },
         {
           "day": 283,
-          "multiple": 9.6547
+          "multiple": 9.6498
         },
         {
           "day": 284,
-          "multiple": 9.844
+          "multiple": 9.8393
         },
         {
           "day": 285,
-          "multiple": 9.6368
+          "multiple": 9.6316
         },
         {
           "day": 286,
-          "multiple": 9.8223
+          "multiple": 9.8173
         },
         {
           "day": 287,
-          "multiple": 9.8951
+          "multiple": 9.8904
         },
         {
           "day": 288,
-          "multiple": 10.2391
+          "multiple": 10.2347
         },
         {
           "day": 289,
-          "multiple": 10.266
+          "multiple": 10.2606
         },
         {
           "day": 290,
-          "multiple": 10.2711
+          "multiple": 10.2663
         },
         {
           "day": 291,
-          "multiple": 10.0217
+          "multiple": 10.0168
         },
         {
           "day": 292,
-          "multiple": 10.0627
+          "multiple": 10.0576
         },
         {
           "day": 293,
-          "multiple": 10.1458
+          "multiple": 10.1411
         },
         {
           "day": 294,
-          "multiple": 11.1381
+          "multiple": 11.1334
         },
         {
           "day": 295,
-          "multiple": 10.1049
+          "multiple": 10.1001
         },
         {
           "day": 296,
-          "multiple": 9.913
+          "multiple": 9.9084
         },
         {
           "day": 297,
-          "multiple": 9.8223
+          "multiple": 9.8174
         },
         {
           "day": 298,
-          "multiple": 9.8529
+          "multiple": 9.8477
         },
         {
           "day": 299,
-          "multiple": 9.789
+          "multiple": 9.7842
         },
         {
           "day": 300,
-          "multiple": 9.8286
+          "multiple": 9.8243
         },
         {
           "day": 301,
-          "multiple": 9.8632
+          "multiple": 9.858
         },
         {
           "day": 302,
-          "multiple": 9.8402
+          "multiple": 9.8357
         },
         {
           "day": 303,
-          "multiple": 9.8913
+          "multiple": 9.8866
         },
         {
           "day": 304,
-          "multiple": 10.0537
+          "multiple": 10.0492
         },
         {
           "day": 305,
-          "multiple": 10.0409
+          "multiple": 10.0365
         },
         {
           "day": 306,
-          "multiple": 10.055
+          "multiple": 10.0501
         },
         {
           "day": 307,
-          "multiple": 9.9399
+          "multiple": 9.9352
         },
         {
           "day": 308,
-          "multiple": 10.0652
+          "multiple": 10.0609
         },
         {
           "day": 309,
-          "multiple": 8.1995
+          "multiple": 8.1962
         },
         {
           "day": 310,
-          "multiple": 9.367
+          "multiple": 9.3628
         },
         {
           "day": 311,
-          "multiple": 9.7161
+          "multiple": 9.7108
         },
         {
           "day": 312,
-          "multiple": 9.656
+          "multiple": 9.6519
         },
         {
           "day": 313,
-          "multiple": 9.7379
+          "multiple": 9.7328
         },
         {
           "day": 314,
-          "multiple": 9.8261
+          "multiple": 9.8216
         },
         {
           "day": 315,
-          "multiple": 9.9399
+          "multiple": 9.9352
         },
         {
           "day": 316,
-          "multiple": 10.0895
+          "multiple": 10.0853
         },
         {
           "day": 317,
-          "multiple": 10.1471
+          "multiple": 10.1427
         },
         {
           "day": 318,
-          "multiple": 10.1969
+          "multiple": 10.1915
         },
         {
           "day": 319,
-          "multiple": 10.211
+          "multiple": 10.2059
         },
         {
           "day": 320,
-          "multiple": 10.6061
+          "multiple": 10.601
         },
         {
           "day": 321,
-          "multiple": 10.8414
+          "multiple": 10.8367
         },
         {
           "day": 322,
-          "multiple": 11.2494
+          "multiple": 11.2436
         },
         {
           "day": 323,
-          "multiple": 10.9642
+          "multiple": 10.9585
         },
         {
           "day": 324,
-          "multiple": 11.3683
+          "multiple": 11.363
         },
         {
           "day": 325,
-          "multiple": 13.2839
+          "multiple": 13.2781
         },
         {
           "day": 326,
-          "multiple": 14.468
+          "multiple": 14.4607
         },
         {
           "day": 327,
-          "multiple": 14.7417
+          "multiple": 14.7347
         },
         {
           "day": 328,
-          "multiple": 14.2519
+          "multiple": 14.2449
         },
         {
           "day": 329,
-          "multiple": 15.0269
+          "multiple": 15.0193
         },
         {
           "day": 330,
-          "multiple": 16.1087
+          "multiple": 16.1005
         },
         {
           "day": 331,
-          "multiple": 15.445
+          "multiple": 15.438
         },
         {
           "day": 332,
-          "multiple": 14.7749
+          "multiple": 14.7678
         },
         {
           "day": 333,
-          "multiple": 14.1982
+          "multiple": 14.1916
         },
         {
           "day": 334,
-          "multiple": 15.3645
+          "multiple": 15.3566
         },
         {
           "day": 335,
-          "multiple": 16.4629
+          "multiple": 16.4552
         },
         {
           "day": 336,
-          "multiple": 17.1867
+          "multiple": 17.1789
         },
         {
           "day": 337,
-          "multiple": 16.4194
+          "multiple": 16.412
         },
         {
           "day": 338,
-          "multiple": 16.312
+          "multiple": 16.3036
         },
         {
           "day": 339,
-          "multiple": 16.2685
+          "multiple": 16.2604
         },
         {
           "day": 340,
-          "multiple": 16.4169
+          "multiple": 16.4093
         },
         {
           "day": 341,
-          "multiple": 16.7967
+          "multiple": 16.7893
         },
         {
           "day": 342,
-          "multiple": 18.3107
+          "multiple": 18.3021
         },
         {
           "day": 343,
-          "multiple": 20.0793
+          "multiple": 20.0703
         },
         {
           "day": 344,
-          "multiple": 21.1061
+          "multiple": 21.0958
         },
         {
           "day": 345,
-          "multiple": 23.1432
+          "multiple": 23.1325
         },
         {
           "day": 346,
-          "multiple": 26.5614
+          "multiple": 26.5488
         },
         {
           "day": 347,
-          "multiple": 26.243
+          "multiple": 26.2309
         },
         {
           "day": 348,
-          "multiple": 26.2455
+          "multiple": 26.2334
         },
         {
           "day": 349,
-          "multiple": 27.6317
+          "multiple": 27.6184
         },
         {
           "day": 350,
-          "multiple": 28.4143
+          "multiple": 28.4009
         },
         {
           "day": 351,
-          "multiple": 31.312
+          "multiple": 31.297
         },
         {
           "day": 352,
-          "multiple": 33.0281
+          "multiple": 33.012
         },
         {
           "day": 353,
-          "multiple": 32.7916
+          "multiple": 32.7757
         },
         {
           "day": 354,
-          "multiple": 34.798
+          "multiple": 34.7811
         },
         {
           "day": 355,
-          "multiple": 37.6931
+          "multiple": 37.6746
         },
         {
           "day": 356,
-          "multiple": 52.4284
+          "multiple": 52.4027
         },
         {
           "day": 357,
-          "multiple": 43.3146
+          "multiple": 43.2939
         },
         {
           "day": 358,
-          "multiple": 47.3951
+          "multiple": 47.3729
         },
         {
           "day": 359,
-          "multiple": 56.5754
+          "multiple": 56.5488
         },
         {
           "day": 360,
-          "multiple": 62.7506
+          "multiple": 62.7206
         },
         {
           "day": 361,
-          "multiple": 65.5128
+          "multiple": 65.4811
         },
         {
           "day": 362,
-          "multiple": 63.789
+          "multiple": 63.758
         },
         {
           "day": 363,
-          "multiple": 64.4578
+          "multiple": 64.4269
         },
         {
           "day": 364,
-          "multiple": 71.9987
+          "multiple": 71.9638
         },
         {
           "day": 365,
-          "multiple": 75.5486
+          "multiple": 75.5127
         },
         {
           "day": 366,
-          "multiple": 79.3389
+          "multiple": 79.3014
         },
         {
           "day": 367,
-          "multiple": 88.7161
+          "multiple": 88.6736
         },
         {
           "day": 368,
-          "multiple": 87.5627
+          "multiple": 87.5201
         },
         {
           "day": 369,
-          "multiple": 74.5294
+          "multiple": 74.4938
         },
         {
           "day": 370,
-          "multiple": 81.3235
+          "multiple": 81.2849
         },
         {
           "day": 371,
-          "multiple": 82.009
+          "multiple": 81.9697
         },
         {
           "day": 372,
-          "multiple": 88.9028
+          "multiple": 88.8608
         },
         {
           "day": 373,
-          "multiple": 80.9744
+          "multiple": 80.9358
         },
         {
           "day": 374,
-          "multiple": 62.5895
+          "multiple": 62.5591
         },
         {
           "day": 375,
-          "multiple": 55.2276
+          "multiple": 55.2013
         },
         {
           "day": 376,
-          "multiple": 61.4015
+          "multiple": 61.3723
         },
         {
           "day": 377,
-          "multiple": 69.5435
+          "multiple": 69.51
         },
         {
           "day": 378,
-          "multiple": 76.3926
+          "multiple": 76.3557
         },
         {
           "day": 379,
-          "multiple": 68.3529
+          "multiple": 68.3202
         },
         {
           "day": 380,
-          "multiple": 68.7506
+          "multiple": 68.7174
         },
         {
           "day": 381,
-          "multiple": 69.5588
+          "multiple": 69.525
         },
         {
           "day": 382,
-          "multiple": 66.8708
+          "multiple": 66.839
         },
         {
           "day": 383,
-          "multiple": 67.5985
+          "multiple": 67.5667
         },
         {
           "day": 384,
-          "multiple": 54.2685
+          "multiple": 54.2426
         },
         {
           "day": 385,
-          "multiple": 52.6343
+          "multiple": 52.6087
         },
         {
           "day": 386,
-          "multiple": 40.7775
+          "multiple": 40.7575
         },
         {
           "day": 387,
-          "multiple": 53.5754
+          "multiple": 53.5503
         },
         {
           "day": 388,
-          "multiple": 47.991
+          "multiple": 47.9687
         },
         {
           "day": 389,
-          "multiple": 46.9003
+          "multiple": 46.8778
         },
         {
           "day": 390,
-          "multiple": 48.0102
+          "multiple": 47.9875
         },
         {
           "day": 391,
-          "multiple": 51.5627
+          "multiple": 51.5379
         },
         {
           "day": 392,
-          "multiple": 51.0166
+          "multiple": 50.9921
         },
         {
           "day": 393,
-          "multiple": 52.8657
+          "multiple": 52.84
         },
         {
           "day": 394,
-          "multiple": 57.8555
+          "multiple": 57.8272
         },
         {
           "day": 395,
-          "multiple": 56.0716
+          "multiple": 56.0452
         },
         {
           "day": 396,
-          "multiple": 55.376
+          "multiple": 55.35
         },
         {
           "day": 397,
-          "multiple": 56.5077
+          "multiple": 56.4806
         },
         {
           "day": 398,
-          "multiple": 56.9348
+          "multiple": 56.9076
         },
         {
           "day": 399,
-          "multiple": 56.587
+          "multiple": 56.5599
         },
         {
           "day": 400,
-          "multiple": 58.101
+          "multiple": 58.0733
         },
         {
           "day": 401,
-          "multiple": 60.8491
+          "multiple": 60.8196
         },
         {
           "day": 402,
-          "multiple": 62.8862
+          "multiple": 62.8562
         },
         {
           "day": 403,
-          "multiple": 64.5499
+          "multiple": 64.5184
         },
         {
           "day": 404,
-          "multiple": 70.6419
+          "multiple": 70.6085
         },
         {
           "day": 405,
-          "multiple": 71.3478
+          "multiple": 71.3136
         },
         {
           "day": 406,
-          "multiple": 61.509
+          "multiple": 61.4799
         },
         {
           "day": 407,
-          "multiple": 63.8683
+          "multiple": 63.8382
         },
         {
           "day": 408,
-          "multiple": 64.3926
+          "multiple": 64.3621
         },
         {
           "day": 409,
-          "multiple": 66.5524
+          "multiple": 66.5206
         },
         {
           "day": 410,
-          "multiple": 69.7481
+          "multiple": 69.715
         },
         {
           "day": 411,
-          "multiple": 65.7455
+          "multiple": 65.7135
         },
         {
           "day": 412,
-          "multiple": 64.0243
+          "multiple": 63.9935
         },
         {
           "day": 413,
-          "multiple": 63.6688
+          "multiple": 63.6389
         },
         {
           "day": 414,
-          "multiple": 65.8824
+          "multiple": 65.8503
         },
         {
           "day": 415,
-          "multiple": 63.5537
+          "multiple": 63.5232
         },
         {
           "day": 416,
-          "multiple": 61.5972
+          "multiple": 61.5681
         },
         {
           "day": 417,
-          "multiple": 63.0908
+          "multiple": 63.0607
         },
         {
           "day": 418,
-          "multiple": 65.5038
+          "multiple": 65.4726
         },
         {
           "day": 419,
-          "multiple": 64.4808
+          "multiple": 64.4499
         },
         {
           "day": 420,
-          "multiple": 63.6752
+          "multiple": 63.6441
         },
         {
           "day": 421,
-          "multiple": 63.1471
+          "multiple": 63.1164
         },
         {
           "day": 422,
-          "multiple": 62.8402
+          "multiple": 62.8101
         },
         {
           "day": 423,
-          "multiple": 60.4233
+          "multiple": 60.3944
         },
         {
           "day": 424,
-          "multiple": 62.3581
+          "multiple": 62.3285
         },
         {
           "day": 425,
-          "multiple": 62.8964
+          "multiple": 62.8664
         },
         {
           "day": 426,
-          "multiple": 57.6343
+          "multiple": 57.6062
         },
         {
           "day": 427,
-          "multiple": 60.6905
+          "multiple": 60.6611
         },
         {
           "day": 428,
-          "multiple": 61.6215
+          "multiple": 61.5925
         },
         {
           "day": 429,
-          "multiple": 62.1662
+          "multiple": 62.1371
         },
         {
           "day": 430,
-          "multiple": 62.4003
+          "multiple": 62.3701
         },
         {
           "day": 431,
-          "multiple": 63.4936
+          "multiple": 63.4637
         },
         {
           "day": 432,
-          "multiple": 63.7187
+          "multiple": 63.6882
         },
         {
           "day": 433,
-          "multiple": 63.4015
+          "multiple": 63.3711
         },
         {
           "day": 434,
-          "multiple": 63.0972
+          "multiple": 63.0668
         },
         {
           "day": 435,
-          "multiple": 61.3312
+          "multiple": 61.3021
         },
         {
           "day": 436,
-          "multiple": 59.8363
+          "multiple": 59.8074
         },
         {
           "day": 437,
-          "multiple": 55.61
+          "multiple": 55.5832
         },
         {
           "day": 438,
-          "multiple": 53.3223
+          "multiple": 53.2965
         },
         {
           "day": 439,
-          "multiple": 53.5972
+          "multiple": 53.5713
         },
         {
           "day": 440,
-          "multiple": 53.4974
+          "multiple": 53.4712
         },
         {
           "day": 441,
-          "multiple": 52.2583
+          "multiple": 52.2328
         },
         {
           "day": 442,
-          "multiple": 50.1573
+          "multiple": 50.1336
         },
         {
           "day": 443,
-          "multiple": 46.6841
+          "multiple": 46.6621
         },
         {
           "day": 444,
-          "multiple": 51.2992
+          "multiple": 51.274
         },
         {
           "day": 445,
-          "multiple": 50.1829
+          "multiple": 50.1587
         },
         {
           "day": 446,
-          "multiple": 47.6867
+          "multiple": 47.664
         },
         {
           "day": 447,
-          "multiple": 48.3018
+          "multiple": 48.2786
         },
         {
           "day": 448,
-          "multiple": 48.3286
+          "multiple": 48.3052
         },
         {
           "day": 449,
-          "multiple": 47.922
+          "multiple": 47.8984
         },
         {
           "day": 450,
-          "multiple": 43.165
+          "multiple": 43.1443
         },
         {
           "day": 451,
-          "multiple": 44.4297
+          "multiple": 44.4088
         },
         {
           "day": 452,
-          "multiple": 46.9591
+          "multiple": 46.9361
         },
         {
           "day": 453,
-          "multiple": 46.913
+          "multiple": 46.8912
         },
         {
           "day": 454,
-          "multiple": 41.5716
+          "multiple": 41.5523
         },
         {
           "day": 455,
-          "multiple": 42.8798
+          "multiple": 42.8596
         },
         {
           "day": 456,
-          "multiple": 44.954
+          "multiple": 44.9325
         },
         {
           "day": 457,
-          "multiple": 44.5985
+          "multiple": 44.5766
         },
         {
           "day": 458,
-          "multiple": 42.2992
+          "multiple": 42.2791
         },
         {
           "day": 459,
-          "multiple": 43.4066
+          "multiple": 43.3862
         },
         {
           "day": 460,
-          "multiple": 42.8862
+          "multiple": 42.8651
         },
         {
           "day": 461,
-          "multiple": 52.2289
+          "multiple": 52.2042
         },
         {
           "day": 462,
-          "multiple": 51.5179
+          "multiple": 51.4935
         },
         {
           "day": 463,
-          "multiple": 51.3798
+          "multiple": 51.3546
         },
         {
           "day": 464,
-          "multiple": 51.0141
+          "multiple": 50.9892
         },
         {
           "day": 465,
-          "multiple": 48.1918
+          "multiple": 48.1684
         },
         {
           "day": 466,
-          "multiple": 47.4591
+          "multiple": 47.436
         },
         {
           "day": 467,
-          "multiple": 49.1522
+          "multiple": 49.1287
         },
         {
           "day": 468,
-          "multiple": 48.4361
+          "multiple": 48.4131
         },
         {
           "day": 469,
-          "multiple": 48.656
+          "multiple": 48.6321
         },
         {
           "day": 470,
-          "multiple": 48.6547
+          "multiple": 48.6318
         },
         {
           "day": 471,
-          "multiple": 49.3951
+          "multiple": 49.3711
         },
         {
           "day": 472,
-          "multiple": 48.5793
+          "multiple": 48.5554
         },
         {
           "day": 473,
-          "multiple": 49.1049
+          "multiple": 49.0807
         },
         {
           "day": 474,
-          "multiple": 48.8606
+          "multiple": 48.8368
         },
         {
           "day": 475,
-          "multiple": 48.1701
+          "multiple": 48.1476
         },
         {
           "day": 476,
-          "multiple": 47.3402
+          "multiple": 47.3171
         },
         {
           "day": 477,
-          "multiple": 47.3977
+          "multiple": 47.3749
         },
         {
           "day": 478,
-          "multiple": 45.4156
+          "multiple": 45.3933
         },
         {
           "day": 479,
-          "multiple": 44.4297
+          "multiple": 44.4081
         },
         {
           "day": 480,
-          "multiple": 43.6637
+          "multiple": 43.6422
         },
         {
           "day": 481,
-          "multiple": 43.3964
+          "multiple": 43.3759
         },
         {
           "day": 482,
-          "multiple": 45.3338
+          "multiple": 45.3121
         },
         {
           "day": 483,
-          "multiple": 45.2788
+          "multiple": 45.2571
         },
         {
           "day": 484,
-          "multiple": 44.5051
+          "multiple": 44.4842
         },
         {
           "day": 485,
-          "multiple": 36.4578
+          "multiple": 36.4398
         },
         {
           "day": 486,
-          "multiple": 38.4105
+          "multiple": 38.3917
         },
         {
           "day": 487,
-          "multiple": 37.6726
+          "multiple": 37.654
         },
         {
           "day": 488,
-          "multiple": 35.2302
+          "multiple": 35.2139
         },
         {
           "day": 489,
-          "multiple": 35.179
+          "multiple": 35.1621
         },
         {
           "day": 490,
-          "multiple": 36.7647
+          "multiple": 36.7468
         },
         {
           "day": 491,
-          "multiple": 33.8312
+          "multiple": 33.8153
         },
         {
           "day": 492,
-          "multiple": 34.6253
+          "multiple": 34.6087
         },
         {
           "day": 493,
-          "multiple": 34.8785
+          "multiple": 34.8617
         },
         {
           "day": 494,
-          "multiple": 35.7276
+          "multiple": 35.7101
         },
         {
           "day": 495,
-          "multiple": 35.2992
+          "multiple": 35.2819
         },
         {
           "day": 496,
-          "multiple": 34.4322
+          "multiple": 34.4159
         },
         {
           "day": 497,
-          "multiple": 34.5946
+          "multiple": 34.5779
         },
         {
           "day": 498,
-          "multiple": 33.711
+          "multiple": 33.6947
         },
         {
           "day": 499,
-          "multiple": 28.2033
+          "multiple": 28.1897
         },
         {
           "day": 500,
-          "multiple": 32.3606
+          "multiple": 32.3455
         },
         {
           "day": 501,
-          "multiple": 32.3593
+          "multiple": 32.3432
         },
         {
           "day": 502,
-          "multiple": 31.954
+          "multiple": 31.9391
         },
         {
           "day": 503,
-          "multiple": 35.1355
+          "multiple": 35.1183
         },
         {
           "day": 504,
-          "multiple": 39.8146
+          "multiple": 39.7951
         },
         {
           "day": 505,
-          "multiple": 40.0409
+          "multiple": 40.0216
         },
         {
           "day": 506,
-          "multiple": 37.9399
+          "multiple": 37.9216
         },
         {
           "day": 507,
-          "multiple": 36.7148
+          "multiple": 36.6969
         },
         {
           "day": 508,
-          "multiple": 38.3657
+          "multiple": 38.3478
         },
         {
           "day": 509,
-          "multiple": 38.1944
+          "multiple": 38.1758
         },
         {
           "day": 510,
-          "multiple": 37.8453
+          "multiple": 37.8272
         },
         {
           "day": 511,
-          "multiple": 37.2046
+          "multiple": 37.187
         },
         {
           "day": 512,
-          "multiple": 37.4668
+          "multiple": 37.4489
         },
         {
           "day": 513,
-          "multiple": 38.202
+          "multiple": 38.1836
         },
         {
           "day": 514,
-          "multiple": 35.234
+          "multiple": 35.2165
         },
         {
           "day": 515,
-          "multiple": 35.1074
+          "multiple": 35.091
         },
         {
           "day": 516,
-          "multiple": 33.3095
+          "multiple": 33.2932
         },
         {
           "day": 517,
-          "multiple": 33.6458
+          "multiple": 33.6292
         },
         {
           "day": 518,
-          "multiple": 34.0422
+          "multiple": 34.0255
         },
         {
           "day": 519,
-          "multiple": 34.2033
+          "multiple": 34.1874
         },
         {
           "day": 520,
-          "multiple": 34.9297
+          "multiple": 34.9131
         },
         {
           "day": 521,
-          "multiple": 34.4693
+          "multiple": 34.4534
         },
         {
           "day": 522,
-          "multiple": 33.3414
+          "multiple": 33.3249
         },
         {
           "day": 523,
-          "multiple": 33.1279
+          "multiple": 33.1121
         },
         {
           "day": 524,
-          "multiple": 32.6061
+          "multiple": 32.59
         },
         {
           "day": 525,
-          "multiple": 32.2532
+          "multiple": 32.2372
         },
         {
           "day": 526,
-          "multiple": 33.266
+          "multiple": 33.2497
         },
         {
           "day": 527,
-          "multiple": 33.1854
+          "multiple": 33.1694
         },
         {
           "day": 528,
-          "multiple": 34.0486
+          "multiple": 34.0327
         },
         {
           "day": 529,
-          "multiple": 34.656
+          "multiple": 34.6391
         },
         {
           "day": 530,
-          "multiple": 33.1547
+          "multiple": 33.1394
         },
         {
           "day": 531,
-          "multiple": 33.6087
+          "multiple": 33.592
         },
         {
           "day": 532,
-          "multiple": 33.468
+          "multiple": 33.4525
         },
         {
           "day": 533,
-          "multiple": 33.9361
+          "multiple": 33.9203
         },
         {
           "day": 534,
-          "multiple": 33.9706
+          "multiple": 33.9542
         },
         {
           "day": 535,
-          "multiple": 34.1675
+          "multiple": 34.1512
         },
         {
           "day": 536,
-          "multiple": 34.133
+          "multiple": 34.1162
         },
         {
           "day": 537,
-          "multiple": 33.9437
+          "multiple": 33.9271
         },
         {
           "day": 538,
-          "multiple": 34.0358
+          "multiple": 34.019
         },
         {
           "day": 539,
-          "multiple": 36.9437
+          "multiple": 36.9256
         },
         {
           "day": 540,
-          "multiple": 37.4527
+          "multiple": 37.4346
         },
         {
           "day": 541,
-          "multiple": 40.1164
+          "multiple": 40.0972
         },
         {
           "day": 542,
-          "multiple": 39.5678
+          "multiple": 39.5493
         },
         {
           "day": 543,
-          "multiple": 40.0857
+          "multiple": 40.0661
         },
         {
           "day": 544,
-          "multiple": 43.2916
+          "multiple": 43.2707
         },
         {
           "day": 545,
-          "multiple": 44.477
+          "multiple": 44.4559
         },
         {
           "day": 546,
-          "multiple": 43.7276
+          "multiple": 43.7068
         },
         {
           "day": 547,
-          "multiple": 44.4565
+          "multiple": 44.4358
         },
         {
           "day": 548,
-          "multiple": 43.4795
+          "multiple": 43.459
         },
         {
           "day": 549,
-          "multiple": 47.4757
+          "multiple": 47.4527
         },
         {
           "day": 550,
-          "multiple": 47.8734
+          "multiple": 47.8499
         },
         {
           "day": 551,
-          "multiple": 48.1688
+          "multiple": 48.1455
         },
         {
           "day": 552,
-          "multiple": 50.546
+          "multiple": 50.522
         },
         {
           "day": 553,
-          "multiple": 51.1279
+          "multiple": 51.1035
         },
         {
           "day": 554,
-          "multiple": 49.0997
+          "multiple": 49.0759
         },
         {
           "day": 555,
-          "multiple": 50.2749
+          "multiple": 50.2512
         },
         {
           "day": 556,
-          "multiple": 49.3274
+          "multiple": 49.3032
         },
         {
           "day": 557,
-          "multiple": 49.9437
+          "multiple": 49.92
         },
         {
           "day": 558,
-          "multiple": 50.009
+          "multiple": 49.9846
         },
         {
           "day": 559,
-          "multiple": 49.4565
+          "multiple": 49.4327
         },
         {
           "day": 560,
-          "multiple": 49.4041
+          "multiple": 49.3805
         },
         {
           "day": 561,
-          "multiple": 47.4923
+          "multiple": 47.4692
         },
         {
           "day": 562,
-          "multiple": 43.3376
+          "multiple": 43.3174
         },
         {
           "day": 563,
-          "multiple": 44.5972
+          "multiple": 44.5758
         },
         {
           "day": 564,
-          "multiple": 43.1445
+          "multiple": 43.1238
         },
         {
           "day": 565,
-          "multiple": 44.6777
+          "multiple": 44.6558
         },
         {
           "day": 566,
-          "multiple": 44.1496
+          "multiple": 44.129
         },
         {
           "day": 567,
-          "multiple": 45.8887
+          "multiple": 45.8668
         },
         {
           "day": 568,
-          "multiple": 45.6598
+          "multiple": 45.6378
         },
         {
           "day": 569,
-          "multiple": 44.6688
+          "multiple": 44.6471
         },
         {
           "day": 570,
-          "multiple": 44.5435
+          "multiple": 44.5218
         },
         {
           "day": 571,
-          "multiple": 44.3542
+          "multiple": 44.3328
         },
         {
           "day": 572,
-          "multiple": 45.0192
+          "multiple": 44.9971
         },
         {
           "day": 573,
-          "multiple": 44.2724
+          "multiple": 44.2515
         },
         {
           "day": 574,
-          "multiple": 43.3248
+          "multiple": 43.3043
         },
         {
           "day": 575,
-          "multiple": 42.1151
+          "multiple": 42.0944
         },
         {
           "day": 576,
-          "multiple": 43.3465
+          "multiple": 43.3263
         },
         {
           "day": 577,
-          "multiple": 44.9731
+          "multiple": 44.9517
         },
         {
           "day": 578,
-          "multiple": 44.298
+          "multiple": 44.2763
         },
         {
           "day": 579,
-          "multiple": 45.0243
+          "multiple": 45.0022
         },
         {
           "day": 580,
-          "multiple": 47.6432
+          "multiple": 47.62
         },
         {
           "day": 581,
-          "multiple": 47.6368
+          "multiple": 47.6144
         },
         {
           "day": 582,
-          "multiple": 48.5537
+          "multiple": 48.5308
         },
         {
           "day": 583,
-          "multiple": 48.1368
+          "multiple": 48.1137
         },
         {
           "day": 584,
-          "multiple": 46.7059
+          "multiple": 46.683
         },
         {
           "day": 585,
-          "multiple": 47.0665
+          "multiple": 47.0438
         },
         {
           "day": 586,
-          "multiple": 47.3312
+          "multiple": 47.3088
         },
         {
           "day": 587,
-          "multiple": 46.6407
+          "multiple": 46.6187
         },
         {
           "day": 588,
-          "multiple": 46.7391
+          "multiple": 46.7169
         },
         {
           "day": 589,
-          "multiple": 46.4808
+          "multiple": 46.4585
         },
         {
           "day": 590,
-          "multiple": 46.0716
+          "multiple": 46.0496
         },
         {
           "day": 591,
-          "multiple": 47.3568
+          "multiple": 47.3337
         },
         {
           "day": 592,
-          "multiple": 47.5192
+          "multiple": 47.4965
         },
         {
           "day": 593,
-          "multiple": 47.1279
+          "multiple": 47.1057
         },
         {
           "day": 594,
-          "multiple": 46.2826
+          "multiple": 46.2599
         },
         {
           "day": 595,
-          "multiple": 46.6061
+          "multiple": 46.5842
         },
         {
           "day": 596,
-          "multiple": 46.1688
+          "multiple": 46.1464
         },
         {
           "day": 597,
-          "multiple": 46.8338
+          "multiple": 46.8118
         },
         {
           "day": 598,
-          "multiple": 47.2864
+          "multiple": 47.2643
         },
         {
           "day": 599,
-          "multiple": 47.1483
+          "multiple": 47.1259
         },
         {
           "day": 600,
-          "multiple": 46.9463
+          "multiple": 46.9235
         },
         {
           "day": 601,
-          "multiple": 46.6573
+          "multiple": 46.6348
         },
         {
           "day": 602,
-          "multiple": 46.5639
+          "multiple": 46.5413
         },
         {
           "day": 603,
-          "multiple": 46.6509
+          "multiple": 46.6284
         },
         {
           "day": 604,
-          "multiple": 45.4629
+          "multiple": 45.4413
         },
         {
           "day": 605,
-          "multiple": 45.3836
+          "multiple": 45.3616
         },
         {
           "day": 606,
-          "multiple": 44.8568
+          "multiple": 44.8349
         },
         {
           "day": 607,
-          "multiple": 44.679
+          "multiple": 44.6574
         },
         {
           "day": 608,
-          "multiple": 44.5153
+          "multiple": 44.4939
         },
         {
           "day": 609,
-          "multiple": 44.2327
+          "multiple": 44.2112
         },
         {
           "day": 610,
-          "multiple": 42.688
+          "multiple": 42.6672
         },
         {
           "day": 611,
-          "multiple": 44.2353
+          "multiple": 44.2137
         },
         {
           "day": 612,
-          "multiple": 45.2775
+          "multiple": 45.2559
         },
         {
           "day": 613,
-          "multiple": 44.8082
+          "multiple": 44.7873
         },
         {
           "day": 614,
-          "multiple": 44.3427
+          "multiple": 44.3218
         },
         {
           "day": 615,
-          "multiple": 44.6458
+          "multiple": 44.6249
         },
         {
           "day": 616,
-          "multiple": 44.2136
+          "multiple": 44.1919
         },
         {
           "day": 617,
-          "multiple": 44.2609
+          "multiple": 44.2399
         },
         {
           "day": 618,
-          "multiple": 44.5192
+          "multiple": 44.4983
         },
         {
           "day": 619,
-          "multiple": 44.821
+          "multiple": 44.7995
         },
         {
           "day": 620,
-          "multiple": 44.8683
+          "multiple": 44.8467
         },
         {
           "day": 621,
-          "multiple": 45.0115
+          "multiple": 44.9896
         },
         {
           "day": 622,
-          "multiple": 43.7519
+          "multiple": 43.7311
         },
         {
           "day": 623,
-          "multiple": 43.555
+          "multiple": 43.5344
         },
         {
           "day": 624,
-          "multiple": 42.156
+          "multiple": 42.1365
         },
         {
           "day": 625,
-          "multiple": 38.6547
+          "multiple": 38.6366
         },
         {
           "day": 626,
-          "multiple": 38.3389
+          "multiple": 38.3211
         },
         {
           "day": 627,
-          "multiple": 40.1394
+          "multiple": 40.12
         },
         {
           "day": 628,
-          "multiple": 38.0895
+          "multiple": 38.0712
         },
         {
           "day": 629,
-          "multiple": 36.5064
+          "multiple": 36.4887
         },
         {
           "day": 630,
-          "multiple": 37.6445
+          "multiple": 37.6268
         },
         {
           "day": 631,
-          "multiple": 39.9834
+          "multiple": 39.9647
         },
         {
           "day": 632,
-          "multiple": 40.1969
+          "multiple": 40.1782
         },
         {
           "day": 633,
-          "multiple": 39.7788
+          "multiple": 39.7596
         },
         {
           "day": 634,
-          "multiple": 38.2033
+          "multiple": 38.1852
         },
         {
           "day": 635,
-          "multiple": 39.1598
+          "multiple": 39.1407
         },
         {
           "day": 636,
-          "multiple": 38.702
+          "multiple": 38.6834
         },
         {
           "day": 637,
-          "multiple": 39.5985
+          "multiple": 39.5801
         },
         {
           "day": 638,
-          "multiple": 39.4552
+          "multiple": 39.4359
         },
         {
           "day": 639,
-          "multiple": 39.0691
+          "multiple": 39.0501
         },
         {
           "day": 640,
-          "multiple": 39.2762
+          "multiple": 39.2574
         },
         {
           "day": 641,
-          "multiple": 38.6355
+          "multiple": 38.6177
         },
         {
           "day": 642,
-          "multiple": 36.8478
+          "multiple": 36.8297
         },
         {
           "day": 643,
-          "multiple": 36.8465
+          "multiple": 36.8294
         },
         {
           "day": 644,
-          "multiple": 36.7685
+          "multiple": 36.7507
         },
         {
           "day": 645,
-          "multiple": 36.9808
+          "multiple": 36.9629
         },
         {
           "day": 646,
-          "multiple": 38.3619
+          "multiple": 38.344
         },
         {
           "day": 647,
-          "multiple": 38.1304
+          "multiple": 38.1119
         },
         {
           "day": 648,
-          "multiple": 37.6343
+          "multiple": 37.6161
         },
         {
           "day": 649,
-          "multiple": 37.7647
+          "multiple": 37.7468
         },
         {
           "day": 650,
-          "multiple": 37.1202
+          "multiple": 37.1029
         },
         {
           "day": 651,
-          "multiple": 37.5128
+          "multiple": 37.4949
         },
         {
           "day": 652,
-          "multiple": 37.6061
+          "multiple": 37.5887
         },
         {
           "day": 653,
-          "multiple": 37.6343
+          "multiple": 37.6157
         },
         {
           "day": 654,
-          "multiple": 37.3887
+          "multiple": 37.3708
         },
         {
           "day": 655,
-          "multiple": 37.5703
+          "multiple": 37.5519
         },
         {
           "day": 656,
-          "multiple": 37.3491
+          "multiple": 37.3311
         },
         {
           "day": 657,
-          "multiple": 37.1611
+          "multiple": 37.1433
         },
         {
           "day": 658,
-          "multiple": 36.2967
+          "multiple": 36.2795
         },
         {
           "day": 659,
-          "multiple": 35.546
+          "multiple": 35.5292
         },
         {
           "day": 660,
-          "multiple": 33.3018
+          "multiple": 33.2864
         },
         {
           "day": 661,
-          "multiple": 30.9629
+          "multiple": 30.9485
         },
         {
           "day": 662,
-          "multiple": 32.2187
+          "multiple": 32.2031
         },
         {
           "day": 663,
-          "multiple": 31.413
+          "multiple": 31.3983
         },
         {
           "day": 664,
-          "multiple": 31.1816
+          "multiple": 31.1669
         },
         {
           "day": 665,
-          "multiple": 34.321
+          "multiple": 34.3049
         },
         {
           "day": 666,
-          "multiple": 33.2609
+          "multiple": 33.2452
         },
         {
           "day": 667,
-          "multiple": 32.165
+          "multiple": 32.1492
         },
         {
           "day": 668,
-          "multiple": 31.7353
+          "multiple": 31.7197
         },
         {
           "day": 669,
-          "multiple": 31.3964
+          "multiple": 31.3811
         },
         {
           "day": 670,
-          "multiple": 29.5703
+          "multiple": 29.5567
         },
         {
           "day": 671,
-          "multiple": 29.5345
+          "multiple": 29.5197
         },
         {
           "day": 672,
-          "multiple": 30.8095
+          "multiple": 30.7942
         },
         {
           "day": 673,
-          "multiple": 30.4194
+          "multiple": 30.4054
         },
         {
           "day": 674,
-          "multiple": 29.9105
+          "multiple": 29.8959
         },
         {
           "day": 675,
-          "multiple": 28.5665
+          "multiple": 28.5529
         },
         {
           "day": 676,
-          "multiple": 26.1381
+          "multiple": 26.1257
         },
         {
           "day": 677,
-          "multiple": 25.9054
+          "multiple": 25.8925
         },
         {
           "day": 678,
-          "multiple": 26.0537
+          "multiple": 26.0409
         },
         {
           "day": 679,
-          "multiple": 26.5882
+          "multiple": 26.5751
         },
         {
           "day": 680,
-          "multiple": 28.1688
+          "multiple": 28.1547
         },
         {
           "day": 681,
-          "multiple": 28.9987
+          "multiple": 28.9854
         },
         {
           "day": 682,
-          "multiple": 28.7826
+          "multiple": 28.7694
         },
         {
           "day": 683,
-          "multiple": 28.867
+          "multiple": 28.8531
         },
         {
           "day": 684,
-          "multiple": 30.2647
+          "multiple": 30.2501
         },
         {
           "day": 685,
-          "multiple": 31.491
+          "multiple": 31.4766
         },
         {
           "day": 686,
-          "multiple": 32.335
+          "multiple": 32.3193
         },
         {
           "day": 687,
-          "multiple": 31.5652
+          "multiple": 31.5497
         },
         {
           "day": 688,
-          "multiple": 30.4527
+          "multiple": 30.4375
         },
         {
           "day": 689,
-          "multiple": 30.3951
+          "multiple": 30.3812
         },
         {
           "day": 690,
-          "multiple": 31.0192
+          "multiple": 31.0044
         },
         {
           "day": 691,
-          "multiple": 30.8555
+          "multiple": 30.8406
         },
         {
           "day": 692,
-          "multiple": 30.1969
+          "multiple": 30.1824
         },
         {
           "day": 693,
-          "multiple": 30.7468
+          "multiple": 30.7327
         },
         {
           "day": 694,
-          "multiple": 30.6407
+          "multiple": 30.6259
         },
         {
           "day": 695,
-          "multiple": 28.4591
+          "multiple": 28.446
         },
         {
           "day": 696,
-          "multiple": 28.5627
+          "multiple": 28.5488
         },
         {
           "day": 697,
-          "multiple": 27.6471
+          "multiple": 27.6337
         },
         {
           "day": 698,
-          "multiple": 28.2059
+          "multiple": 28.1928
         },
         {
           "day": 699,
-          "multiple": 27.7404
+          "multiple": 27.7267
         },
         {
           "day": 700,
-          "multiple": 28.2545
+          "multiple": 28.2405
         },
         {
           "day": 701,
-          "multiple": 26.7941
+          "multiple": 26.7811
         },
         {
           "day": 702,
-          "multiple": 27.6509
+          "multiple": 27.6378
         },
         {
           "day": 703,
-          "multiple": 27.0499
+          "multiple": 27.0367
         },
         {
           "day": 704,
-          "multiple": 25.9859
+          "multiple": 25.9738
         },
         {
           "day": 705,
-          "multiple": 25.9258
+          "multiple": 25.9131
         },
         {
           "day": 706,
-          "multiple": 26.0857
+          "multiple": 26.0735
         },
         {
           "day": 707,
-          "multiple": 26.5396
+          "multiple": 26.5263
         },
         {
           "day": 708,
-          "multiple": 27.1969
+          "multiple": 27.184
         },
         {
           "day": 709,
-          "multiple": 28.2877
+          "multiple": 28.2746
         },
         {
           "day": 710,
-          "multiple": 27.6598
+          "multiple": 27.6469
         },
         {
           "day": 711,
-          "multiple": 28.0435
+          "multiple": 28.0306
         },
         {
           "day": 712,
-          "multiple": 29.4271
+          "multiple": 29.4133
         },
         {
           "day": 713,
-          "multiple": 29.5038
+          "multiple": 29.4892
         },
         {
           "day": 714,
-          "multiple": 29.8581
+          "multiple": 29.8442
         },
         {
           "day": 715,
-          "multiple": 34.1317
+          "multiple": 34.1148
         },
         {
           "day": 716,
-          "multiple": 34.3069
+          "multiple": 34.2903
         },
         {
           "day": 717,
-          "multiple": 32.601
+          "multiple": 32.5855
         },
         {
           "day": 718,
-          "multiple": 30.7941
+          "multiple": 30.7795
         },
         {
           "day": 719,
-          "multiple": 31.8734
+          "multiple": 31.8576
         },
         {
           "day": 720,
-          "multiple": 31.7673
+          "multiple": 31.7515
         },
         {
           "day": 721,
-          "multiple": 30.5844
+          "multiple": 30.5695
         },
         {
           "day": 722,
-          "multiple": 30.8836
+          "multiple": 30.8688
         },
         {
           "day": 723,
-          "multiple": 29.0678
+          "multiple": 29.0541
         },
         {
           "day": 724,
-          "multiple": 28.5614
+          "multiple": 28.5471
         },
         {
           "day": 725,
-          "multiple": 28.7877
+          "multiple": 28.7745
         },
         {
           "day": 726,
-          "multiple": 29.9463
+          "multiple": 29.9316
         },
         {
           "day": 727,
-          "multiple": 30.5703
+          "multiple": 30.5554
         },
         {
           "day": 728,
-          "multiple": 30.4987
+          "multiple": 30.4839
         },
         {
           "day": 729,
-          "multiple": 29.7711
+          "multiple": 29.7567
         },
         {
           "day": 730,
-          "multiple": 30.1419
+          "multiple": 30.1275
         },
         {
           "day": 731,
-          "multiple": 30.7136
+          "multiple": 30.6983
         },
         {
           "day": 732,
-          "multiple": 30.5997
+          "multiple": 30.5851
         },
         {
           "day": 733,
-          "multiple": 30.5691
+          "multiple": 30.5548
         },
         {
           "day": 734,
-          "multiple": 30.8299
+          "multiple": 30.8146
         },
         {
           "day": 735,
-          "multiple": 30.9514
+          "multiple": 30.9369
         },
         {
           "day": 736,
-          "multiple": 30.7046
+          "multiple": 30.6894
         },
         {
           "day": 737,
-          "multiple": 30.0601
+          "multiple": 30.0456
         },
         {
           "day": 738,
-          "multiple": 30.6522
+          "multiple": 30.638
         },
         {
           "day": 739,
-          "multiple": 30.5754
+          "multiple": 30.5606
         },
         {
           "day": 740,
-          "multiple": 30.7737
+          "multiple": 30.7585
         },
         {
           "day": 741,
-          "multiple": 29.6522
+          "multiple": 29.6384
         },
         {
           "day": 742,
-          "multiple": 28.6726
+          "multiple": 28.6586
         },
         {
           "day": 743,
-          "multiple": 28.4488
+          "multiple": 28.4354
         },
         {
           "day": 744,
-          "multiple": 28.4054
+          "multiple": 28.3921
         },
         {
           "day": 745,
-          "multiple": 28.6688
+          "multiple": 28.6557
         },
         {
           "day": 746,
-          "multiple": 28.633
+          "multiple": 28.6199
         },
         {
           "day": 747,
-          "multiple": 29.2212
+          "multiple": 29.2072
         },
         {
           "day": 748,
-          "multiple": 28.2698
+          "multiple": 28.2559
         },
         {
           "day": 749,
-          "multiple": 26.8772
+          "multiple": 26.8647
         },
         {
           "day": 750,
-          "multiple": 26.3069
+          "multiple": 26.2947
         },
         {
           "day": 751,
-          "multiple": 25.5179
+          "multiple": 25.506
         },
         {
           "day": 752,
-          "multiple": 26.0358
+          "multiple": 26.0231
         },
         {
           "day": 753,
-          "multiple": 27.0921
+          "multiple": 27.0792
         },
         {
           "day": 754,
-          "multiple": 26.1995
+          "multiple": 26.1868
         },
         {
           "day": 755,
-          "multiple": 27.3465
+          "multiple": 27.3334
         },
         {
           "day": 756,
-          "multiple": 27.734
+          "multiple": 27.7212
         },
         {
           "day": 757,
-          "multiple": 26.6419
+          "multiple": 26.6294
         },
         {
           "day": 758,
-          "multiple": 26.3235
+          "multiple": 26.311
         },
         {
           "day": 759,
-          "multiple": 27.1573
+          "multiple": 27.1444
         },
         {
           "day": 760,
-          "multiple": 26.0179
+          "multiple": 26.005
         },
         {
           "day": 761,
-          "multiple": 26.0972
+          "multiple": 26.085
         },
         {
           "day": 762,
-          "multiple": 25.7826
+          "multiple": 25.7704
         },
         {
           "day": 763,
-          "multiple": 25.5153
+          "multiple": 25.5025
         },
         {
           "day": 764,
-          "multiple": 26.3325
+          "multiple": 26.3201
         },
         {
           "day": 765,
-          "multiple": 26.0729
+          "multiple": 26.0607
         },
         {
           "day": 766,
-          "multiple": 26.2136
+          "multiple": 26.2015
         },
         {
           "day": 767,
-          "multiple": 23.6113
+          "multiple": 23.6004
         },
         {
           "day": 768,
-          "multiple": 22.1074
+          "multiple": 22.0964
         },
         {
           "day": 769,
-          "multiple": 23.0857
+          "multiple": 23.0747
         },
         {
           "day": 770,
-          "multiple": 24.2954
+          "multiple": 24.2836
         },
         {
           "day": 771,
-          "multiple": 25.2928
+          "multiple": 25.2807
         },
         {
           "day": 772,
-          "multiple": 24.0179
+          "multiple": 24.0063
         },
         {
           "day": 773,
-          "multiple": 24.5512
+          "multiple": 24.5396
         },
         {
           "day": 774,
-          "multiple": 23.298
+          "multiple": 23.2874
         },
         {
           "day": 775,
-          "multiple": 22.7609
+          "multiple": 22.7506
         },
         {
           "day": 776,
-          "multiple": 22.5102
+          "multiple": 22.4995
         },
         {
           "day": 777,
-          "multiple": 18.6918
+          "multiple": 18.6826
         },
         {
           "day": 778,
-          "multiple": 14.413
+          "multiple": 14.4056
         },
         {
           "day": 779,
-          "multiple": 17.7161
+          "multiple": 17.7079
         },
         {
           "day": 780,
-          "multiple": 17.5409
+          "multiple": 17.5327
         },
         {
           "day": 781,
-          "multiple": 16.8363
+          "multiple": 16.8284
         },
         {
           "day": 782,
-          "multiple": 17.9015
+          "multiple": 17.8936
         },
         {
           "day": 783,
-          "multiple": 18.2187
+          "multiple": 18.2097
         },
         {
           "day": 784,
-          "multiple": 17.8286
+          "multiple": 17.8205
         },
         {
           "day": 785,
-          "multiple": 18.8964
+          "multiple": 18.8869
         },
         {
           "day": 786,
-          "multiple": 19.9271
+          "multiple": 19.9175
         },
         {
           "day": 787,
-          "multiple": 19.9437
+          "multiple": 19.9345
         },
         {
           "day": 788,
-          "multiple": 21.2762
+          "multiple": 21.266
         },
         {
           "day": 789,
-          "multiple": 21.6624
+          "multiple": 21.652
         },
         {
           "day": 790,
-          "multiple": 23.1944
+          "multiple": 23.1834
         },
         {
           "day": 791,
-          "multiple": 22.179
+          "multiple": 22.168
         },
         {
           "day": 792,
-          "multiple": 19.9604
+          "multiple": 19.9512
         },
         {
           "day": 793,
-          "multiple": 20.0499
+          "multiple": 20.0407
         },
         {
           "day": 794,
-          "multiple": 19.2839
+          "multiple": 19.2747
         },
         {
           "day": 795,
-          "multiple": 18.6279
+          "multiple": 18.6191
         },
         {
           "day": 796,
-          "multiple": 19.3146
+          "multiple": 19.3051
         },
         {
           "day": 797,
-          "multiple": 20.1675
+          "multiple": 20.158
         },
         {
           "day": 798,
-          "multiple": 19.1061
+          "multiple": 19.0964
         },
         {
           "day": 799,
-          "multiple": 19.0102
+          "multiple": 19.0014
         },
         {
           "day": 800,
-          "multiple": 18.1138
+          "multiple": 18.1052
         },
         {
           "day": 801,
-          "multiple": 18.5627
+          "multiple": 18.5541
         },
         {
           "day": 802,
-          "multiple": 19.1419
+          "multiple": 19.1332
         },
         {
           "day": 803,
-          "multiple": 18.8312
+          "multiple": 18.8227
         },
         {
           "day": 804,
-          "multiple": 18.4719
+          "multiple": 18.4634
         },
         {
           "day": 805,
-          "multiple": 18.4207
+          "multiple": 18.4125
         },
         {
           "day": 806,
-          "multiple": 18.2852
+          "multiple": 18.2761
         },
         {
           "day": 807,
-          "multiple": 18.4885
+          "multiple": 18.4792
         },
         {
           "day": 808,
-          "multiple": 19.6995
+          "multiple": 19.6902
         },
         {
           "day": 809,
-          "multiple": 21.413
+          "multiple": 21.4024
         },
         {
           "day": 810,
-          "multiple": 19.4795
+          "multiple": 19.4705
         },
         {
           "day": 811,
-          "multiple": 19.5294
+          "multiple": 19.5199
         },
         {
           "day": 812,
-          "multiple": 20.3338
+          "multiple": 20.3241
         },
         {
           "day": 813,
-          "multiple": 19.6752
+          "multiple": 19.666
         },
         {
           "day": 814,
-          "multiple": 20.0754
+          "multiple": 20.066
         },
         {
           "day": 815,
-          "multiple": 20.4412
+          "multiple": 20.4309
         },
         {
           "day": 816,
-          "multiple": 20.4105
+          "multiple": 20.4002
         },
         {
           "day": 817,
-          "multiple": 19.6368
+          "multiple": 19.6278
         },
         {
           "day": 818,
-          "multiple": 19.8056
+          "multiple": 19.7959
         },
         {
           "day": 819,
-          "multiple": 19.8171
+          "multiple": 19.8076
         },
         {
           "day": 820,
-          "multiple": 19.6317
+          "multiple": 19.6222
         },
         {
           "day": 821,
-          "multiple": 19.5895
+          "multiple": 19.5804
         },
         {
           "day": 822,
-          "multiple": 20.8747
+          "multiple": 20.8649
         },
         {
           "day": 823,
-          "multiple": 20.9898
+          "multiple": 20.9799
         },
         {
           "day": 824,
-          "multiple": 21.3555
+          "multiple": 21.3456
         },
         {
           "day": 825,
-          "multiple": 22.9834
+          "multiple": 22.9726
         },
         {
           "day": 826,
-          "multiple": 23.321
+          "multiple": 23.3103
         },
         {
           "day": 827,
-          "multiple": 22.6228
+          "multiple": 22.6125
         },
         {
           "day": 828,
-          "multiple": 23.0013
+          "multiple": 22.9899
         },
         {
           "day": 829,
-          "multiple": 22.9361
+          "multiple": 22.9251
         },
         {
           "day": 830,
-          "multiple": 23.2992
+          "multiple": 23.2887
         },
         {
           "day": 831,
-          "multiple": 23.2685
+          "multiple": 23.2577
         },
         {
           "day": 832,
-          "multiple": 24.3619
+          "multiple": 24.3508
         },
         {
           "day": 833,
-          "multiple": 24.665
+          "multiple": 24.6536
         },
         {
           "day": 834,
-          "multiple": 25.3376
+          "multiple": 25.3258
         },
         {
           "day": 835,
-          "multiple": 25.5128
+          "multiple": 25.5009
         },
         {
           "day": 836,
-          "multiple": 24.6598
+          "multiple": 24.6474
         },
         {
           "day": 837,
-          "multiple": 24.4143
+          "multiple": 24.4027
         },
         {
           "day": 838,
-          "multiple": 24.7724
+          "multiple": 24.7611
         },
         {
           "day": 839,
-          "multiple": 25.0422
+          "multiple": 25.0302
         },
         {
           "day": 840,
-          "multiple": 24.8312
+          "multiple": 24.8199
         },
         {
           "day": 841,
-          "multiple": 22.1087
+          "multiple": 22.0987
         },
         {
           "day": 842,
-          "multiple": 22.5038
+          "multiple": 22.4937
         },
         {
           "day": 843,
-          "multiple": 22.5652
+          "multiple": 22.5548
         },
         {
           "day": 844,
-          "multiple": 22.3836
+          "multiple": 22.3732
         },
         {
           "day": 845,
-          "multiple": 22.9629
+          "multiple": 22.9513
         },
         {
           "day": 846,
-          "multiple": 22.8133
+          "multiple": 22.802
         },
         {
           "day": 847,
-          "multiple": 21.0051
+          "multiple": 20.9956
         },
         {
           "day": 848,
-          "multiple": 21.2238
+          "multiple": 21.2137
         },
         {
           "day": 849,
-          "multiple": 21.4258
+          "multiple": 21.4155
         },
         {
           "day": 850,
-          "multiple": 21.2826
+          "multiple": 21.2729
         },
         {
           "day": 851,
-          "multiple": 21.7468
+          "multiple": 21.736
         },
         {
           "day": 852,
-          "multiple": 20.9399
+          "multiple": 20.9304
         },
         {
           "day": 853,
-          "multiple": 21.4386
+          "multiple": 21.428
         },
         {
           "day": 854,
-          "multiple": 21.1036
+          "multiple": 21.0931
         },
         {
           "day": 855,
-          "multiple": 21.2928
+          "multiple": 21.2831
         },
         {
           "day": 856,
-          "multiple": 21.7136
+          "multiple": 21.7037
         },
         {
           "day": 857,
-          "multiple": 21.8018
+          "multiple": 21.7911
         },
         {
           "day": 858,
-          "multiple": 21.7481
+          "multiple": 21.7371
         },
         {
           "day": 859,
-          "multiple": 22.2711
+          "multiple": 22.2599
         },
         {
           "day": 860,
-          "multiple": 21.9194
+          "multiple": 21.9091
         },
         {
           "day": 861,
-          "multiple": 21.7136
+          "multiple": 21.703
         },
         {
           "day": 862,
-          "multiple": 21.1343
+          "multiple": 21.1245
         },
         {
           "day": 863,
-          "multiple": 21.2967
+          "multiple": 21.2866
         },
         {
           "day": 864,
-          "multiple": 20.6829
+          "multiple": 20.6734
         },
         {
           "day": 865,
-          "multiple": 20.7148
+          "multiple": 20.7049
         },
         {
           "day": 866,
-          "multiple": 20.679
+          "multiple": 20.669
         },
         {
           "day": 867,
-          "multiple": 19.4821
+          "multiple": 19.4728
         },
         {
           "day": 868,
-          "multiple": 18.7353
+          "multiple": 18.726
         },
         {
           "day": 869,
-          "multiple": 19.101
+          "multiple": 19.0922
         },
         {
           "day": 870,
-          "multiple": 19.3657
+          "multiple": 19.357
         },
         {
           "day": 871,
-          "multiple": 18.9527
+          "multiple": 18.9435
         },
         {
           "day": 872,
-          "multiple": 19.0179
+          "multiple": 19.009
         },
         {
           "day": 873,
-          "multiple": 19.1023
+          "multiple": 19.0935
         },
         {
           "day": 874,
-          "multiple": 19.2647
+          "multiple": 19.2557
         },
         {
           "day": 875,
-          "multiple": 20.0141
+          "multiple": 20.0049
         },
         {
           "day": 876,
-          "multiple": 19.8824
+          "multiple": 19.8726
         },
         {
           "day": 877,
-          "multiple": 19.9591
+          "multiple": 19.9497
         },
         {
           "day": 878,
-          "multiple": 19.5512
+          "multiple": 19.5423
         },
         {
           "day": 879,
-          "multiple": 19.1394
+          "multiple": 19.1306
         },
         {
           "day": 880,
-          "multiple": 18.578
+          "multiple": 18.5693
         },
         {
           "day": 881,
-          "multiple": 18.9949
+          "multiple": 18.9855
         },
         {
           "day": 882,
-          "multiple": 18.7442
+          "multiple": 18.7348
         },
         {
           "day": 883,
-          "multiple": 18.6944
+          "multiple": 18.6858
         },
         {
           "day": 884,
-          "multiple": 19.9348
+          "multiple": 19.9252
         },
         {
           "day": 885,
-          "multiple": 19.5128
+          "multiple": 19.503
         },
         {
           "day": 886,
-          "multiple": 19.7494
+          "multiple": 19.7394
         },
         {
           "day": 887,
-          "multiple": 20.2609
+          "multiple": 20.2515
         },
         {
           "day": 888,
-          "multiple": 20.1432
+          "multiple": 20.1337
         },
         {
           "day": 889,
-          "multiple": 19.8107
+          "multiple": 19.8016
         },
         {
           "day": 890,
-          "multiple": 19.2315
+          "multiple": 19.2228
         },
         {
           "day": 891,
-          "multiple": 19.6765
+          "multiple": 19.6671
         },
         {
           "day": 892,
-          "multiple": 20.1803
+          "multiple": 20.1713
         },
         {
           "day": 893,
-          "multiple": 20.0934
+          "multiple": 20.0842
         },
         {
           "day": 894,
-          "multiple": 19.7468
+          "multiple": 19.7378
         },
         {
           "day": 895,
-          "multiple": 19.6407
+          "multiple": 19.6311
         },
         {
           "day": 896,
-          "multiple": 19.7123
+          "multiple": 19.7023
         },
         {
           "day": 897,
-          "multiple": 19.1074
+          "multiple": 19.0987
         },
         {
           "day": 898,
-          "multiple": 19.3005
+          "multiple": 19.2916
         },
         {
           "day": 899,
-          "multiple": 19.3223
+          "multiple": 19.3136
         },
         {
           "day": 900,
-          "multiple": 19.2621
+          "multiple": 19.2534
         },
         {
           "day": 901,
-          "multiple": 19.2506
+          "multiple": 19.2409
         },
         {
           "day": 902,
-          "multiple": 19.2225
+          "multiple": 19.2128
         },
         {
           "day": 903,
-          "multiple": 19.0486
+          "multiple": 19.0399
         },
         {
           "day": 904,
-          "multiple": 19.0908
+          "multiple": 19.0811
         },
         {
           "day": 905,
-          "multiple": 19.2148
+          "multiple": 19.2051
         },
         {
           "day": 906,
-          "multiple": 19.5256
+          "multiple": 19.5156
         },
         {
           "day": 907,
-          "multiple": 19.4399
+          "multiple": 19.4306
         },
         {
           "day": 908,
-          "multiple": 19.812
+          "multiple": 19.8023
         },
         {
           "day": 909,
-          "multiple": 19.5665
+          "multiple": 19.5572
         },
         {
           "day": 910,
-          "multiple": 19.6151
+          "multiple": 19.6054
         },
         {
           "day": 911,
-          "multiple": 19.6739
+          "multiple": 19.6642
         },
         {
           "day": 912,
-          "multiple": 19.8171
+          "multiple": 19.8078
         },
         {
           "day": 913,
-          "multiple": 19.757
+          "multiple": 19.7475
         },
         {
           "day": 914,
-          "multiple": 19.4706
+          "multiple": 19.461
         },
         {
           "day": 915,
-          "multiple": 19.1905
+          "multiple": 19.1808
         },
         {
           "day": 916,
-          "multiple": 18.7711
+          "multiple": 18.7624
         },
         {
           "day": 917,
-          "multiple": 18.8159
+          "multiple": 18.8074
         },
         {
           "day": 918,
-          "multiple": 18.7302
+          "multiple": 18.721
         },
         {
           "day": 919,
-          "multiple": 18.5908
+          "multiple": 18.5817
         },
         {
           "day": 920,
-          "multiple": 18.7468
+          "multiple": 18.7385
         },
         {
           "day": 921,
-          "multiple": 18.766
+          "multiple": 18.7576
         },
         {
           "day": 922,
-          "multiple": 18.6355
+          "multiple": 18.6265
         },
         {
           "day": 923,
-          "multiple": 19.0332
+          "multiple": 19.0237
         },
         {
           "day": 924,
-          "multiple": 18.9015
+          "multiple": 18.8922
         },
         {
           "day": 925,
-          "multiple": 18.8453
+          "multiple": 18.8359
         },
         {
           "day": 926,
-          "multiple": 18.9118
+          "multiple": 18.9021
         },
         {
           "day": 927,
-          "multiple": 18.9578
+          "multiple": 18.9492
         },
         {
           "day": 928,
-          "multiple": 19.1151
+          "multiple": 19.106
         },
         {
           "day": 929,
-          "multiple": 19.1368
+          "multiple": 19.1283
         },
         {
           "day": 930,
-          "multiple": 19.3274
+          "multiple": 19.3177
         },
         {
           "day": 931,
-          "multiple": 20.321
+          "multiple": 20.3111
         },
         {
           "day": 932,
-          "multiple": 19.8862
+          "multiple": 19.8769
         },
         {
           "day": 933,
-          "multiple": 20.0448
+          "multiple": 20.0351
         },
         {
           "day": 934,
-          "multiple": 19.6893
+          "multiple": 19.6792
         },
         {
           "day": 935,
-          "multiple": 19.7609
+          "multiple": 19.7518
         },
         {
           "day": 936,
-          "multiple": 19.6803
+          "multiple": 19.6711
         },
         {
           "day": 937,
-          "multiple": 20
+          "multiple": 19.9906
         },
         {
           "day": 938,
-          "multiple": 19.7954
+          "multiple": 19.7862
         },
         {
           "day": 939,
-          "multiple": 19.532
+          "multiple": 19.5227
         },
         {
           "day": 940,
-          "multiple": 19.6841
+          "multiple": 19.6743
         },
         {
           "day": 941,
-          "multiple": 19.757
+          "multiple": 19.7474
         },
         {
           "day": 942,
-          "multiple": 20.4258
+          "multiple": 20.4163
         },
         {
           "day": 943,
-          "multiple": 20.2289
+          "multiple": 20.2197
         },
         {
           "day": 944,
-          "multiple": 20.8184
+          "multiple": 20.8083
         },
         {
           "day": 945,
-          "multiple": 21.4361
+          "multiple": 21.4262
         },
         {
           "day": 946,
-          "multiple": 21.1598
+          "multiple": 21.1492
         },
         {
           "day": 947,
-          "multiple": 20.8453
+          "multiple": 20.8347
         },
         {
           "day": 948,
-          "multiple": 20.9629
+          "multiple": 20.9525
         },
         {
           "day": 949,
-          "multiple": 21.3069
+          "multiple": 21.2969
         },
         {
           "day": 950,
-          "multiple": 22.3171
+          "multiple": 22.3061
         },
         {
           "day": 951,
-          "multiple": 22.2315
+          "multiple": 22.2209
         },
         {
           "day": 952,
-          "multiple": 22.1189
+          "multiple": 22.1077
         },
         {
           "day": 953,
-          "multiple": 22.4399
+          "multiple": 22.4292
         },
         {
           "day": 954,
-          "multiple": 22.1688
+          "multiple": 22.158
         },
         {
           "day": 955,
-          "multiple": 23.4808
-        },
-        {
-          "day": 956,
-          "multiple": 24.0345
-        },
-        {
-          "day": 957,
-          "multiple": 25.5729
-        },
-        {
-          "day": 958,
-          "multiple": 23.9744
-        },
-        {
-          "day": 959,
-          "multiple": 23.5614
-        },
-        {
-          "day": 960,
-          "multiple": 23.4655
-        },
-        {
-          "day": 961,
-          "multiple": 22.7788
-        },
-        {
-          "day": 962,
-          "multiple": 22.9143
-        },
-        {
-          "day": 963,
-          "multiple": 22.6944
-        },
-        {
-          "day": 964,
-          "multiple": 22.6292
-        },
-        {
-          "day": 965,
-          "multiple": 22.9399
-        },
-        {
-          "day": 966,
-          "multiple": 22.6662
-        },
-        {
-          "day": 967,
-          "multiple": 22.7634
-        },
-        {
-          "day": 968,
-          "multiple": 22.8555
-        },
-        {
-          "day": 969,
-          "multiple": 23.8811
-        },
-        {
-          "day": 970,
-          "multiple": 23.8632
-        },
-        {
-          "day": 971,
-          "multiple": 24.133
-        },
-        {
-          "day": 972,
-          "multiple": 24.1176
-        },
-        {
-          "day": 973,
-          "multiple": 24.0332
-        },
-        {
-          "day": 974,
-          "multiple": 23.7455
-        },
-        {
-          "day": 975,
-          "multiple": 23.6816
-        },
-        {
-          "day": 976,
-          "multiple": 23.3414
-        },
-        {
-          "day": 977,
-          "multiple": 23.0652
-        },
-        {
-          "day": 978,
-          "multiple": 23.1637
-        },
-        {
-          "day": 979,
-          "multiple": 23.023
-        },
-        {
-          "day": 980,
-          "multiple": 23.3171
-        },
-        {
-          "day": 981,
-          "multiple": 23.1547
-        },
-        {
-          "day": 982,
-          "multiple": 22.835
-        },
-        {
-          "day": 983,
-          "multiple": 23.0192
-        },
-        {
-          "day": 984,
-          "multiple": 21.61
-        },
-        {
-          "day": 985,
-          "multiple": 21.867
-        },
-        {
-          "day": 986,
-          "multiple": 21.6829
-        },
-        {
-          "day": 987,
-          "multiple": 22.2072
-        },
-        {
-          "day": 988,
-          "multiple": 21.8836
-        },
-        {
-          "day": 989,
-          "multiple": 21.6317
-        },
-        {
-          "day": 990,
-          "multiple": 21.7506
-        },
-        {
-          "day": 991,
-          "multiple": 21.3824
-        },
-        {
-          "day": 992,
-          "multiple": 20.9629
-        },
-        {
-          "day": 993,
-          "multiple": 20.8977
-        },
-        {
-          "day": 994,
-          "multiple": 18.1343
-        },
-        {
-          "day": 995,
-          "multiple": 18.4668
-        },
-        {
-          "day": 996,
-          "multiple": 19.2008
-        },
-        {
-          "day": 997,
-          "multiple": 19.0524
-        },
-        {
-          "day": 998,
-          "multiple": 18.8491
-        },
-        {
-          "day": 999,
-          "multiple": 18.5294
-        },
-        {
-          "day": 1000,
-          "multiple": 17.0921
-        },
-        {
-          "day": 1001,
-          "multiple": 18.2212
-        },
-        {
-          "day": 1002,
-          "multiple": 18.6483
-        },
-        {
-          "day": 1003,
-          "multiple": 18.7033
-        },
-        {
-          "day": 1004,
-          "multiple": 19.2366
-        },
-        {
-          "day": 1005,
-          "multiple": 19.0793
-        },
-        {
-          "day": 1006,
-          "multiple": 18.9463
-        },
-        {
-          "day": 1007,
-          "multiple": 19.2033
-        },
-        {
-          "day": 1008,
-          "multiple": 19.087
-        },
-        {
-          "day": 1009,
-          "multiple": 19.1765
-        },
-        {
-          "day": 1010,
-          "multiple": 19.0844
-        },
-        {
-          "day": 1011,
-          "multiple": 19.3785
-        },
-        {
-          "day": 1012,
-          "multiple": 19.7992
-        },
-        {
-          "day": 1013,
-          "multiple": 20.1266
-        },
-        {
-          "day": 1014,
-          "multiple": 19.9565
-        },
-        {
-          "day": 1015,
-          "multiple": 20.3286
-        },
-        {
-          "day": 1016,
-          "multiple": 19.7941
-        },
-        {
-          "day": 1017,
-          "multiple": 19.8005
-        },
-        {
-          "day": 1018,
-          "multiple": 19.8939
-        },
-        {
-          "day": 1019,
-          "multiple": 19.4616
-        },
-        {
-          "day": 1020,
-          "multiple": 19.0806
-        },
-        {
-          "day": 1021,
-          "multiple": 19.0627
-        },
-        {
-          "day": 1022,
-          "multiple": 18.9962
-        },
-        {
-          "day": 1023,
-          "multiple": 18.8069
-        },
-        {
-          "day": 1024,
-          "multiple": 18.9744
-        },
-        {
-          "day": 1025,
-          "multiple": 19.0026
-        },
-        {
-          "day": 1026,
-          "multiple": 18.8171
-        },
-        {
-          "day": 1027,
-          "multiple": 18.9488
-        },
-        {
-          "day": 1028,
-          "multiple": 18.7353
-        },
-        {
-          "day": 1029,
-          "multiple": 19.2839
-        },
-        {
-          "day": 1030,
-          "multiple": 19.2801
-        },
-        {
-          "day": 1031,
-          "multiple": 19.7161
-        },
-        {
-          "day": 1032,
-          "multiple": 19.8184
-        },
-        {
-          "day": 1033,
-          "multiple": 19.7148
-        },
-        {
-          "day": 1034,
-          "multiple": 19.5614
-        },
-        {
-          "day": 1035,
-          "multiple": 20.1726
-        },
-        {
-          "day": 1036,
-          "multiple": 19.9731
-        },
-        {
-          "day": 1037,
-          "multiple": 19.9488
-        },
-        {
-          "day": 1038,
-          "multiple": 20.0691
-        },
-        {
-          "day": 1039,
-          "multiple": 20.0473
-        },
-        {
-          "day": 1040,
-          "multiple": 20.1586
-        },
-        {
-          "day": 1041,
-          "multiple": 20.0831
-        },
-        {
-          "day": 1042,
-          "multiple": 20.2813
-        },
-        {
-          "day": 1043,
-          "multiple": 20.6125
-        },
-        {
-          "day": 1044,
-          "multiple": 20.3402
-        },
-        {
-          "day": 1045,
-          "multiple": 20.2583
-        },
-        {
-          "day": 1046,
-          "multiple": 20.3811
-        },
-        {
-          "day": 1047,
-          "multiple": 20.4834
-        },
-        {
-          "day": 1048,
-          "multiple": 20.6407
-        },
-        {
-          "day": 1049,
-          "multiple": 20.6458
-        },
-        {
-          "day": 1050,
-          "multiple": 20.7813
-        },
-        {
-          "day": 1051,
-          "multiple": 20.8772
-        },
-        {
-          "day": 1052,
-          "multiple": 21.0742
-        },
-        {
-          "day": 1053,
-          "multiple": 21.7161
-        },
-        {
-          "day": 1054,
-          "multiple": 22.3606
-        },
-        {
-          "day": 1055,
-          "multiple": 21.5512
-        },
-        {
-          "day": 1056,
-          "multiple": 21.7903
-        },
-        {
-          "day": 1057,
-          "multiple": 22.4092
-        },
-        {
-          "day": 1058,
-          "multiple": 22.1535
-        },
-        {
-          "day": 1059,
-          "multiple": 22.7749
-        },
-        {
-          "day": 1060,
-          "multiple": 23.1304
-        },
-        {
-          "day": 1061,
           "multiple": 23.4693
         },
         {
+          "day": 956,
+          "multiple": 24.0229
+        },
+        {
+          "day": 957,
+          "multiple": 25.5607
+        },
+        {
+          "day": 958,
+          "multiple": 23.9626
+        },
+        {
+          "day": 959,
+          "multiple": 23.5495
+        },
+        {
+          "day": 960,
+          "multiple": 23.4547
+        },
+        {
+          "day": 961,
+          "multiple": 22.7682
+        },
+        {
+          "day": 962,
+          "multiple": 22.9034
+        },
+        {
+          "day": 963,
+          "multiple": 22.683
+        },
+        {
+          "day": 964,
+          "multiple": 22.618
+        },
+        {
+          "day": 965,
+          "multiple": 22.9293
+        },
+        {
+          "day": 966,
+          "multiple": 22.6555
+        },
+        {
+          "day": 967,
+          "multiple": 22.7531
+        },
+        {
+          "day": 968,
+          "multiple": 22.845
+        },
+        {
+          "day": 969,
+          "multiple": 23.87
+        },
+        {
+          "day": 970,
+          "multiple": 23.8518
+        },
+        {
+          "day": 971,
+          "multiple": 24.1216
+        },
+        {
+          "day": 972,
+          "multiple": 24.1058
+        },
+        {
+          "day": 973,
+          "multiple": 24.0218
+        },
+        {
+          "day": 974,
+          "multiple": 23.7345
+        },
+        {
+          "day": 975,
+          "multiple": 23.6701
+        },
+        {
+          "day": 976,
+          "multiple": 23.3304
+        },
+        {
+          "day": 977,
+          "multiple": 23.0546
+        },
+        {
+          "day": 978,
+          "multiple": 23.1532
+        },
+        {
+          "day": 979,
+          "multiple": 23.0124
+        },
+        {
+          "day": 980,
+          "multiple": 23.3062
+        },
+        {
+          "day": 981,
+          "multiple": 23.1434
+        },
+        {
+          "day": 982,
+          "multiple": 22.8235
+        },
+        {
+          "day": 983,
+          "multiple": 23.008
+        },
+        {
+          "day": 984,
+          "multiple": 21.5995
+        },
+        {
+          "day": 985,
+          "multiple": 21.8565
+        },
+        {
+          "day": 986,
+          "multiple": 21.6731
+        },
+        {
+          "day": 987,
+          "multiple": 22.1966
+        },
+        {
+          "day": 988,
+          "multiple": 21.8734
+        },
+        {
+          "day": 989,
+          "multiple": 21.6212
+        },
+        {
+          "day": 990,
+          "multiple": 21.7398
+        },
+        {
+          "day": 991,
+          "multiple": 21.3719
+        },
+        {
+          "day": 992,
+          "multiple": 20.9531
+        },
+        {
+          "day": 993,
+          "multiple": 20.8871
+        },
+        {
+          "day": 994,
+          "multiple": 18.125
+        },
+        {
+          "day": 995,
+          "multiple": 18.4581
+        },
+        {
+          "day": 996,
+          "multiple": 19.1912
+        },
+        {
+          "day": 997,
+          "multiple": 19.0427
+        },
+        {
+          "day": 998,
+          "multiple": 18.8396
+        },
+        {
+          "day": 999,
+          "multiple": 18.5201
+        },
+        {
+          "day": 1000,
+          "multiple": 17.0842
+        },
+        {
+          "day": 1001,
+          "multiple": 18.2127
+        },
+        {
+          "day": 1002,
+          "multiple": 18.639
+        },
+        {
+          "day": 1003,
+          "multiple": 18.6945
+        },
+        {
+          "day": 1004,
+          "multiple": 19.2268
+        },
+        {
+          "day": 1005,
+          "multiple": 19.0698
+        },
+        {
+          "day": 1006,
+          "multiple": 18.9373
+        },
+        {
+          "day": 1007,
+          "multiple": 19.1937
+        },
+        {
+          "day": 1008,
+          "multiple": 19.0783
+        },
+        {
+          "day": 1009,
+          "multiple": 19.1674
+        },
+        {
+          "day": 1010,
+          "multiple": 19.0759
+        },
+        {
+          "day": 1011,
+          "multiple": 19.3688
+        },
+        {
+          "day": 1012,
+          "multiple": 19.7894
+        },
+        {
+          "day": 1013,
+          "multiple": 20.1176
+        },
+        {
+          "day": 1014,
+          "multiple": 19.9467
+        },
+        {
+          "day": 1015,
+          "multiple": 20.3189
+        },
+        {
+          "day": 1016,
+          "multiple": 19.7847
+        },
+        {
+          "day": 1017,
+          "multiple": 19.7911
+        },
+        {
+          "day": 1018,
+          "multiple": 19.8847
+        },
+        {
+          "day": 1019,
+          "multiple": 19.4529
+        },
+        {
+          "day": 1020,
+          "multiple": 19.0708
+        },
+        {
+          "day": 1021,
+          "multiple": 19.053
+        },
+        {
+          "day": 1022,
+          "multiple": 18.9871
+        },
+        {
+          "day": 1023,
+          "multiple": 18.7982
+        },
+        {
+          "day": 1024,
+          "multiple": 18.9653
+        },
+        {
+          "day": 1025,
+          "multiple": 18.9939
+        },
+        {
+          "day": 1026,
+          "multiple": 18.8085
+        },
+        {
+          "day": 1027,
+          "multiple": 18.9403
+        },
+        {
+          "day": 1028,
+          "multiple": 18.7263
+        },
+        {
+          "day": 1029,
+          "multiple": 19.2745
+        },
+        {
+          "day": 1030,
+          "multiple": 19.2703
+        },
+        {
+          "day": 1031,
+          "multiple": 19.7068
+        },
+        {
+          "day": 1032,
+          "multiple": 19.8095
+        },
+        {
+          "day": 1033,
+          "multiple": 19.7059
+        },
+        {
+          "day": 1034,
+          "multiple": 19.5522
+        },
+        {
+          "day": 1035,
+          "multiple": 20.1635
+        },
+        {
+          "day": 1036,
+          "multiple": 19.9636
+        },
+        {
+          "day": 1037,
+          "multiple": 19.9394
+        },
+        {
+          "day": 1038,
+          "multiple": 20.0594
+        },
+        {
+          "day": 1039,
+          "multiple": 20.0375
+        },
+        {
+          "day": 1040,
+          "multiple": 20.1487
+        },
+        {
+          "day": 1041,
+          "multiple": 20.0733
+        },
+        {
+          "day": 1042,
+          "multiple": 20.2719
+        },
+        {
+          "day": 1043,
+          "multiple": 20.6028
+        },
+        {
+          "day": 1044,
+          "multiple": 20.3303
+        },
+        {
+          "day": 1045,
+          "multiple": 20.2481
+        },
+        {
+          "day": 1046,
+          "multiple": 20.3714
+        },
+        {
+          "day": 1047,
+          "multiple": 20.4739
+        },
+        {
+          "day": 1048,
+          "multiple": 20.6309
+        },
+        {
+          "day": 1049,
+          "multiple": 20.6358
+        },
+        {
+          "day": 1050,
+          "multiple": 20.772
+        },
+        {
+          "day": 1051,
+          "multiple": 20.8676
+        },
+        {
+          "day": 1052,
+          "multiple": 21.064
+        },
+        {
+          "day": 1053,
+          "multiple": 21.7063
+        },
+        {
+          "day": 1054,
+          "multiple": 22.3502
+        },
+        {
+          "day": 1055,
+          "multiple": 21.5412
+        },
+        {
+          "day": 1056,
+          "multiple": 21.7797
+        },
+        {
+          "day": 1057,
+          "multiple": 22.3988
+        },
+        {
+          "day": 1058,
+          "multiple": 22.143
+        },
+        {
+          "day": 1059,
+          "multiple": 22.7644
+        },
+        {
+          "day": 1060,
+          "multiple": 23.1187
+        },
+        {
+          "day": 1061,
+          "multiple": 23.4581
+        },
+        {
           "day": 1062,
-          "multiple": 23.5946
+          "multiple": 23.5835
         },
         {
           "day": 1063,
-          "multiple": 23.9105
+          "multiple": 23.8985
         },
         {
           "day": 1064,
-          "multiple": 24.6944
+          "multiple": 24.6832
         },
         {
           "day": 1065,
-          "multiple": 25.5575
+          "multiple": 25.5456
         },
         {
           "day": 1066,
-          "multiple": 26.243
+          "multiple": 26.2306
         },
         {
           "day": 1067,
-          "multiple": 27.3568
+          "multiple": 27.3438
         },
         {
           "day": 1068,
-          "multiple": 25.8568
+          "multiple": 25.8448
         },
         {
           "day": 1069,
-          "multiple": 26.9335
+          "multiple": 26.9209
         },
         {
           "day": 1070,
-          "multiple": 30.0384
+          "multiple": 30.0244
         },
         {
           "day": 1071,
-          "multiple": 33.5575
+          "multiple": 33.542
         },
         {
           "day": 1072,
-          "multiple": 34.1637
+          "multiple": 34.1468
         },
         {
           "day": 1073,
-          "multiple": 32.61
+          "multiple": 32.5949
         },
         {
           "day": 1074,
-          "multiple": 31.5678
+          "multiple": 31.5521
         },
         {
           "day": 1075,
-          "multiple": 32.6931
+          "multiple": 32.6776
         },
         {
           "day": 1076,
-          "multiple": 31.4463
+          "multiple": 31.4314
         },
         {
           "day": 1077,
-          "multiple": 32.1905
+          "multiple": 32.1755
         },
         {
           "day": 1078,
-          "multiple": 28.3325
+          "multiple": 28.3194
         },
         {
           "day": 1079,
-          "multiple": 26.0217
+          "multiple": 26.0093
         },
         {
           "day": 1080,
-          "multiple": 28.6266
+          "multiple": 28.6134
         },
         {
           "day": 1081,
-          "multiple": 28.3056
+          "multiple": 28.2926
         },
         {
           "day": 1082,
-          "multiple": 27.8926
+          "multiple": 27.8787
         },
         {
           "day": 1083,
-          "multiple": 26.8478
+          "multiple": 26.8344
         },
         {
           "day": 1084,
-          "multiple": 27.812
+          "multiple": 27.7991
         },
         {
           "day": 1085,
-          "multiple": 28.2353
+          "multiple": 28.2215
         },
         {
           "day": 1086,
-          "multiple": 27.9386
+          "multiple": 27.925
         },
         {
           "day": 1087,
-          "multiple": 27.3338
+          "multiple": 27.3203
         },
         {
           "day": 1088,
-          "multiple": 27.0166
+          "multiple": 27.0034
         },
         {
           "day": 1089,
-          "multiple": 27.3683
+          "multiple": 27.3547
         },
         {
           "day": 1090,
-          "multiple": 27.3606
+          "multiple": 27.347
         },
         {
           "day": 1091,
-          "multiple": 27.4271
+          "multiple": 27.4141
         },
         {
           "day": 1092,
-          "multiple": 27.0959
+          "multiple": 27.0833
         },
         {
           "day": 1093,
-          "multiple": 27.8529
+          "multiple": 27.8402
         },
         {
           "day": 1094,
-          "multiple": 30.2724
+          "multiple": 30.2582
         },
         {
           "day": 1095,
-          "multiple": 30.4143
+          "multiple": 30.4
         },
         {
           "day": 1096,
-          "multiple": 30.2788
+          "multiple": 30.2642
         },
         {
           "day": 1097,
-          "multiple": 31.6074
+          "multiple": 31.5921
         },
         {
           "day": 1098,
-          "multiple": 32.0243
+          "multiple": 32.0087
         },
         {
           "day": 1099,
-          "multiple": 30.8427
+          "multiple": 30.8279
         },
         {
           "day": 1100,
-          "multiple": 30.6471
+          "multiple": 30.6322
         },
         {
           "day": 1101,
-          "multiple": 30.5307
+          "multiple": 30.5163
         },
         {
           "day": 1102,
-          "multiple": 30.7263
+          "multiple": 30.7113
         },
         {
           "day": 1103,
-          "multiple": 32.6829
+          "multiple": 32.6674
         },
         {
           "day": 1104,
-          "multiple": 32.8836
+          "multiple": 32.8684
         },
         {
           "day": 1105,
-          "multiple": 33.7596
+          "multiple": 33.7439
         },
         {
           "day": 1106,
-          "multiple": 35.0524
+          "multiple": 35.0353
         },
         {
           "day": 1107,
-          "multiple": 35.2136
+          "multiple": 35.1961
         },
         {
           "day": 1108,
-          "multiple": 35.023
+          "multiple": 35.0065
         },
         {
           "day": 1109,
-          "multiple": 38.0371
+          "multiple": 38.0185
         },
         {
           "day": 1110,
-          "multiple": 36.7992
+          "multiple": 36.7815
         },
         {
           "day": 1111,
-          "multiple": 36.6343
+          "multiple": 36.617
         },
         {
           "day": 1112,
-          "multiple": 37.4488
+          "multiple": 37.4305
         },
         {
           "day": 1113,
-          "multiple": 39.523
+          "multiple": 39.5044
         },
         {
           "day": 1114,
-          "multiple": 39.0371
+          "multiple": 39.019
         },
         {
           "day": 1115,
-          "multiple": 39.1535
+          "multiple": 39.1351
         },
         {
           "day": 1116,
-          "multiple": 39.7046
+          "multiple": 39.6854
         },
         {
           "day": 1117,
-          "multiple": 39.5972
+          "multiple": 39.5782
         },
         {
           "day": 1118,
-          "multiple": 37.9987
+          "multiple": 37.9801
         },
         {
           "day": 1119,
-          "multiple": 37.6816
+          "multiple": 37.6634
         },
         {
           "day": 1120,
-          "multiple": 37.3772
+          "multiple": 37.3595
         },
         {
           "day": 1121,
-          "multiple": 37.9552
+          "multiple": 37.9367
         },
         {
           "day": 1122,
-          "multiple": 39.11
+          "multiple": 39.0906
         },
         {
           "day": 1123,
-          "multiple": 39.0665
+          "multiple": 39.0477
         },
         {
           "day": 1124,
-          "multiple": 35.7737
+          "multiple": 35.7568
         },
         {
           "day": 1125,
-          "multiple": 36.2366
+          "multiple": 36.2192
         },
         {
           "day": 1126,
-          "multiple": 36.376
+          "multiple": 36.3583
         },
         {
           "day": 1127,
-          "multiple": 37.4194
+          "multiple": 37.402
         },
         {
           "day": 1128,
-          "multiple": 36.9182
+          "multiple": 36.9006
         },
         {
           "day": 1129,
-          "multiple": 37.1471
+          "multiple": 37.1298
         },
         {
           "day": 1130,
-          "multiple": 37.4808
+          "multiple": 37.4624
         },
         {
           "day": 1131,
-          "multiple": 37.3082
+          "multiple": 37.2909
         },
         {
           "day": 1132,
-          "multiple": 37.3095
+          "multiple": 37.2913
         },
         {
           "day": 1133,
-          "multiple": 37.8389
+          "multiple": 37.8204
         },
         {
           "day": 1134,
-          "multiple": 37.8056
+          "multiple": 37.7873
         },
         {
           "day": 1135,
-          "multiple": 37.6522
+          "multiple": 37.6338
         },
         {
           "day": 1136,
-          "multiple": 40.2417
+          "multiple": 40.2224
         },
         {
           "day": 1137,
-          "multiple": 39.7136
+          "multiple": 39.6944
         },
         {
           "day": 1138,
-          "multiple": 39.3478
+          "multiple": 39.3287
         },
         {
           "day": 1139,
-          "multiple": 39.344
+          "multiple": 39.3252
         },
         {
           "day": 1140,
-          "multiple": 39.6918
+          "multiple": 39.6723
         },
         {
           "day": 1141,
-          "multiple": 38.7609
+          "multiple": 38.7429
         },
         {
           "day": 1142,
-          "multiple": 38.4488
+          "multiple": 38.4301
         },
         {
           "day": 1143,
-          "multiple": 38.3261
+          "multiple": 38.3082
         },
         {
           "day": 1144,
-          "multiple": 32.4552
+          "multiple": 32.44
         },
         {
           "day": 1145,
-          "multiple": 34.6074
+          "multiple": 34.5911
         },
         {
           "day": 1146,
-          "multiple": 34.0384
+          "multiple": 34.0222
         },
         {
           "day": 1147,
-          "multiple": 34.6854
+          "multiple": 34.6691
         },
         {
           "day": 1148,
-          "multiple": 34.0716
+          "multiple": 34.0551
         },
         {
           "day": 1149,
-          "multiple": 38.0882
+          "multiple": 38.0695
         },
         {
           "day": 1150,
-          "multiple": 36.5716
+          "multiple": 36.5538
         },
         {
           "day": 1151,
-          "multiple": 34.0601
+          "multiple": 34.0444
         },
         {
           "day": 1152,
-          "multiple": 34.3811
+          "multiple": 34.3648
         },
         {
           "day": 1153,
-          "multiple": 36.179
+          "multiple": 36.1618
         },
         {
           "day": 1154,
-          "multiple": 35.1023
+          "multiple": 35.0859
         },
         {
           "day": 1155,
-          "multiple": 34.9437
+          "multiple": 34.9267
         },
         {
           "day": 1156,
-          "multiple": 35.2583
+          "multiple": 35.2412
         },
         {
           "day": 1157,
-          "multiple": 33.9872
+          "multiple": 33.9704
         },
         {
           "day": 1158,
-          "multiple": 33.8402
+          "multiple": 33.8237
         },
         {
           "day": 1159,
-          "multiple": 33.6982
+          "multiple": 33.6824
         },
         {
           "day": 1160,
-          "multiple": 32.8913
+          "multiple": 32.8754
         },
         {
           "day": 1161,
-          "multiple": 33.0473
+          "multiple": 33.032
         },
         {
           "day": 1162,
-          "multiple": 32.8708
+          "multiple": 32.8545
         },
         {
           "day": 1163,
-          "multiple": 32.2059
+          "multiple": 32.1908
         },
         {
           "day": 1164,
-          "multiple": 34.0934
+          "multiple": 34.0772
         },
         {
           "day": 1165,
-          "multiple": 33.7481
+          "multiple": 33.7321
         },
         {
           "day": 1166,
-          "multiple": 32.977
+          "multiple": 32.9609
         },
         {
           "day": 1167,
-          "multiple": 33.3657
+          "multiple": 33.3503
         },
         {
           "day": 1168,
-          "multiple": 32.9604
+          "multiple": 32.9449
         },
         {
           "day": 1169,
-          "multiple": 32.8069
+          "multiple": 32.7912
         },
         {
           "day": 1170,
-          "multiple": 33.6432
+          "multiple": 33.6272
         },
         {
           "day": 1171,
-          "multiple": 33.3286
+          "multiple": 33.3129
         },
         {
           "day": 1172,
-          "multiple": 33.734
+          "multiple": 33.7183
         },
         {
           "day": 1173,
-          "multiple": 34.3747
+          "multiple": 34.358
         },
         {
           "day": 1174,
-          "multiple": 35.7685
+          "multiple": 35.7518
         },
         {
           "day": 1175,
-          "multiple": 35.468
+          "multiple": 35.4516
         },
         {
           "day": 1176,
-          "multiple": 36.3785
+          "multiple": 36.3606
         },
         {
           "day": 1177,
-          "multiple": 36.9246
+          "multiple": 36.9063
         },
         {
           "day": 1178,
-          "multiple": 37.6637
+          "multiple": 37.6457
         },
         {
           "day": 1179,
-          "multiple": 37.6138
+          "multiple": 37.5964
         },
         {
           "day": 1180,
-          "multiple": 38.977
+          "multiple": 38.958
         },
         {
           "day": 1181,
-          "multiple": 39.7455
+          "multiple": 39.7271
         },
         {
           "day": 1182,
-          "multiple": 39.5882
+          "multiple": 39.5697
         },
         {
           "day": 1183,
-          "multiple": 38.5396
+          "multiple": 38.5212
         },
         {
           "day": 1184,
-          "multiple": 38.7864
+          "multiple": 38.7684
         },
         {
           "day": 1185,
-          "multiple": 38.743
+          "multiple": 38.7243
         },
         {
           "day": 1186,
-          "multiple": 39.3414
+          "multiple": 39.3224
         },
         {
           "day": 1187,
-          "multiple": 39.4872
+          "multiple": 39.4678
         },
         {
           "day": 1188,
-          "multiple": 39.8593
+          "multiple": 39.8401
         },
         {
           "day": 1189,
-          "multiple": 39.9668
+          "multiple": 39.9482
         },
         {
           "day": 1190,
-          "multiple": 39.5435
+          "multiple": 39.5242
         },
         {
           "day": 1191,
-          "multiple": 38.3772
+          "multiple": 38.3593
         },
         {
           "day": 1192,
-          "multiple": 37.9399
+          "multiple": 37.9223
         },
         {
           "day": 1193,
-          "multiple": 36.8875
+          "multiple": 36.8697
         },
         {
           "day": 1194,
-          "multiple": 36.0537
+          "multiple": 36.0364
         },
         {
           "day": 1195,
-          "multiple": 36.679
+          "multiple": 36.6613
         },
         {
           "day": 1196,
-          "multiple": 37.11
+          "multiple": 37.0918
         },
         {
           "day": 1197,
-          "multiple": 37.0486
+          "multiple": 37.0303
         },
         {
           "day": 1198,
-          "multiple": 37.3095
+          "multiple": 37.2916
         },
         {
           "day": 1199,
-          "multiple": 37.2212
+          "multiple": 37.2036
         },
         {
           "day": 1200,
-          "multiple": 37.5895
+          "multiple": 37.5712
         },
         {
           "day": 1201,
-          "multiple": 36.6752
+          "multiple": 36.6581
         },
         {
           "day": 1202,
-          "multiple": 36.7647
+          "multiple": 36.7471
         },
         {
           "day": 1203,
-          "multiple": 37.4322
+          "multiple": 37.4144
         },
         {
           "day": 1204,
-          "multiple": 37.8274
+          "multiple": 37.8091
         },
         {
           "day": 1205,
-          "multiple": 36.8427
+          "multiple": 36.8254
         },
         {
           "day": 1206,
-          "multiple": 36.9399
+          "multiple": 36.9226
         },
         {
           "day": 1207,
-          "multiple": 36.0102
+          "multiple": 35.9935
         },
         {
           "day": 1208,
-          "multiple": 36.1125
+          "multiple": 36.095
         },
         {
           "day": 1209,
-          "multiple": 36.5857
+          "multiple": 36.5679
         },
         {
           "day": 1210,
-          "multiple": 37.0192
+          "multiple": 37.002
         },
         {
           "day": 1211,
-          "multiple": 37.6483
+          "multiple": 37.6308
         },
         {
           "day": 1212,
-          "multiple": 37.8261
+          "multiple": 37.8075
         },
         {
           "day": 1213,
-          "multiple": 37.5703
+          "multiple": 37.5525
         },
         {
           "day": 1214,
-          "multiple": 37.6432
+          "multiple": 37.6257
         },
         {
           "day": 1215,
-          "multiple": 37.7327
+          "multiple": 37.7144
         },
         {
           "day": 1216,
-          "multiple": 38.1394
+          "multiple": 38.1206
         },
         {
           "day": 1217,
-          "multiple": 37.8964
+          "multiple": 37.8781
         },
         {
           "day": 1218,
-          "multiple": 36.899
+          "multiple": 36.8814
         },
         {
           "day": 1219,
-          "multiple": 36.7852
+          "multiple": 36.7674
         },
         {
           "day": 1220,
-          "multiple": 37.0703
+          "multiple": 37.0523
         },
         {
           "day": 1221,
-          "multiple": 37.202
+          "multiple": 37.1845
         },
         {
           "day": 1222,
-          "multiple": 37.454
+          "multiple": 37.4364
         },
         {
           "day": 1223,
-          "multiple": 37.4987
+          "multiple": 37.4806
         },
         {
           "day": 1224,
-          "multiple": 37.8504
+          "multiple": 37.8319
         },
         {
           "day": 1225,
-          "multiple": 38.4373
+          "multiple": 38.4195
         },
         {
           "day": 1226,
-          "multiple": 38.2992
+          "multiple": 38.2803
         },
         {
           "day": 1227,
-          "multiple": 38.1547
+          "multiple": 38.1359
         },
         {
           "day": 1228,
-          "multiple": 37.9642
+          "multiple": 37.9461
         },
         {
           "day": 1229,
-          "multiple": 38.0294
+          "multiple": 38.0115
         },
         {
           "day": 1230,
-          "multiple": 37.8184
+          "multiple": 37.8004
         },
         {
           "day": 1231,
-          "multiple": 37.8619
+          "multiple": 37.8442
         },
         {
           "day": 1232,
-          "multiple": 38.2519
+          "multiple": 38.2334
         },
         {
           "day": 1233,
-          "multiple": 38.3248
+          "multiple": 38.3068
         },
         {
           "day": 1234,
-          "multiple": 38.2711
+          "multiple": 38.2529
         },
         {
           "day": 1235,
-          "multiple": 38.7289
+          "multiple": 38.7099
         },
         {
           "day": 1236,
-          "multiple": 38.8299
+          "multiple": 38.8117
         },
         {
           "day": 1237,
-          "multiple": 38.5601
+          "multiple": 38.5414
         },
         {
           "day": 1238,
-          "multiple": 38.0537
+          "multiple": 38.036
         },
         {
           "day": 1239,
-          "multiple": 38.7519
+          "multiple": 38.7331
         },
         {
           "day": 1240,
-          "multiple": 39.156
+          "multiple": 39.1376
         },
         {
           "day": 1241,
-          "multiple": 40.1113
+          "multiple": 40.0925
         },
         {
           "day": 1242,
-          "multiple": 39.8184
+          "multiple": 39.7992
         },
         {
           "day": 1243,
-          "multiple": 40.1931
+          "multiple": 40.1743
         },
         {
           "day": 1244,
-          "multiple": 40.5486
+          "multiple": 40.5288
         },
         {
           "day": 1245,
-          "multiple": 40.601
+          "multiple": 40.5814
         },
         {
           "day": 1246,
-          "multiple": 40.9821
+          "multiple": 40.9626
         },
         {
           "day": 1247,
-          "multiple": 39.023
+          "multiple": 39.0044
         },
         {
           "day": 1248,
-          "multiple": 39.3721
+          "multiple": 39.3532
         },
         {
           "day": 1249,
-          "multiple": 39.8964
+          "multiple": 39.877
         },
         {
           "day": 1250,
-          "multiple": 39.2724
+          "multiple": 39.2535
         },
         {
           "day": 1251,
-          "multiple": 39.4399
+          "multiple": 39.4204
         },
         {
           "day": 1252,
-          "multiple": 38.8082
+          "multiple": 38.7896
         },
         {
           "day": 1253,
-          "multiple": 39.7097
+          "multiple": 39.6907
         },
         {
           "day": 1254,
-          "multiple": 39.3939
+          "multiple": 39.3749
         },
         {
           "day": 1255,
-          "multiple": 39.6522
+          "multiple": 39.6334
         },
         {
           "day": 1256,
-          "multiple": 40.5
+          "multiple": 40.4809
         },
         {
           "day": 1257,
-          "multiple": 40.5038
+          "multiple": 40.4845
         },
         {
           "day": 1258,
-          "multiple": 40.6317
+          "multiple": 40.6124
         },
         {
           "day": 1259,
-          "multiple": 40.7864
+          "multiple": 40.767
         },
         {
           "day": 1260,
-          "multiple": 39.8951
+          "multiple": 39.876
         },
         {
           "day": 1261,
-          "multiple": 40.1113
+          "multiple": 40.0916
         },
         {
           "day": 1262,
-          "multiple": 40.3146
+          "multiple": 40.2954
         },
         {
           "day": 1263,
-          "multiple": 40.4527
+          "multiple": 40.4338
         },
         {
           "day": 1264,
-          "multiple": 40.4962
+          "multiple": 40.4773
         },
         {
           "day": 1265,
-          "multiple": 40.6957
+          "multiple": 40.6759
         },
         {
           "day": 1266,
-          "multiple": 40.0882
+          "multiple": 40.0694
         },
         {
           "day": 1267,
-          "multiple": 39.8043
+          "multiple": 39.7849
         },
         {
           "day": 1268,
-          "multiple": 39.6215
+          "multiple": 39.6029
         },
         {
           "day": 1269,
-          "multiple": 38.2737
+          "multiple": 38.2553
         },
         {
           "day": 1270,
-          "multiple": 38.8414
+          "multiple": 38.8229
         },
         {
           "day": 1271,
-          "multiple": 38.9015
+          "multiple": 38.8835
         },
         {
           "day": 1272,
-          "multiple": 38.7174
+          "multiple": 38.6987
         },
         {
           "day": 1273,
-          "multiple": 38.8107
+          "multiple": 38.7923
         },
         {
           "day": 1274,
-          "multiple": 38.6854
+          "multiple": 38.667
         },
         {
           "day": 1275,
-          "multiple": 39.0307
+          "multiple": 39.0117
         },
         {
           "day": 1276,
-          "multiple": 39.4642
+          "multiple": 39.4451
         },
         {
           "day": 1277,
-          "multiple": 41.0294
+          "multiple": 41.0097
         },
         {
           "day": 1278,
-          "multiple": 45.9757
+          "multiple": 45.9537
         },
         {
           "day": 1279,
-          "multiple": 44.6829
+          "multiple": 44.6609
         },
         {
           "day": 1280,
-          "multiple": 45.9783
+          "multiple": 45.9565
         },
         {
           "day": 1281,
-          "multiple": 47.0934
+          "multiple": 47.0712
         },
         {
           "day": 1282,
-          "multiple": 47.5882
+          "multiple": 47.565
         },
         {
           "day": 1283,
-          "multiple": 47.6701
+          "multiple": 47.6476
         },
         {
           "day": 1284,
-          "multiple": 50.3184
+          "multiple": 50.2939
         },
         {
           "day": 1285,
-          "multiple": 50.8465
+          "multiple": 50.8226
         },
         {
           "day": 1286,
-          "multiple": 50.9054
+          "multiple": 50.8808
         },
         {
           "day": 1287,
-          "multiple": 51.2276
+          "multiple": 51.2036
         },
         {
           "day": 1288,
-          "multiple": 50.7084
+          "multiple": 50.6836
         },
         {
           "day": 1289,
-          "multiple": 51.5627
+          "multiple": 51.5383
         },
         {
           "day": 1290,
-          "multiple": 50.9872
+          "multiple": 50.9631
         },
         {
           "day": 1291,
-          "multiple": 51.3095
+          "multiple": 51.2852
         },
         {
           "day": 1292,
-          "multiple": 53.9783
+          "multiple": 53.9527
         },
         {
           "day": 1293,
-          "multiple": 60.0857
+          "multiple": 60.0567
         },
         {
           "day": 1294,
-          "multiple": 63.789
+          "multiple": 63.7587
         },
         {
           "day": 1295,
-          "multiple": 61.7609
+          "multiple": 61.7313
         },
         {
           "day": 1296,
-          "multiple": 62.7609
+          "multiple": 62.7309
         },
         {
           "day": 1297,
-          "multiple": 68.4719
+          "multiple": 68.4393
         },
         {
           "day": 1298,
-          "multiple": 66.8274
+          "multiple": 66.7959
         },
         {
           "day": 1299,
-          "multiple": 67.3043
+          "multiple": 67.2727
         },
         {
           "day": 1300,
-          "multiple": 66.3005
+          "multiple": 66.2687
         },
         {
           "day": 1301,
-          "multiple": 62.8146
+          "multiple": 62.7842
         },
         {
           "day": 1302,
-          "multiple": 57.8299
+          "multiple": 57.8021
         },
         {
           "day": 1303,
-          "multiple": 50.9834
+          "multiple": 50.9588
         },
         {
           "day": 1304,
-          "multiple": 58.0486
+          "multiple": 58.0209
         },
         {
           "day": 1305,
-          "multiple": 62.0537
+          "multiple": 62.024
         },
         {
           "day": 1306,
-          "multiple": 61.6279
+          "multiple": 61.5987
         },
         {
           "day": 1307,
-          "multiple": 61.1113
+          "multiple": 61.0816
         },
         {
           "day": 1308,
-          "multiple": 62.2711
+          "multiple": 62.2418
         },
         {
           "day": 1309,
-          "multiple": 61.4118
+          "multiple": 61.3819
         },
         {
           "day": 1310,
-          "multiple": 60.5435
+          "multiple": 60.5149
         },
         {
           "day": 1311,
-          "multiple": 64.3043
+          "multiple": 64.2737
         },
         {
           "day": 1312,
-          "multiple": 65.0435
+          "multiple": 65.0127
         },
         {
           "day": 1313,
-          "multiple": 67.5256
+          "multiple": 67.4934
         },
         {
           "day": 1314,
-          "multiple": 63.2852
+          "multiple": 63.2552
         },
         {
           "day": 1315,
-          "multiple": 66.5064
+          "multiple": 66.4745
         },
         {
           "day": 1316,
-          "multiple": 65.8261
+          "multiple": 65.7942
         },
         {
           "day": 1317,
-          "multiple": 66.1637
+          "multiple": 66.1322
         },
         {
           "day": 1318,
-          "multiple": 62.8747
+          "multiple": 62.845
         }
       ]
     },
@@ -5293,7 +5293,7 @@
       "cycle": 2,
       "halvingDate": "2016-07-09",
       "endDate": "2020-05-11",
-      "basePriceUsd": 510.55,
+      "basePrice": 510.54982288618515,
       "series": [
         {
           "day": 0,
@@ -5365,7 +5365,7 @@
         },
         {
           "day": 17,
-          "multiple": 0.9766
+          "multiple": 0.9765
         },
         {
           "day": 18,
@@ -5489,7 +5489,7 @@
         },
         {
           "day": 48,
-          "multiple": 0.8536
+          "multiple": 0.8535
         },
         {
           "day": 49,
@@ -5737,7 +5737,7 @@
         },
         {
           "day": 110,
-          "multiple": 1.0782
+          "multiple": 1.0781
         },
         {
           "day": 111,
@@ -5989,7 +5989,7 @@
         },
         {
           "day": 173,
-          "multiple": 1.5598
+          "multiple": 1.5599
         },
         {
           "day": 174,
@@ -6181,7 +6181,7 @@
         },
         {
           "day": 221,
-          "multiple": 1.5884
+          "multiple": 1.5885
         },
         {
           "day": 222,
@@ -6217,7 +6217,7 @@
         },
         {
           "day": 230,
-          "multiple": 1.8525
+          "multiple": 1.8524
         },
         {
           "day": 231,
@@ -6269,7 +6269,7 @@
         },
         {
           "day": 243,
-          "multiple": 1.8582
+          "multiple": 1.8581
         },
         {
           "day": 244,
@@ -6345,7 +6345,7 @@
         },
         {
           "day": 262,
-          "multiple": 1.6234
+          "multiple": 1.6235
         },
         {
           "day": 263,
@@ -6393,7 +6393,7 @@
         },
         {
           "day": 274,
-          "multiple": 1.8669
+          "multiple": 1.867
         },
         {
           "day": 275,
@@ -6501,7 +6501,7 @@
         },
         {
           "day": 301,
-          "multiple": 2.2991
+          "multiple": 2.299
         },
         {
           "day": 302,
@@ -6689,7 +6689,7 @@
         },
         {
           "day": 348,
-          "multiple": 4.1107
+          "multiple": 4.1108
         },
         {
           "day": 349,
@@ -6785,7 +6785,7 @@
         },
         {
           "day": 372,
-          "multiple": 2.9776
+          "multiple": 2.9775
         },
         {
           "day": 373,
@@ -6893,7 +6893,7 @@
         },
         {
           "day": 399,
-          "multiple": 5.5083
+          "multiple": 5.5082
         },
         {
           "day": 400,
@@ -6929,7 +6929,7 @@
         },
         {
           "day": 408,
-          "multiple": 6.1664
+          "multiple": 6.1663
         },
         {
           "day": 409,
@@ -7073,7 +7073,7 @@
         },
         {
           "day": 444,
-          "multiple": 5.735
+          "multiple": 5.7349
         },
         {
           "day": 445,
@@ -7129,7 +7129,7 @@
         },
         {
           "day": 458,
-          "multiple": 7.0868
+          "multiple": 7.0869
         },
         {
           "day": 459,
@@ -7261,7 +7261,7 @@
         },
         {
           "day": 491,
-          "multiple": 9.4175
+          "multiple": 9.4174
         },
         {
           "day": 492,
@@ -7325,7 +7325,7 @@
         },
         {
           "day": 507,
-          "multiple": 14.3353
+          "multiple": 14.3354
         },
         {
           "day": 508,
@@ -7437,7 +7437,7 @@
         },
         {
           "day": 535,
-          "multiple": 20.1316
+          "multiple": 20.1317
         },
         {
           "day": 536,
@@ -7453,7 +7453,7 @@
         },
         {
           "day": 539,
-          "multiple": 20.8858
+          "multiple": 20.8859
         },
         {
           "day": 540,
@@ -7597,7 +7597,7 @@
         },
         {
           "day": 575,
-          "multiple": 12.706
+          "multiple": 12.7061
         },
         {
           "day": 576,
@@ -7689,7 +7689,7 @@
         },
         {
           "day": 598,
-          "multiple": 14.5256
+          "multiple": 14.5257
         },
         {
           "day": 599,
@@ -7801,7 +7801,7 @@
         },
         {
           "day": 626,
-          "multiple": 11.3382
+          "multiple": 11.3383
         },
         {
           "day": 627,
@@ -7925,7 +7925,7 @@
         },
         {
           "day": 657,
-          "multiple": 13.2276
+          "multiple": 13.2277
         },
         {
           "day": 658,
@@ -7977,7 +7977,7 @@
         },
         {
           "day": 670,
-          "multiple": 13.4811
+          "multiple": 13.4812
         },
         {
           "day": 671,
@@ -8005,7 +8005,7 @@
         },
         {
           "day": 677,
-          "multiple": 12.0915
+          "multiple": 12.0916
         },
         {
           "day": 678,
@@ -8069,7 +8069,7 @@
         },
         {
           "day": 693,
-          "multiple": 11.0651
+          "multiple": 11.0652
         },
         {
           "day": 694,
@@ -8077,7 +8077,7 @@
         },
         {
           "day": 695,
-          "multiple": 11.2862
+          "multiple": 11.2863
         },
         {
           "day": 696,
@@ -8085,7 +8085,7 @@
         },
         {
           "day": 697,
-          "multiple": 11.1223
+          "multiple": 11.1224
         },
         {
           "day": 698,
@@ -8145,7 +8145,7 @@
         },
         {
           "day": 712,
-          "multiple": 10.0274
+          "multiple": 10.0275
         },
         {
           "day": 713,
@@ -8181,7 +8181,7 @@
         },
         {
           "day": 721,
-          "multiple": 9.2645
+          "multiple": 9.2646
         },
         {
           "day": 722,
@@ -8289,7 +8289,7 @@
         },
         {
           "day": 748,
-          "multiple": 11.8822
+          "multiple": 11.8823
         },
         {
           "day": 749,
@@ -8317,7 +8317,7 @@
         },
         {
           "day": 755,
-          "multiple": 11.3427
+          "multiple": 11.3428
         },
         {
           "day": 756,
@@ -8329,7 +8329,7 @@
         },
         {
           "day": 758,
-          "multiple": 10.6536
+          "multiple": 10.6535
         },
         {
           "day": 759,
@@ -8365,7 +8365,7 @@
         },
         {
           "day": 767,
-          "multiple": 9.545
+          "multiple": 9.5451
         },
         {
           "day": 768,
@@ -8425,7 +8425,7 @@
         },
         {
           "day": 782,
-          "multiple": 10.5739
+          "multiple": 10.574
         },
         {
           "day": 783,
@@ -8437,7 +8437,7 @@
         },
         {
           "day": 785,
-          "multiple": 10.8583
+          "multiple": 10.8584
         },
         {
           "day": 786,
@@ -8529,7 +8529,7 @@
         },
         {
           "day": 808,
-          "multiple": 9.791
+          "multiple": 9.7911
         },
         {
           "day": 809,
@@ -8569,7 +8569,7 @@
         },
         {
           "day": 818,
-          "multiple": 9.8573
+          "multiple": 9.8574
         },
         {
           "day": 819,
@@ -8665,7 +8665,7 @@
         },
         {
           "day": 842,
-          "multiple": 9.855
+          "multiple": 9.8551
         },
         {
           "day": 843,
@@ -8685,11 +8685,11 @@
         },
         {
           "day": 847,
-          "multiple": 9.6335
+          "multiple": 9.6334
         },
         {
           "day": 848,
-          "multiple": 9.5895
+          "multiple": 9.5896
         },
         {
           "day": 849,
@@ -8741,7 +8741,7 @@
         },
         {
           "day": 861,
-          "multiple": 8.5298
+          "multiple": 8.5299
         },
         {
           "day": 862,
@@ -8869,7 +8869,7 @@
         },
         {
           "day": 893,
-          "multiple": 5.7607
+          "multiple": 5.7608
         },
         {
           "day": 894,
@@ -8905,7 +8905,7 @@
         },
         {
           "day": 902,
-          "multiple": 5.6175
+          "multiple": 5.6174
         },
         {
           "day": 903,
@@ -8969,7 +8969,7 @@
         },
         {
           "day": 918,
-          "multiple": 5.5607
+          "multiple": 5.5606
         },
         {
           "day": 919,
@@ -9069,7 +9069,7 @@
         },
         {
           "day": 943,
-          "multiple": 5.1595
+          "multiple": 5.1594
         },
         {
           "day": 944,
@@ -9077,7 +9077,7 @@
         },
         {
           "day": 945,
-          "multiple": 5.5296
+          "multiple": 5.5297
         },
         {
           "day": 946,
@@ -9181,7 +9181,7 @@
         },
         {
           "day": 971,
-          "multiple": 5.786
+          "multiple": 5.7859
         },
         {
           "day": 972,
@@ -9401,7 +9401,7 @@
         },
         {
           "day": 1026,
-          "multiple": 7.8847
+          "multiple": 7.8846
         },
         {
           "day": 1027,
@@ -9433,7 +9433,7 @@
         },
         {
           "day": 1034,
-          "multiple": 8.9467
+          "multiple": 8.9468
         },
         {
           "day": 1035,
@@ -9621,7 +9621,7 @@
         },
         {
           "day": 1081,
-          "multiple": 16.9571
+          "multiple": 16.9572
         },
         {
           "day": 1082,
@@ -9677,7 +9677,7 @@
         },
         {
           "day": 1095,
-          "multiple": 19.3666
+          "multiple": 19.3667
         },
         {
           "day": 1096,
@@ -9769,7 +9769,7 @@
         },
         {
           "day": 1118,
-          "multiple": 16.3123
+          "multiple": 16.3124
         },
         {
           "day": 1119,
@@ -9809,7 +9809,7 @@
         },
         {
           "day": 1128,
-          "multiple": 18.3174
+          "multiple": 18.3175
         },
         {
           "day": 1129,
@@ -9821,7 +9821,7 @@
         },
         {
           "day": 1131,
-          "multiple": 17.6157
+          "multiple": 17.6158
         },
         {
           "day": 1132,
@@ -9929,7 +9929,7 @@
         },
         {
           "day": 1158,
-          "multiple": 16.3399
+          "multiple": 16.34
         },
         {
           "day": 1159,
@@ -9965,7 +9965,7 @@
         },
         {
           "day": 1167,
-          "multiple": 15.9521
+          "multiple": 15.952
         },
         {
           "day": 1168,
@@ -10005,7 +10005,7 @@
         },
         {
           "day": 1177,
-          "multiple": 13.0795
+          "multiple": 13.0796
         },
         {
           "day": 1178,
@@ -10033,7 +10033,7 @@
         },
         {
           "day": 1184,
-          "multiple": 12.9429
+          "multiple": 12.943
         },
         {
           "day": 1185,
@@ -10085,7 +10085,7 @@
         },
         {
           "day": 1197,
-          "multiple": 12.0838
+          "multiple": 12.0837
         },
         {
           "day": 1198,
@@ -10113,7 +10113,7 @@
         },
         {
           "day": 1204,
-          "multiple": 13.2351
+          "multiple": 13.2352
         },
         {
           "day": 1205,
@@ -10141,7 +10141,7 @@
         },
         {
           "day": 1211,
-          "multiple": 13.9939
+          "multiple": 13.994
         },
         {
           "day": 1212,
@@ -10189,7 +10189,7 @@
         },
         {
           "day": 1223,
-          "multiple": 13.3655
+          "multiple": 13.3656
         },
         {
           "day": 1224,
@@ -10233,7 +10233,7 @@
         },
         {
           "day": 1234,
-          "multiple": 10.5098
+          "multiple": 10.5099
         },
         {
           "day": 1235,
@@ -10313,7 +10313,7 @@
         },
         {
           "day": 1254,
-          "multiple": 10.3455
+          "multiple": 10.3456
         },
         {
           "day": 1255,
@@ -10325,7 +10325,7 @@
         },
         {
           "day": 1257,
-          "multiple": 9.9104
+          "multiple": 9.9105
         },
         {
           "day": 1258,
@@ -10625,7 +10625,7 @@
         },
         {
           "day": 1332,
-          "multiple": 13.0928
+          "multiple": 13.0929
         },
         {
           "day": 1333,
@@ -10693,7 +10693,7 @@
         },
         {
           "day": 1349,
-          "multiple": 9.1227
+          "multiple": 9.1226
         },
         {
           "day": 1350,
@@ -10753,7 +10753,7 @@
         },
         {
           "day": 1364,
-          "multiple": 10.8632
+          "multiple": 10.8633
         },
         {
           "day": 1365,
@@ -10841,7 +10841,7 @@
         },
         {
           "day": 1386,
-          "multiple": 11.9127
+          "multiple": 11.9128
         },
         {
           "day": 1387,
@@ -10909,7 +10909,7 @@
       "cycle": 3,
       "halvingDate": "2020-05-11",
       "endDate": "2024-04-20",
-      "basePriceUsd": 7107.62,
+      "basePrice": 7107.623609645205,
       "series": [
         {
           "day": 0,
@@ -11009,7 +11009,7 @@
         },
         {
           "day": 24,
-          "multiple": 1.0833
+          "multiple": 1.0832
         },
         {
           "day": 25,
@@ -11921,7 +11921,7 @@
         },
         {
           "day": 252,
-          "multiple": 3.7182
+          "multiple": 3.7181
         },
         {
           "day": 253,
@@ -11957,7 +11957,7 @@
         },
         {
           "day": 261,
-          "multiple": 3.341
+          "multiple": 3.3409
         },
         {
           "day": 262,
@@ -12225,7 +12225,7 @@
         },
         {
           "day": 328,
-          "multiple": 5.8086
+          "multiple": 5.8085
         },
         {
           "day": 329,
@@ -12349,7 +12349,7 @@
         },
         {
           "day": 359,
-          "multiple": 5.3833
+          "multiple": 5.3832
         },
         {
           "day": 360,
@@ -12429,7 +12429,7 @@
         },
         {
           "day": 379,
-          "multiple": 3.8465
+          "multiple": 3.8464
         },
         {
           "day": 380,
@@ -12653,7 +12653,7 @@
         },
         {
           "day": 435,
-          "multiple": 3.1866
+          "multiple": 3.1865
         },
         {
           "day": 436,
@@ -12701,7 +12701,7 @@
         },
         {
           "day": 447,
-          "multiple": 4.1968
+          "multiple": 4.1967
         },
         {
           "day": 448,
@@ -13001,7 +13001,7 @@
         },
         {
           "day": 522,
-          "multiple": 5.8723
+          "multiple": 5.8722
         },
         {
           "day": 523,
@@ -13009,7 +13009,7 @@
         },
         {
           "day": 524,
-          "multiple": 6.2356
+          "multiple": 6.2355
         },
         {
           "day": 525,
@@ -13037,7 +13037,7 @@
         },
         {
           "day": 531,
-          "multiple": 6.2542
+          "multiple": 6.2541
         },
         {
           "day": 532,
@@ -13045,7 +13045,7 @@
         },
         {
           "day": 533,
-          "multiple": 6.4293
+          "multiple": 6.4292
         },
         {
           "day": 534,
@@ -13213,7 +13213,7 @@
         },
         {
           "day": 575,
-          "multiple": 5.368
+          "multiple": 5.3679
         },
         {
           "day": 576,
@@ -13229,7 +13229,7 @@
         },
         {
           "day": 579,
-          "multiple": 5.0216
+          "multiple": 5.0215
         },
         {
           "day": 580,
@@ -13385,7 +13385,7 @@
         },
         {
           "day": 618,
-          "multiple": 4.3713
+          "multiple": 4.3712
         },
         {
           "day": 619,
@@ -13633,7 +13633,7 @@
         },
         {
           "day": 680,
-          "multiple": 4.3625
+          "multiple": 4.3624
         },
         {
           "day": 681,
@@ -13769,7 +13769,7 @@
         },
         {
           "day": 714,
-          "multiple": 4.3574
+          "multiple": 4.3573
         },
         {
           "day": 715,
@@ -13873,7 +13873,7 @@
         },
         {
           "day": 740,
-          "multiple": 3.29
+          "multiple": 3.2899
         },
         {
           "day": 741,
@@ -14253,7 +14253,7 @@
         },
         {
           "day": 835,
-          "multiple": 2.5685
+          "multiple": 2.5684
         },
         {
           "day": 836,
@@ -14961,7 +14961,7 @@
         },
         {
           "day": 1012,
-          "multiple": 2.7714
+          "multiple": 2.7713
         },
         {
           "day": 1013,
@@ -15057,7 +15057,7 @@
         },
         {
           "day": 1036,
-          "multiple": 2.5788
+          "multiple": 2.5787
         },
         {
           "day": 1037,
@@ -15205,7 +15205,7 @@
         },
         {
           "day": 1073,
-          "multiple": 3.4461
+          "multiple": 3.446
         },
         {
           "day": 1074,
@@ -15233,7 +15233,7 @@
         },
         {
           "day": 1080,
-          "multiple": 3.1945
+          "multiple": 3.1944
         },
         {
           "day": 1081,
@@ -15253,7 +15253,7 @@
         },
         {
           "day": 1085,
-          "multiple": 3.2952
+          "multiple": 3.2951
         },
         {
           "day": 1086,
@@ -15361,7 +15361,7 @@
         },
         {
           "day": 1112,
-          "multiple": 3.0531
+          "multiple": 3.053
         },
         {
           "day": 1113,
@@ -15549,7 +15549,7 @@
         },
         {
           "day": 1159,
-          "multiple": 3.379
+          "multiple": 3.3789
         },
         {
           "day": 1160,
@@ -15589,7 +15589,7 @@
         },
         {
           "day": 1169,
-          "multiple": 3.2937
+          "multiple": 3.2936
         },
         {
           "day": 1170,
@@ -15817,7 +15817,7 @@
         },
         {
           "day": 1226,
-          "multiple": 3.0321
+          "multiple": 3.032
         },
         {
           "day": 1227,
@@ -15829,7 +15829,7 @@
         },
         {
           "day": 1229,
-          "multiple": 3.0474
+          "multiple": 3.0473
         },
         {
           "day": 1230,
@@ -16009,7 +16009,7 @@
         },
         {
           "day": 1274,
-          "multiple": 3.9777
+          "multiple": 3.9776
         },
         {
           "day": 1275,
@@ -16133,7 +16133,7 @@
         },
         {
           "day": 1305,
-          "multiple": 4.8999
+          "multiple": 4.8998
         },
         {
           "day": 1306,
@@ -16409,7 +16409,7 @@
         },
         {
           "day": 1374,
-          "multiple": 5.5695
+          "multiple": 5.5694
         },
         {
           "day": 1375,
@@ -16509,7 +16509,7 @@
         },
         {
           "day": 1399,
-          "multiple": 7.5082
+          "multiple": 7.5081
         },
         {
           "day": 1400,
@@ -16537,7 +16537,7 @@
         },
         {
           "day": 1406,
-          "multiple": 7.2045
+          "multiple": 7.2044
         },
         {
           "day": 1407,
@@ -16677,7 +16677,7 @@
       "cycle": 4,
       "halvingDate": "2024-04-20",
       "endDate": null,
-      "basePriceUsd": 51296.86,
+      "basePrice": 51296.85741842148,
       "series": [
         {
           "day": 0,
