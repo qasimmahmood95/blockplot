@@ -63,6 +63,7 @@ describe('parseHoldings', () => {
     expect(parseHoldings('{"btc":1e308,"cost":null,"costCurrency":"usd"}')).toBeNull();
     expect(parseHoldings('{"btc":21000001,"cost":null,"costCurrency":"usd"}')).toBeNull();
     expect(parseHoldings('{"btc":1,"cost":1e308,"costCurrency":"usd"}')).toBeNull();
+    expect(parseHoldings('{"btc":1,"cost":1e14,"costCurrency":"usd"}')).toBeNull();
     // The supply cap itself is a legitimate entry.
     expect(parseHoldings('{"btc":21000000,"cost":null,"costCurrency":"usd"}')?.btc).toBe(21000000);
   });

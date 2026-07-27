@@ -115,7 +115,7 @@ describe('valueHoldings', () => {
       valueHoldings({ btc: 1, cost: 1e308, costCurrency: 'usd' }, 65042.86, 'usd', latest),
     ).toThrow('between 0 and');
     expect(MAX_BTC).toBe(21_000_000);
-    expect(MAX_COST).toBe(1e15);
+    expect(MAX_COST).toBe(1e13);
     // The cap itself is allowed, and still finite.
     expect(
       Number.isFinite(

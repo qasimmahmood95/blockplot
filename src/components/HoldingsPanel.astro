@@ -337,6 +337,8 @@ const payload = {
     const btcInput = form.elements.namedItem('btc') as HTMLInputElement | null;
     const costInput = form.elements.namedItem('cost') as HTMLInputElement | null;
     if (btcInput) btcInput.value = String(stored.btc);
+    // The fields now mirror storage, not anything the reader typed.
+    costEdited = false;
     storedCost =
       stored.cost === null ? null : { cost: stored.cost, costCurrency: stored.costCurrency };
     if (costInput && stored.cost === null) costInput.value = '';
@@ -377,11 +379,42 @@ const payload = {
     setStatus('cleared — nothing is stored for this browser');
   });
 
-  // Another island on the page (the header tile) can change the stored value.
-  window.addEventListener(HOLDINGS_EVENT, () => {
-    if (document.activeElement?.closest('#holdings-form')) return;
+  function syncFromStorage(): void {
     load();
     render();
+    const holdings = formHoldings();
+    renderChart(holdings && holdings.btc > 0 ? holdings.btc : 0);
+  }
+
+  /**
+   * Another tab, or another island on this page, changed the stored value.
+   *
+   * Repopulating the fields under a cursor would be hostile, so while the
+   * reader is typing the fields are left alone — but the snapshot behind them
+   * is refreshed regardless, because the alternative is that the next keystroke
+   * writes a stale cost over the one the other tab just set. The fields catch
+   * up when focus leaves.
+   */
+  window.addEventListener(HOLDINGS_EVENT, () => {
+    if (!document.activeElement?.closest('#holdings-form')) {
+      syncFromStorage();
+      return;
+    }
+    const stored = readHoldings();
+    storedCost =
+      stored?.cost == null ? null : { cost: stored.cost, costCurrency: stored.costCurrency };
+    setStatus('changed in another tab');
+    // focusout fires when tabbing between this form's own fields too, and
+    // syncing then would rewrite the field the reader is moving into. Wait for
+    // focus to leave the form entirely.
+    const onLeave = (event: FocusEvent): void => {
+      const to = event.relatedTarget;
+      if (to instanceof Node && form?.contains(to)) return;
+      form?.removeEventListener('focusout', onLeave);
+      syncFromStorage();
+    };
+    form?.removeEventListener('focusout', onLeave);
+    form?.addEventListener('focusout', onLeave);
   });
 
   load();

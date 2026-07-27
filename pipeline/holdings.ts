@@ -41,13 +41,14 @@ export interface HoldingsValue {
 
 /**
  * Bounds on what a reader can enter. 21 million is the supply cap, so no
- * honest holding exceeds it; the cost bound is where doubles stop representing
- * cents exactly. Both matter because `Number.isFinite` on the inputs does not
- * stop their product overflowing — 1e308 BTC is finite and typeable, and
- * printed "$∞" on every page before this.
+ * honest holding exceeds it. The cost bound sits under 2^53/100 ≈ 9.0e13, the
+ * largest figure at which a double still represents whole cents exactly —
+ * above it the rounding in this file stops being reliable. Both matter because
+ * `Number.isFinite` on the inputs does not stop their product overflowing:
+ * 1e308 BTC is finite and typeable, and printed "$∞" on every page before this.
  */
 export const MAX_BTC = 21_000_000;
-export const MAX_COST = 1e15;
+export const MAX_COST = 1e13;
 
 const round2 = (value: number): number => {
   const rounded = Math.round(value * 100) / 100;
