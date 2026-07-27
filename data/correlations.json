@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-07-27T16:23:35.581Z",
+  "fetchedAt": "2026-07-27T16:39:47.499Z",
   "asOf": "2026-07-27",
   "windowDays": 90,
   "minObs": 40,
@@ -9914,6 +9914,7 @@
         {
           "regime": "neutral",
           "startDate": "2016-09-20",
+          "confirmedFrom": "2016-09-20",
           "endDate": "2018-02-02",
           "observations": 346,
           "days": 501,
@@ -9922,6 +9923,7 @@
         {
           "regime": "positive",
           "startDate": "2018-02-05",
+          "confirmedFrom": "2018-02-05",
           "endDate": "2018-03-23",
           "observations": 34,
           "days": 47,
@@ -9930,6 +9932,7 @@
         {
           "regime": "neutral",
           "startDate": "2018-03-26",
+          "confirmedFrom": "2018-03-26",
           "endDate": "2019-05-17",
           "observations": 289,
           "days": 418,
@@ -9938,6 +9941,7 @@
         {
           "regime": "negative",
           "startDate": "2019-05-20",
+          "confirmedFrom": "2019-05-20",
           "endDate": "2019-08-13",
           "observations": 60,
           "days": 86,
@@ -9946,6 +9950,7 @@
         {
           "regime": "neutral",
           "startDate": "2019-08-14",
+          "confirmedFrom": "2019-08-14",
           "endDate": "2020-03-06",
           "observations": 142,
           "days": 206,
@@ -9954,6 +9959,7 @@
         {
           "regime": "positive",
           "startDate": "2020-03-09",
+          "confirmedFrom": "2020-03-09",
           "endDate": "2020-12-01",
           "observations": 187,
           "days": 268,
@@ -9962,6 +9968,7 @@
         {
           "regime": "neutral",
           "startDate": "2020-12-02",
+          "confirmedFrom": "2020-12-02",
           "endDate": "2021-02-26",
           "observations": 59,
           "days": 87,
@@ -9970,6 +9977,7 @@
         {
           "regime": "positive",
           "startDate": "2021-03-01",
+          "confirmedFrom": "2021-03-01",
           "endDate": "2021-06-23",
           "observations": 81,
           "days": 115,
@@ -9978,6 +9986,7 @@
         {
           "regime": "neutral",
           "startDate": "2021-06-24",
+          "confirmedFrom": "2021-06-24",
           "endDate": "2021-09-17",
           "observations": 60,
           "days": 86,
@@ -9986,6 +9995,7 @@
         {
           "regime": "positive",
           "startDate": "2021-09-20",
+          "confirmedFrom": "2021-09-20",
           "endDate": "2023-04-17",
           "observations": 396,
           "days": 575,
@@ -9994,6 +10004,7 @@
         {
           "regime": "neutral",
           "startDate": "2023-04-18",
+          "confirmedFrom": "2023-04-18",
           "endDate": "2023-09-15",
           "observations": 105,
           "days": 151,
@@ -10002,6 +10013,7 @@
         {
           "regime": "positive",
           "startDate": "2023-09-18",
+          "confirmedFrom": "2023-09-18",
           "endDate": "2023-11-01",
           "observations": 33,
           "days": 45,
@@ -10010,6 +10022,7 @@
         {
           "regime": "neutral",
           "startDate": "2023-11-02",
+          "confirmedFrom": "2023-11-02",
           "endDate": "2024-05-24",
           "observations": 141,
           "days": 205,
@@ -10018,6 +10031,7 @@
         {
           "regime": "positive",
           "startDate": "2024-05-28",
+          "confirmedFrom": "2024-05-28",
           "endDate": "2025-07-09",
           "observations": 279,
           "days": 408,
@@ -10026,6 +10040,7 @@
         {
           "regime": "neutral",
           "startDate": "2025-07-10",
+          "confirmedFrom": "2025-07-10",
           "endDate": "2025-07-31",
           "observations": 16,
           "days": 22,
@@ -10034,6 +10049,7 @@
         {
           "regime": "positive",
           "startDate": "2025-08-01",
+          "confirmedFrom": "2025-08-01",
           "endDate": "2026-07-24",
           "observations": 246,
           "days": 358,
@@ -19935,6 +19951,7 @@
         {
           "regime": "neutral",
           "startDate": "2016-09-22",
+          "confirmedFrom": "2016-09-22",
           "endDate": "2016-10-31",
           "observations": 27,
           "days": 40,
@@ -19943,6 +19960,7 @@
         {
           "regime": "positive",
           "startDate": "2016-11-01",
+          "confirmedFrom": "2016-11-01",
           "endDate": "2016-12-02",
           "observations": 22,
           "days": 32,
@@ -19951,6 +19969,7 @@
         {
           "regime": "neutral",
           "startDate": "2016-12-05",
+          "confirmedFrom": "2016-12-05",
           "endDate": "2016-12-19",
           "observations": 11,
           "days": 15,
@@ -19959,6 +19978,7 @@
         {
           "regime": "positive",
           "startDate": "2016-12-20",
+          "confirmedFrom": "2016-12-20",
           "endDate": "2017-01-04",
           "observations": 10,
           "days": 16,
@@ -19967,6 +19987,7 @@
         {
           "regime": "neutral",
           "startDate": "2017-01-05",
+          "confirmedFrom": "2017-01-05",
           "endDate": "2018-09-24",
           "observations": 432,
           "days": 628,
@@ -19975,6 +19996,7 @@
         {
           "regime": "negative",
           "startDate": "2018-09-25",
+          "confirmedFrom": "2018-09-25",
           "endDate": "2018-11-16",
           "observations": 39,
           "days": 53,
@@ -19983,6 +20005,7 @@
         {
           "regime": "neutral",
           "startDate": "2018-11-19",
+          "confirmedFrom": "2018-11-19",
           "endDate": "2019-01-08",
           "observations": 33,
           "days": 51,
@@ -19991,6 +20014,7 @@
         {
           "regime": "positive",
           "startDate": "2019-01-09",
+          "confirmedFrom": "2019-01-09",
           "endDate": "2019-03-27",
           "observations": 54,
           "days": 78,
@@ -19999,6 +20023,7 @@
         {
           "regime": "neutral",
           "startDate": "2019-03-28",
+          "confirmedFrom": "2019-03-28",
           "endDate": "2019-04-25",
           "observations": 20,
           "days": 29,
@@ -20007,6 +20032,7 @@
         {
           "regime": "positive",
           "startDate": "2019-04-26",
+          "confirmedFrom": "2019-04-26",
           "endDate": "2019-05-31",
           "observations": 25,
           "days": 36,
@@ -20015,6 +20041,7 @@
         {
           "regime": "neutral",
           "startDate": "2019-06-03",
+          "confirmedFrom": "2019-06-03",
           "endDate": "2019-06-28",
           "observations": 20,
           "days": 26,
@@ -20023,6 +20050,7 @@
         {
           "regime": "positive",
           "startDate": "2019-07-01",
+          "confirmedFrom": "2019-07-01",
           "endDate": "2019-09-27",
           "observations": 63,
           "days": 89,
@@ -20031,6 +20059,7 @@
         {
           "regime": "neutral",
           "startDate": "2019-09-30",
+          "confirmedFrom": "2019-09-30",
           "endDate": "2020-03-20",
           "observations": 120,
           "days": 173,
@@ -20039,6 +20068,7 @@
         {
           "regime": "positive",
           "startDate": "2020-03-23",
+          "confirmedFrom": "2020-03-23",
           "endDate": "2021-01-05",
           "observations": 200,
           "days": 289,
@@ -20047,6 +20077,7 @@
         {
           "regime": "neutral",
           "startDate": "2021-01-06",
+          "confirmedFrom": "2021-01-06",
           "endDate": "2022-09-13",
           "observations": 425,
           "days": 616,
@@ -20055,6 +20086,7 @@
         {
           "regime": "positive",
           "startDate": "2022-09-14",
+          "confirmedFrom": "2022-09-14",
           "endDate": "2022-12-09",
           "observations": 62,
           "days": 87,
@@ -20063,6 +20095,7 @@
         {
           "regime": "neutral",
           "startDate": "2022-12-12",
+          "confirmedFrom": "2022-12-12",
           "endDate": "2023-03-15",
           "observations": 64,
           "days": 94,
@@ -20071,6 +20104,7 @@
         {
           "regime": "positive",
           "startDate": "2023-03-16",
+          "confirmedFrom": "2023-03-16",
           "endDate": "2023-06-14",
           "observations": 63,
           "days": 91,
@@ -20079,6 +20113,7 @@
         {
           "regime": "neutral",
           "startDate": "2023-06-15",
+          "confirmedFrom": "2023-06-15",
           "endDate": "2024-10-16",
           "observations": 337,
           "days": 490,
@@ -20087,6 +20122,7 @@
         {
           "regime": "positive",
           "startDate": "2024-10-17",
+          "confirmedFrom": "2024-10-17",
           "endDate": "2024-11-05",
           "observations": 14,
           "days": 20,
@@ -20095,6 +20131,7 @@
         {
           "regime": "neutral",
           "startDate": "2024-11-06",
+          "confirmedFrom": "2024-11-06",
           "endDate": "2025-11-13",
           "observations": 258,
           "days": 373,
@@ -20103,6 +20140,7 @@
         {
           "regime": "positive",
           "startDate": "2025-11-14",
+          "confirmedFrom": "2025-11-14",
           "endDate": "2025-12-01",
           "observations": 11,
           "days": 18,
@@ -20111,6 +20149,7 @@
         {
           "regime": "neutral",
           "startDate": "2025-12-02",
+          "confirmedFrom": "2025-12-02",
           "endDate": "2026-06-04",
           "observations": 127,
           "days": 185,
@@ -20119,6 +20158,7 @@
         {
           "regime": "positive",
           "startDate": "2026-06-05",
+          "confirmedFrom": "2026-06-05",
           "endDate": "2026-07-24",
           "observations": 34,
           "days": 50,
@@ -30020,6 +30060,7 @@
         {
           "regime": "neutral",
           "startDate": "2016-09-22",
+          "confirmedFrom": "2016-09-22",
           "endDate": "2019-02-11",
           "observations": 598,
           "days": 873,
@@ -30028,6 +30069,7 @@
         {
           "regime": "negative",
           "startDate": "2019-02-12",
+          "confirmedFrom": "2019-02-12",
           "endDate": "2019-03-19",
           "observations": 25,
           "days": 36,
@@ -30036,6 +30078,7 @@
         {
           "regime": "neutral",
           "startDate": "2019-03-20",
+          "confirmedFrom": "2019-03-20",
           "endDate": "2019-07-17",
           "observations": 83,
           "days": 120,
@@ -30044,6 +30087,7 @@
         {
           "regime": "negative",
           "startDate": "2019-07-18",
+          "confirmedFrom": "2019-07-18",
           "endDate": "2019-10-11",
           "observations": 61,
           "days": 86,
@@ -30052,6 +30096,7 @@
         {
           "regime": "neutral",
           "startDate": "2019-10-14",
+          "confirmedFrom": "2019-10-14",
           "endDate": "2020-07-14",
           "observations": 189,
           "days": 275,
@@ -30060,6 +30105,7 @@
         {
           "regime": "negative",
           "startDate": "2020-07-15",
+          "confirmedFrom": "2020-07-15",
           "endDate": "2020-12-21",
           "observations": 112,
           "days": 160,
@@ -30068,6 +30114,7 @@
         {
           "regime": "neutral",
           "startDate": "2020-12-22",
+          "confirmedFrom": "2020-12-22",
           "endDate": "2022-04-12",
           "observations": 329,
           "days": 477,
@@ -30076,6 +30123,7 @@
         {
           "regime": "negative",
           "startDate": "2022-04-13",
+          "confirmedFrom": "2022-04-13",
           "endDate": "2022-06-15",
           "observations": 44,
           "days": 64,
@@ -30084,6 +30132,7 @@
         {
           "regime": "neutral",
           "startDate": "2022-06-16",
+          "confirmedFrom": "2022-06-16",
           "endDate": "2022-09-13",
           "observations": 61,
           "days": 90,
@@ -30092,6 +30141,7 @@
         {
           "regime": "negative",
           "startDate": "2022-09-14",
+          "confirmedFrom": "2022-09-14",
           "endDate": "2023-03-29",
           "observations": 136,
           "days": 197,
@@ -30100,6 +30150,7 @@
         {
           "regime": "neutral",
           "startDate": "2023-03-30",
+          "confirmedFrom": "2023-03-30",
           "endDate": "2023-05-15",
           "observations": 32,
           "days": 47,
@@ -30108,6 +30159,7 @@
         {
           "regime": "negative",
           "startDate": "2023-05-16",
+          "confirmedFrom": "2023-05-16",
           "endDate": "2023-06-09",
           "observations": 18,
           "days": 25,
@@ -30116,6 +30168,7 @@
         {
           "regime": "neutral",
           "startDate": "2023-06-12",
+          "confirmedFrom": "2023-06-12",
           "endDate": "2024-04-11",
           "observations": 210,
           "days": 305,
@@ -30124,6 +30177,7 @@
         {
           "regime": "negative",
           "startDate": "2024-04-12",
+          "confirmedFrom": "2024-04-12",
           "endDate": "2024-07-10",
           "observations": 61,
           "days": 90,
@@ -30132,6 +30186,7 @@
         {
           "regime": "neutral",
           "startDate": "2024-07-11",
+          "confirmedFrom": "2024-07-11",
           "endDate": "2026-06-16",
           "observations": 487,
           "days": 706,
@@ -30140,6 +30195,7 @@
         {
           "regime": "negative",
           "startDate": "2026-06-17",
+          "confirmedFrom": "2026-06-17",
           "endDate": "2026-07-23",
           "observations": 25,
           "days": 37,
@@ -31161,6 +31217,7 @@
         {
           "regime": "negative",
           "startDate": "2025-07-08",
+          "confirmedFrom": "2025-07-08",
           "endDate": "2025-08-21",
           "observations": 33,
           "days": 45,
@@ -31169,6 +31226,7 @@
         {
           "regime": "neutral",
           "startDate": "2025-08-22",
+          "confirmedFrom": "2025-08-22",
           "endDate": "2026-04-17",
           "observations": 164,
           "days": 239,
@@ -31177,6 +31235,7 @@
         {
           "regime": "positive",
           "startDate": "2026-04-20",
+          "confirmedFrom": "2026-04-20",
           "endDate": "2026-07-24",
           "observations": 67,
           "days": 96,
@@ -32198,6 +32257,7 @@
         {
           "regime": "positive",
           "startDate": "2025-05-06",
+          "confirmedFrom": "2025-05-06",
           "endDate": "2025-08-07",
           "observations": 65,
           "days": 94,
@@ -32206,6 +32266,7 @@
         {
           "regime": "neutral",
           "startDate": "2025-08-08",
+          "confirmedFrom": "2025-08-08",
           "endDate": "2026-03-30",
           "observations": 161,
           "days": 235,
@@ -32214,6 +32275,7 @@
         {
           "regime": "negative",
           "startDate": "2026-03-31",
+          "confirmedFrom": "2026-03-31",
           "endDate": "2026-07-23",
           "observations": 79,
           "days": 115,
@@ -33231,6 +33293,7 @@
         {
           "regime": "negative",
           "startDate": "2025-04-10",
+          "confirmedFrom": "2025-04-10",
           "endDate": "2025-11-07",
           "observations": 147,
           "days": 212,
@@ -33239,6 +33302,7 @@
         {
           "regime": "neutral",
           "startDate": "2025-11-10",
+          "confirmedFrom": "2025-11-10",
           "endDate": "2026-01-16",
           "observations": 47,
           "days": 68,
@@ -33247,6 +33311,7 @@
         {
           "regime": "negative",
           "startDate": "2026-01-20",
+          "confirmedFrom": "2026-01-20",
           "endDate": "2026-04-29",
           "observations": 70,
           "days": 100,
@@ -33255,6 +33320,7 @@
         {
           "regime": "neutral",
           "startDate": "2026-04-30",
+          "confirmedFrom": "2026-04-30",
           "endDate": "2026-06-16",
           "observations": 33,
           "days": 48,
@@ -33263,6 +33329,7 @@
         {
           "regime": "negative",
           "startDate": "2026-06-17",
+          "confirmedFrom": "2026-06-17",
           "endDate": "2026-07-27",
           "observations": 26,
           "days": 41,
