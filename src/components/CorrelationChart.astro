@@ -9,30 +9,58 @@ interface Props {
 
 const { currency } = Astro.props;
 const { correlations } = dataFor(currency);
-const payload = correlations.pairs.filter((p) => p.series.length > 0);
+const pairs = correlations.pairs.filter((p) => p.series.length > 0);
+const payload = { threshold: correlations.regimeThreshold, pairs };
 ---
 
 <figure class="chart-frame">
   <div class="chart-controls">
     <div class="chart-toggle" id="pair-toggle" role="group" aria-label="Asset pair"></div>
+    <div class="chart-legend" id="regime-legend" aria-hidden="true"></div>
   </div>
   <script is:inline type="application/json" id="correlation-chart-data" set:html={toJsonScript(payload)} />
   <div
     id="correlation-chart"
     role="img"
-    aria-label="Line chart of the rolling 90-day correlation of daily log returns for the selected asset pair"
+    aria-label="Line chart of the rolling 90-day correlation of daily log returns for the selected asset pair, with shaded correlation-regime bands"
   >
   </div>
 </figure>
+
+<div class="table-scroll regime-table-wrap">
+  <table class="risk-table" id="regime-table">
+    <caption class="visually-hidden">Correlation regimes for the selected asset pair, newest first</caption>
+  </table>
+</div>
 
 <script>
   import * as Plot from '@observablehq/plot';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
 
-  type Pair = { pair: string; a: string; b: string; series: { date: string; corr: number }[] };
-  const pairs = chartData<Pair[]>('correlation-chart-data');
+  type Regime = 'positive' | 'neutral' | 'negative';
+  type Segment = {
+    regime: Regime;
+    startDate: string;
+    endDate: string;
+    observations: number;
+    days: number;
+    meanCorr: number;
+  };
+  type Pair = {
+    pair: string;
+    a: string;
+    b: string;
+    series: { date: string; corr: number }[];
+    regimes: Segment[];
+  };
+
+  const { threshold, pairs } = chartData<{ threshold: number; pairs: Pair[] }>(
+    'correlation-chart-data',
+  );
   const container = document.getElementById('correlation-chart');
   const toggle = document.getElementById('pair-toggle');
+  const legend = document.getElementById('regime-legend');
+  const table = document.getElementById('regime-table');
 
   const LABELS: Record<string, string> = {
     btc: 'BTC',
@@ -40,13 +68,33 @@ const payload = correlations.pairs.filter((p) => p.series.length > 0);
     gold: 'gold',
     dxy: 'DXY',
   };
+  const REGIME_LABELS: Record<Regime, string> = {
+    positive: 'co-moving',
+    neutral: 'decoupled',
+    negative: 'inverse',
+  };
+  /**
+   * Bands are drawn on the pos/neg tokens at low opacity so the correlation
+   * line stays the figure and the regime is context behind it. Decoupled is
+   * deliberately unpainted: "no regime" should not look like a third state
+   * competing for attention.
+   */
+  const bandFill = (regime: Regime): string | null =>
+    regime === 'positive' ? cssVar('--pos') : regime === 'negative' ? cssVar('--neg') : null;
+
   let active = pairs[0]?.pair ?? '';
 
-  function render(): void {
+  const pairLabel = (p: Pair): string => `${LABELS[p.a] ?? p.a} – ${LABELS[p.b] ?? p.b}`;
+  // Bands are drawn as rects spanning [start, end]; the end date is inclusive,
+  // so extend it by a day or the last observation sits outside its own band.
+  const dayAfter = (date: string): Date => new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000);
+
+  function renderChart(pair: Pair): void {
     if (!container) return;
-    const pair = pairs.find((p) => p.pair === active) ?? pairs[0];
-    if (!pair) return;
     const points = pair.series.map((p) => ({ date: new Date(p.date), corr: p.corr }));
+    const bands = pair.regimes
+      .map((r) => ({ ...r, fill: bandFill(r.regime) }))
+      .filter((r) => r.fill !== null);
     container.replaceChildren(
       Plot.plot({
         width: container.clientWidth || 720,
@@ -55,15 +103,28 @@ const payload = correlations.pairs.filter((p) => p.series.length > 0);
         x: { label: null },
         y: { label: null, grid: true, domain: [-1, 1] },
         marks: [
+          Plot.rect(bands, {
+            x1: (d: Segment) => new Date(d.startDate),
+            x2: (d: Segment) => dayAfter(d.endDate),
+            y1: -1,
+            y2: 1,
+            fill: (d: Segment & { fill: string }) => d.fill,
+            fillOpacity: 0.09,
+          }),
           Plot.ruleY([0], { stroke: cssVar('--ink-muted'), strokeDasharray: '2,3' }),
-          Plot.lineY(points, { x: 'date', y: 'corr', stroke: cssVar('--accent'), strokeWidth: 1.75 }),
+          Plot.ruleY([threshold, -threshold], {
+            stroke: cssVar('--ink-muted'),
+            strokeDasharray: '1,4',
+            strokeOpacity: 0.7,
+          }),
+          Plot.lineY(points, { x: 'date', y: 'corr', stroke: cssVar('--accent'), strokeWidth: 1.5 }),
           Plot.tip(
             points,
             Plot.pointerX({
               x: 'date',
               y: 'corr',
               title: (d: { date: Date; corr: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\n${LABELS[pair.a] ?? pair.a} – ${LABELS[pair.b] ?? pair.b}: ${d.corr.toFixed(2)}`,
+                `${d.date.toISOString().slice(0, 10)}\n${pairLabel(pair)}: ${d.corr.toFixed(2)}`,
             }),
           ),
         ],
@@ -77,12 +138,85 @@ const payload = correlations.pairs.filter((p) => p.series.length > 0);
     );
   }
 
+  function renderLegend(): void {
+    if (!legend) return;
+    legend.replaceChildren(
+      ...(['positive', 'neutral', 'negative'] as Regime[]).map((regime) => {
+        const item = document.createElement('span');
+        item.className = 'legend-item';
+        const swatch = document.createElement('span');
+        swatch.className = 'legend-swatch regime-swatch';
+        const fill = bandFill(regime);
+        swatch.style.background = fill
+          ? `color-mix(in srgb, ${fill} 35%, transparent)`
+          : 'transparent';
+        if (!fill) swatch.style.border = `1px solid ${cssVar('--line')}`;
+        item.append(swatch, REGIME_LABELS[regime]);
+        return item;
+      }),
+    );
+  }
+
+  function renderTable(pair: Pair): void {
+    if (!table) return;
+    const head = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    for (const [label, numeric] of [
+      ['Regime', false],
+      ['From', false],
+      ['To', false],
+      ['Days', true],
+      ['Obs', true],
+      ['Mean corr', true],
+    ] as [string, boolean][]) {
+      const th = document.createElement('th');
+      th.scope = 'col';
+      th.textContent = label;
+      if (numeric) th.className = 'num';
+      headRow.append(th);
+    }
+    head.append(headRow);
+
+    const body = document.createElement('tbody');
+    // Newest first: the regime a reader cares about is the current one.
+    for (const segment of [...pair.regimes].reverse()) {
+      const row = document.createElement('tr');
+      const name = document.createElement('th');
+      name.scope = 'row';
+      name.textContent = REGIME_LABELS[segment.regime];
+      name.className = `regime-${segment.regime}`;
+      row.append(name);
+      for (const [value, numeric] of [
+        [segment.startDate, false],
+        [segment.endDate, false],
+        [String(segment.days), true],
+        [String(segment.observations), true],
+        [segment.meanCorr.toFixed(2), true],
+      ] as [string, boolean][]) {
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        if (numeric) cell.className = 'num';
+        row.append(cell);
+      }
+      body.append(row);
+    }
+    table.replaceChildren(head, body);
+  }
+
+  function render(): void {
+    const pair = pairs.find((p) => p.pair === active) ?? pairs[0];
+    if (!pair) return;
+    renderChart(pair);
+    renderLegend();
+    renderTable(pair);
+  }
+
   if (toggle) {
     toggle.replaceChildren(
       ...pairs.map((p) => {
         const button = document.createElement('button');
         button.type = 'button';
-        button.textContent = `${LABELS[p.a] ?? p.a} – ${LABELS[p.b] ?? p.b}`;
+        button.textContent = pairLabel(p);
         button.setAttribute('aria-pressed', String(p.pair === active));
         button.addEventListener('click', () => {
           active = p.pair;

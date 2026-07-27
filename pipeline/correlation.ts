@@ -1,3 +1,4 @@
+import { classifyRegimes, REGIME_CONFIRM_DAYS, REGIME_THRESHOLD } from './regimes';
 import type { CorrelationDataset, CorrPoint, PairId } from './schema';
 import type { SeriesPoint } from './risk';
 
@@ -87,11 +88,15 @@ export function rollingCorrelation(
 ): CorrPoint[] {
   const aligned = alignReturns(a, b);
   const out: CorrPoint[] = [];
+  // `start` only ever moves forward: the cutoff is monotonic in the end date,
+  // so a return that has left one window can never re-enter a later one.
+  let start = 0;
   for (let i = 0; i < aligned.length; i++) {
     const end = aligned[i];
     if (!end) continue;
     const cutoff = dateMinusDays(end.date, windowDays);
-    const window = aligned.filter((r, j) => j <= i && r.date > cutoff);
+    while (start <= i && (aligned[start]?.date ?? '') <= cutoff) start += 1;
+    const window = aligned.slice(start, i + 1);
     if (window.length < minObs) continue;
     const corr = pearson(
       window.map((r) => r.ra),
@@ -105,42 +110,57 @@ export function rollingCorrelation(
 
 /**
  * Assemble data/correlations.json: every unordered pair of the fixed asset
- * list, rolling correlation clipped to dates >= displayFrom.
+ * list, rolling correlation over each pair's whole shared history, with the
+ * regime segmentation that history supports.
+ *
+ * No display clipping. A 365-day view of a 90-day correlation shows barely
+ * three independent windows — enough to read today's number, not enough to
+ * see that BTC decoupled from gold for two years. The pairs reach as far back
+ * as their shallower source: ten years for anything against the S&P 500
+ * (FRED's SP500 is a rolling decade), further for gold and DXY.
  */
 export function buildCorrelationDataset(
   series: Record<(typeof CORRELATION_ASSETS)[number], SeriesPoint[]>,
   opts: {
     fetchedAt: string;
     asOf: string;
-    displayFrom: string;
     windowDays?: number;
     minObs?: number;
+    regimeThreshold?: number;
+    regimeConfirmDays?: number;
   },
 ): Omit<CorrelationDataset, 'currency'> {
   const windowDays = opts.windowDays ?? CORRELATION_WINDOW_DAYS;
   const minObs = opts.minObs ?? CORRELATION_MIN_OBS;
+  const regimeThreshold = opts.regimeThreshold ?? REGIME_THRESHOLD;
+  const regimeConfirmDays = opts.regimeConfirmDays ?? REGIME_CONFIRM_DAYS;
   const pairs: CorrelationDataset['pairs'] = [];
   for (let i = 0; i < CORRELATION_ASSETS.length; i++) {
     for (let j = i + 1; j < CORRELATION_ASSETS.length; j++) {
       const a = CORRELATION_ASSETS[i];
       const b = CORRELATION_ASSETS[j];
       if (!a || !b) continue;
+      const corrSeries = rollingCorrelation(series[a], series[b], windowDays, minObs);
       pairs.push({
         pair: `${a}-${b}` as PairId,
         a,
         b,
-        series: rollingCorrelation(series[a], series[b], windowDays, minObs).filter(
-          (p) => p.date >= opts.displayFrom,
-        ),
+        series: corrSeries,
+        regimes: classifyRegimes(corrSeries, {
+          threshold: regimeThreshold,
+          confirmDays: regimeConfirmDays,
+        }),
       });
     }
   }
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     fetchedAt: opts.fetchedAt,
     asOf: opts.asOf,
     windowDays,
     minObs,
+    regimeThreshold,
+    regimeConfirmDays,
     pairs,
   };
 }

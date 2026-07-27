@@ -400,6 +400,28 @@ const corrPointSchema = z.object({
 
 export type CorrPoint = z.infer<typeof corrPointSchema>;
 
+/**
+ * Regime of a rolling correlation: co-moving, inverse, or neither, after the
+ * hysteresis in regimes.ts has rejected threshold-crossing noise.
+ */
+export const regimeSchema = z.enum(['positive', 'neutral', 'negative']);
+
+export type Regime = z.infer<typeof regimeSchema>;
+
+const regimeSegmentSchema = z.object({
+  regime: regimeSchema,
+  startDate: isoDate,
+  endDate: isoDate,
+  /** Correlation readings in the segment (shared trading days, not calendar days). */
+  observations: z.number().int().positive(),
+  /** Inclusive calendar-day span, so a one-observation segment is 1. */
+  days: z.number().int().positive(),
+  /** Mean correlation across the segment, 2 dp. */
+  meanCorr: z.number().min(-1).max(1),
+});
+
+export type RegimeSegment = z.infer<typeof regimeSegmentSchema>;
+
 const corrAsset = z.enum(['btc', 'sp500', 'gold', 'dxy']);
 
 const pairIdSchema = z.enum([
@@ -415,7 +437,9 @@ export type PairId = z.infer<typeof pairIdSchema>;
 
 /** Versioned on-disk format of data/correlations.json. */
 export const correlationDatasetSchema = z.object({
-  schemaVersion: z.literal(1),
+  // v2 (M11): series run the full shared history rather than a 365d window,
+  // and each pair carries its regime segmentation.
+  schemaVersion: z.literal(2),
   currency: currencySchema,
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
@@ -423,6 +447,10 @@ export const correlationDatasetSchema = z.object({
   /** Rolling window in calendar days, and the fewest aligned returns a window may hold. */
   windowDays: z.number().int().min(2),
   minObs: z.number().int().min(2),
+  /** |corr| at or beyond which a reading is co-moving or inverse. */
+  regimeThreshold: z.number().positive().max(1),
+  /** Consecutive readings a candidate regime must hold before it takes over. */
+  regimeConfirmDays: z.number().int().positive(),
   pairs: z.array(
     z.object({
       pair: pairIdSchema,
@@ -430,6 +458,8 @@ export const correlationDatasetSchema = z.object({
       b: corrAsset,
       /** Empty entries are allowed while a pair's sources lack shared history. */
       series: z.array(corrPointSchema),
+      /** Contiguous and gapless over `series`; empty exactly when it is. */
+      regimes: z.array(regimeSegmentSchema),
     }),
   ),
 });

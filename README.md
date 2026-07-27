@@ -5,7 +5,7 @@ pipeline fetches market data, validates it with zod, derives every metric in
 tested pure TypeScript, and commits versioned JSON to `/data`; Astro builds
 the site from that dataset alone, charted with Observable Plot.
 
-**Status:** Phase 1 (M0–M6) shipped; Phase 2 in progress (M7–M10 done, M11–M14 planned).
+**Status:** Phase 1 (M0–M6) shipped; Phase 2 in progress (M7–M11 done, M12–M14 planned).
 [PLAN.md](PLAN.md) holds the milestone plan, [CLAUDE.md](CLAUDE.md) the
 development rules.
 
@@ -74,7 +74,27 @@ fixed fixtures with exact, independently derived expected values.
 - **Correlation**: Pearson on pairwise-aligned daily log returns (shared
   trading days; a gap in either calendar becomes one multi-day return) over a
   trailing 90-calendar-day window; windows with fewer than 40 shared returns
-  or zero variance emit nothing.
+  or zero variance emit nothing. Each pair runs its whole shared history —
+  depth is set by its shallower source, and FRED publishes the S&P 500 as a
+  rolling ten years.
+- **Correlation regimes**: |corr| ≥ 0.25 reads as co-moving or inverse, inside
+  that band as decoupled — but a threshold crossing is not a regime. The
+  rolling curve oscillates, so a bare test reports dozens of one-day regimes
+  around every crossing; a candidate must instead hold for 10 consecutive
+  readings before it replaces the incumbent, and the boundary is dated at the
+  *first* of those readings, since that is when the change began. The cost is
+  stated on the page: the last 9 readings cannot yet start a regime, so a turn
+  in the past fortnight shows as a continuation until the data earns it. Each pair runs its whole shared history —
+  depth is set by its shallower source, and FRED publishes the S&P 500 as a
+  rolling ten years.
+- **Correlation regimes**: |corr| ≥ 0.25 reads as co-moving or inverse, inside
+  that band as decoupled — but a threshold crossing is not a regime. The
+  rolling curve oscillates, so a bare test reports dozens of one-day regimes
+  around every crossing; a candidate must instead hold for 10 consecutive
+  readings before it replaces the incumbent, and the boundary is dated at the
+  *first* of those readings, since that is when the change began. The cost is
+  stated on the page: the last 9 readings cannot yet start a regime, so a turn
+  in the past fortnight shows as a continuation until the data earns it.
 - **Halving cycles**: price divided by the halving-day close per epoch
   (blocks 210000/420000/630000/840000), plotted against days since halving.
 - **DCA simulator**: fixed fee-inclusive buys at daily closes, month-end

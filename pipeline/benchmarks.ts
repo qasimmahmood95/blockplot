@@ -94,9 +94,18 @@ export function parseYahooChart(payload: unknown): BenchmarkDay[] {
   return assertAscending(out, 'parseYahooChart');
 }
 
+/**
+ * Full S&P 500 history FRED will serve. Its `SP500` series is a rolling
+ * ten-year window, which is therefore the binding constraint on how far the
+ * BTC–S&P 500 regime view can reach — gold and DXY go back further.
+ */
 export async function fetchSp500(): Promise<BenchmarkDay[]> {
-  return trimToLastDays(parseFredCsv(await getText(FRED_CSV_URL), SP500_FRED_SERIES), BENCHMARK_KEEP_DAYS);
+  return parseFredCsv(await getText(FRED_CSV_URL), SP500_FRED_SERIES);
 }
+
+/** The trailing window the risk page and the correlation warmup need. */
+export const recentWindow = (series: BenchmarkDay[]): BenchmarkDay[] =>
+  trimToLastDays(series, BENCHMARK_KEEP_DAYS);
 
 export interface YahooFetch {
   /** The Yahoo ticker that actually served the data. */
@@ -105,21 +114,20 @@ export interface YahooFetch {
 }
 
 /**
- * Fetch daily closes from Yahoo, trying tickers in preference order.
- * `range: 'max'` also skips the trailing-window trim, for callers (FX) that
- * need history reaching back as far as the BTC series.
+ * Fetch daily closes from Yahoo, trying tickers in preference order. Always
+ * untrimmed: callers take `recentWindow` for the 460d files and the whole
+ * series for the regime view, so one request serves both.
  */
 export async function fetchYahooDaily(
   tickers: string[],
   opts: { range?: '2y' | 'max' } = {},
 ): Promise<YahooFetch> {
-  const range = opts.range ?? '2y';
+  const range = opts.range ?? 'max';
   let lastError: unknown;
   for (const ticker of tickers) {
     const url = `${YAHOO_CHART_API}/${encodeURIComponent(ticker)}?range=${range}&interval=1d`;
     try {
-      const parsed = parseYahooChart(await getJson(url));
-      return { ticker, series: range === 'max' ? parsed : trimToLastDays(parsed, BENCHMARK_KEEP_DAYS) };
+      return { ticker, series: parseYahooChart(await getJson(url)) };
     } catch (err) {
       lastError = err;
     }

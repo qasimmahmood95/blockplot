@@ -78,7 +78,6 @@ describe('buildCorrelationDataset', () => {
   const dataset = buildCorrelationDataset(series, {
     fetchedAt: '2024-01-05T12:00:00.000Z',
     asOf: '2024-01-05',
-    displayFrom: '2024-01-05',
     windowDays: 30,
     minObs: 3,
   });
@@ -95,11 +94,37 @@ describe('buildCorrelationDataset', () => {
     expect(CORRELATION_ASSETS).toEqual(['btc', 'sp500', 'gold', 'dxy']);
   });
 
-  it('clips to displayFrom and carries identical-series pairs at corr 1', () => {
+  it('carries the full shared range, identical-series pairs at corr 1', () => {
+    // btc-gold is x against itself, so it aligns on x's own calendar and
+    // reaches minObs a day earlier than btc-sp500, which aligns on x ∩ y.
     const btcGold = dataset.pairs.find((p) => p.pair === 'btc-gold');
-    expect(btcGold?.series).toEqual([{ date: '2024-01-05', corr: 1 }]);
+    expect(btcGold?.series).toEqual([
+      { date: '2024-01-04', corr: 1 },
+      { date: '2024-01-05', corr: 1 },
+    ]);
     const btcSp = dataset.pairs.find((p) => p.pair === 'btc-sp500');
     expect(btcSp?.series).toEqual([{ date: '2024-01-05', corr: 0.95 }]);
+  });
+
+  it('segments every pair, and the regimes span the series exactly', () => {
+    for (const pair of dataset.pairs) {
+      expect(pair.regimes.length > 0).toBe(pair.series.length > 0);
+      if (pair.series.length === 0) continue;
+      expect(pair.regimes[0]?.startDate).toBe(pair.series[0]?.date);
+      expect(pair.regimes.at(-1)?.endDate).toBe(pair.series.at(-1)?.date);
+      expect(pair.regimes.reduce((n, r) => n + r.observations, 0)).toBe(pair.series.length);
+    }
+    // Both fixture pairs sit at corr >= 0.25 throughout.
+    expect(dataset.pairs.find((p) => p.pair === 'btc-gold')?.regimes).toEqual([
+      {
+        regime: 'positive',
+        startDate: '2024-01-04',
+        endDate: '2024-01-05',
+        observations: 2,
+        days: 2,
+        meanCorr: 1,
+      },
+    ]);
   });
 
   it('produces output the on-disk schema accepts', () => {

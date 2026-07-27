@@ -1,4 +1,11 @@
-import { BENCHMARK_KEEP_DAYS, fetchDxy, fetchGold, fetchSp500, SP500_FRED_SERIES } from './benchmarks';
+import {
+  BENCHMARK_KEEP_DAYS,
+  fetchDxy,
+  fetchGold,
+  fetchSp500,
+  recentWindow,
+  SP500_FRED_SERIES,
+} from './benchmarks';
 import { fetchBtcMarketChart, PRICE_RANGE_DAYS } from './coingecko';
 import { buildCorrelationDataset } from './correlation';
 import {
@@ -174,11 +181,16 @@ for (const currency of CURRENCIES) {
         `the FX floor ${FX_HISTORY_FROM} is later than the BTC start ${history[0]?.date}`,
     );
   }
-  const sp = sp500 ? convertBenchmark(sp500, rates, currency) : null;
-  const au = goldFetch ? convertBenchmark(goldFetch.series, rates, currency) : null;
+  // Deep, for the correlation regimes; the 460d window below is what the risk
+  // page and the benchmarks file need.
+  const spAll = sp500 ? convertBenchmark(sp500, rates, currency) : null;
+  const auAll = goldFetch ? convertBenchmark(goldFetch.series, rates, currency) : null;
   // DXY is a dollar index by construction, so it is never converted; the
   // correlation page notes that its pairs stay dollar-denominated.
-  const dxy = dxyFetch?.series ?? null;
+  const dxyAll = dxyFetch?.series ?? null;
+  const sp = spAll ? recentWindow(spAll) : null;
+  const au = auAll ? recentWindow(auAll) : null;
+  const dxy = dxyAll ? recentWindow(dxyAll) : null;
 
   if (spot) {
     const prices = priceDatasetSchema.parse({
@@ -253,24 +265,24 @@ for (const currency of CURRENCIES) {
     await writeJson(`${dir}/risk-metrics.json`, risk);
     console.log(`${dir}/risk-metrics.json: as of ${risk.asOf}, max drawdown ${risk.drawdown.maxDrawdownPct}%`);
 
-    if (dxy) {
+    if (spAll && auAll && dxyAll) {
       const toPoints = (rows: { date: string; close: number }[]) =>
         rows.map(({ date, close }) => ({ date, value: close }));
       const correlations = correlationDatasetSchema.parse({
         ...buildCorrelationDataset(
           {
             btc: deep.map(({ date, price }) => ({ date, value: price })),
-            sp500: toPoints(sp),
-            gold: toPoints(au),
-            dxy: toPoints(dxy),
+            sp500: toPoints(spAll),
+            gold: toPoints(auAll),
+            dxy: toPoints(dxyAll),
           },
-          { fetchedAt, asOf: risk.asOf, displayFrom: spot[0]?.date ?? risk.asOf },
+          { fetchedAt, asOf: risk.asOf },
         ),
         currency,
       });
       await writeJson(`${dir}/correlations.json`, correlations);
       console.log(
-        `${dir}/correlations.json: ${correlations.pairs.map((p) => `${p.pair}=${p.series.length}`).join(' ')}`,
+        `${dir}/correlations.json: ${correlations.pairs.map((p) => `${p.pair}=${p.series.length}/${p.regimes.length}r`).join(' ')}`,
       );
     }
   }
