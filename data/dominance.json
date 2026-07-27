@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "source": "coingecko",
-  "fetchedAt": "2026-07-27T16:02:28.230Z",
+  "fetchedAt": "2026-07-27T16:05:27.357Z",
   "series": [
     {
       "date": "2026-07-26",
@@ -10,8 +10,8 @@
     },
     {
       "date": "2026-07-27",
-      "btcDominancePct": 56.48,
-      "totalMcapUsd": 2292401523049
+      "btcDominancePct": 56.49,
+      "totalMcapUsd": 2290964092549
     }
   ]
 }
