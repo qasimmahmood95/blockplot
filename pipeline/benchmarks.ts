@@ -29,6 +29,44 @@ export const BENCHMARK_KEEP_DAYS = 460;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+/**
+ * Reject a series that is not actually daily.
+ *
+ * Yahoo accepts `interval=1d` with `range=max` and then silently serves
+ * coarser bars: on the first live run gold came back monthly (13 bars where
+ * 316 were expected) and DXY quarterly (6). Nothing failed — the schema was
+ * satisfied, the file was written, and the risk page computed Sharpe and
+ * volatility for gold from thirteen observations. Wrong numbers that look
+ * right are the worst failure available here, so granularity is checked
+ * rather than assumed.
+ *
+ * Business-day series gap by 1 over the week and 3 over a weekend, so a
+ * median gap above 4 days means the response is not daily. The median, not
+ * the mean: a genuine daily series still contains long holiday gaps.
+ */
+export function assertDaily(series: BenchmarkDay[], context: string): BenchmarkDay[] {
+  if (series.length < 3) return series;
+  const gaps: number[] = [];
+  for (let i = 1; i < series.length; i++) {
+    const prev = series[i - 1];
+    const curr = series[i];
+    if (!prev || !curr) continue;
+    gaps.push(
+      Math.round(
+        (Date.parse(`${curr.date}T00:00:00Z`) - Date.parse(`${prev.date}T00:00:00Z`)) / 86_400_000,
+      ),
+    );
+  }
+  gaps.sort((a, b) => a - b);
+  const median = gaps[Math.floor(gaps.length / 2)] ?? 1;
+  if (median > 4) {
+    throw new Error(
+      `${context}: median gap ${median} days — the source served coarser bars than daily`,
+    );
+  }
+  return series;
+}
+
 function assertAscending(series: BenchmarkDay[], context: string): BenchmarkDay[] {
   if (series.length === 0) throw new Error(`${context}: no data rows`);
   for (let i = 1; i < series.length; i++) {
@@ -121,17 +159,24 @@ export interface YahooFetch {
  * Fetch daily closes from Yahoo, trying tickers in preference order. Always
  * untrimmed: callers take `recentWindow` for the 460d files and the whole
  * series for the regime view, so one request serves both.
+ *
+ * `range=max` is deliberately not offered. Yahoo accepts it alongside
+ * `interval=1d` and then serves monthly or quarterly bars, which is how the
+ * first deep run put 13 gold bars into a file that had held 316. 10y is the
+ * deepest range it serves daily, and every consumer here is bounded by a
+ * shallower constraint anyway (FRED publishes the S&P 500 as a rolling
+ * decade; the GBP/USD record starts in 2009).
  */
 export async function fetchYahooDaily(
   tickers: string[],
-  opts: { range?: '2y' | 'max' } = {},
+  opts: { range?: '2y' | '10y' } = {},
 ): Promise<YahooFetch> {
-  const range = opts.range ?? 'max';
+  const range = opts.range ?? '10y';
   let lastError: unknown;
   for (const ticker of tickers) {
     const url = `${YAHOO_CHART_API}/${encodeURIComponent(ticker)}?range=${range}&interval=1d`;
     try {
-      return { ticker, series: parseYahooChart(await getJson(url)) };
+      return { ticker, series: assertDaily(parseYahooChart(await getJson(url)), ticker) };
     } catch (err) {
       lastError = err;
     }
@@ -142,11 +187,11 @@ export async function fetchYahooDaily(
 }
 
 /**
- * Minimum daily bars a benchmark response must carry. Depth is load-bearing
- * now that the correlation regimes read these series in full: a throttled or
- * reshaped response that returns a few hundred bars would silently shorten the
- * headline view rather than fail. Two years is far below what either ticker
- * genuinely serves at range=max and far above a truncated response.
+ * Minimum bars a benchmark response must carry. Depth is load-bearing now
+ * that the correlation regimes read these series in full: a throttled or
+ * truncated response would silently shorten the headline view rather than
+ * fail. Two years of trading days is far below the ~2,500 a 10y daily range
+ * serves and far above anything truncated.
  */
 export const MIN_BENCHMARK_DAYS = 500;
 

@@ -61,11 +61,13 @@ series is cut at 2009-01-01: FRED goes back to 1971, but BTC has no price
 before then, so earlier rates are permanently committed JSON that can never
 convert a close.
 
-`correlations.json` carries each BTC pair's whole shared history rather than a
-display window, because a 365-day view of a 90-day correlation holds barely
-three independent windows. Depth is set by the shallower source in each pair:
-FRED publishes `SP500` as a rolling ten years, so anything against the S&P 500
-stops there, while gold and DXY reach further. The three pairs *without* BTC
+`correlations.json` carries about ten years per BTC pair rather than a display
+window, because a 365-day view of a 90-day correlation holds barely three
+independent windows. Ten years is where both constraints land: FRED publishes
+`SP500` as a rolling decade, and it is the deepest range Yahoo serves at daily
+granularity — `range=max` with `interval=1d` returns monthly or quarterly bars,
+so responses are checked for daily spacing rather than trusted. The three pairs
+*without* BTC
 keep 365 days — they exist to fill the correlation matrix, which reads one
 number from each, and at full depth they were more than half the file. Their
 regimes are still classified over full history, so a segment may start before

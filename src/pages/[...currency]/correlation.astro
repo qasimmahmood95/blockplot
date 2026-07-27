@@ -104,9 +104,9 @@ const btcPairs = [
       Pearson correlation of daily log returns over a trailing {windowDays}-calendar-day window,
       computed on each pair's shared trading days (a holiday or weekend in either series becomes
       one multi-day return); windows holding fewer than {minObs} shared returns are omitted. Each
-      pair with BTC in it runs as far back as its shallower source: FRED publishes the S&amp;P 500
-      as a rolling ten years, so pairs against it stop there, while gold and the dollar index
-      reach further. Pairs <em>without</em> BTC keep a 365-day window — they exist to fill the
+      pair with BTC in it runs about ten years — FRED publishes the S&amp;P 500 as a rolling
+      decade, and ten years is the deepest range Yahoo serves at daily granularity rather than
+      quietly coarsening to monthly bars. Pairs <em>without</em> BTC keep a 365-day window — they exist to fill the
       matrix above, which reads one number from each, and at full depth they were more than half
       the dataset. Their regimes are still classified over the whole history, so a row may report
       a regime that began before the charted window and count observations the chart does not

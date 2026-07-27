@@ -27,8 +27,13 @@ const FRANKFURTER_URL = 'https://api.frankfurter.app/1999-01-04..?from=GBP&to=US
  * Depth floor for the *Yahoo* leg alone: a short response there means the
  * ticker is being throttled or has changed shape, so it is dropped rather
  * than merged. FRED and ECB carry their own depth and are not gated by it.
+ *
+ * Yahoo now contributes a 10-year daily window rather than the whole record —
+ * `range=max` returns coarser-than-daily bars, which is why this leg never
+ * survived the old 3,650-day floor. FRED reaches 1971 and ECB publishes daily,
+ * so Yahoo is a cross-check on the recent end rather than the depth source.
  */
-const MIN_YAHOO_FX_DAYS = 3650;
+const MIN_YAHOO_FX_DAYS = 2000;
 
 /**
  * Days the rate series may lag the BTC series before the carry-forward rule
@@ -182,7 +187,7 @@ export async function fetchGbpUsd(): Promise<FxFetch> {
   const parts: BenchmarkDay[][] = [];
   const sources: FxSource[] = [];
   try {
-    const deep = await fetchYahooDaily(GBPUSD_YAHOO_TICKERS, { range: 'max' });
+    const deep = await fetchYahooDaily(GBPUSD_YAHOO_TICKERS, { range: '10y' });
     if (deep.series.length >= MIN_YAHOO_FX_DAYS) {
       parts.push(deep.series);
       sources.push('yahoo');
