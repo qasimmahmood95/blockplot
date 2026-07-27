@@ -342,7 +342,10 @@ const payload = {
       form.reset();
       costEdited = false;
       storedCost = null;
-      return 'forgotten in another tab';
+      // No message: an empty store is also what a first-time visitor has, and
+      // load() cannot tell that from a deletion. The external handler knows,
+      // and passes the reason in.
+      return '';
     }
     const btcInput = form.elements.namedItem('btc') as HTMLInputElement | null;
     const costInput = form.elements.namedItem('cost') as HTMLInputElement | null;
@@ -404,13 +407,13 @@ const payload = {
     syncFromStorage();
   }
 
-  function syncFromStorage(): void {
+  function syncFromStorage(reason?: string): void {
     const message = load();
     render();
     const holdings = formHoldings();
     renderChart(holdings && holdings.btc > 0 ? holdings.btc : 0);
     // After render(), which blanks the status when there is nothing to show.
-    setStatus(message);
+    setStatus(reason ?? message);
   }
 
   /**
@@ -432,7 +435,11 @@ const payload = {
     // and the button's own confirmation says they are gone. Refreshing the
     // snapshot alone is not enough: the fields still hold the values, so they
     // have to be reset too.
-    if (!stored || !document.activeElement?.closest('#holdings-form')) {
+    if (!stored) {
+      syncFromStorage('forgotten in another tab');
+      return;
+    }
+    if (!document.activeElement?.closest('#holdings-form')) {
       syncFromStorage();
       return;
     }
