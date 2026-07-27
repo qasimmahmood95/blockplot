@@ -9,7 +9,14 @@ import {
   STABLECOIN_KEEP_DAYS,
   stablecoinChange30dPct,
 } from './flows';
-import { convertBenchmark, convertSeries, CURRENCIES, fetchGbpUsd } from './fx';
+import {
+  convertBenchmark,
+  convertSeries,
+  CURRENCIES,
+  fetchGbpUsd,
+  fxLagDays,
+  MAX_FX_LAG_DAYS,
+} from './fx';
 import { buildHalvingDataset } from './halvings';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
@@ -131,6 +138,18 @@ if (fxRates) {
   });
   await writeJson('data/fx-gbpusd.json', fx);
   console.log(`data/fx-gbpusd.json: ${fxRates.length} quoted days to ${fxRates.at(-1)?.date}`);
+}
+
+// Carry-forward is meant to bridge weekends, not to price a week of BTC
+// closes at a stale rate — so surface a lagging FX feed rather than let it
+// pass as fresh GBP figures.
+if (fxRates && series) {
+  const lag = fxLagDays(fxRates, series.at(-1)?.date ?? '');
+  if (lag > MAX_FX_LAG_DAYS) {
+    console.warn(
+      `warning: GBP/USD rates lag the BTC series by ${lag} days (last quote ${fxRates.at(-1)?.date}) — recent GBP figures carry a stale rate`,
+    );
+  }
 }
 
 for (const currency of CURRENCIES) {

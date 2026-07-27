@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { convertBenchmark, convertSeries, rateLookup } from './fx';
+import { convertBenchmark, convertSeries, fxLagDays, mergeRates, rateLookup } from './fx';
 
 // FX quotes Fri 03-01 and Mon 03-04; the weekend carries Friday's rate.
 const rates = [
@@ -59,6 +59,32 @@ describe('convertSeries', () => {
     expect(() => convertSeries(btc, [{ date: '2024-03-01', close: -1 }], 'gbp')).toThrow(
       'non-positive rate',
     );
+  });
+});
+
+describe('mergeRates', () => {
+  it('lets later sources win per date and returns one ascending series', () => {
+    const deep = [
+      { date: '2024-03-01', close: 1.25 },
+      { date: '2024-03-04', close: 1.26 },
+    ];
+    const fresh = [
+      { date: '2024-03-04', close: 1.28 }, // corrects the deep source
+      { date: '2024-03-05', close: 1.29 }, // extends the tail
+    ];
+    expect(mergeRates(deep, fresh)).toEqual([
+      { date: '2024-03-01', close: 1.25 },
+      { date: '2024-03-04', close: 1.28 },
+      { date: '2024-03-05', close: 1.29 },
+    ]);
+  });
+});
+
+describe('fxLagDays', () => {
+  it('measures how far the last quote trails a target date', () => {
+    expect(fxLagDays(rates, '2024-03-04')).toBe(0);
+    expect(fxLagDays(rates, '2024-03-13')).toBe(9);
+    expect(fxLagDays([], '2024-03-04')).toBe(Number.POSITIVE_INFINITY);
   });
 });
 

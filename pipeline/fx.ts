@@ -85,16 +85,61 @@ export function convertBenchmark(
   return out;
 }
 
+/** Merge rate series, later sources winning per date, sorted ascending. */
+export function mergeRates(...sources: BenchmarkDay[][]): BenchmarkDay[] {
+  const byDate = new Map<string, number>();
+  for (const source of sources) {
+    for (const { date, close } of source) byDate.set(date, close);
+  }
+  return [...byDate.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([date, close]) => ({ date, close }));
+}
+
+/**
+ * Days the rate series may lag the BTC series before the carry-forward rule
+ * stops being a weekend convenience and starts silently pricing recent days
+ * at a stale rate. A long weekend plus a bank holiday is 4 days.
+ */
+export const MAX_FX_LAG_DAYS = 5;
+
+export function fxLagDays(rates: BenchmarkDay[], throughDate: string): number {
+  const last = rates.at(-1);
+  if (!last) return Number.POSITIVE_INFINITY;
+  return Math.round(
+    (Date.parse(`${throughDate}T00:00:00Z`) - Date.parse(`${last.date}T00:00:00Z`)) / 86_400_000,
+  );
+}
+
+/**
+ * Yahoo's `range=max` reaches back to 1971 but its tail can lag by over a
+ * week, so a second `range=2y` request supplies the fresh end and the two
+ * are merged — deep history from one, current rates from the other.
+ */
 export async function fetchGbpUsd(): Promise<BenchmarkDay[]> {
+  const parts: BenchmarkDay[][] = [];
   try {
-    const { series } = await fetchYahooDaily(GBPUSD_YAHOO_TICKERS, { range: 'max' });
-    if (series.length >= MIN_FX_DAYS) return series;
+    const deep = await fetchYahooDaily(GBPUSD_YAHOO_TICKERS, { range: 'max' });
+    if (deep.series.length >= MIN_FX_DAYS) parts.push(deep.series);
   } catch {
-    // fall through to FRED
+    // deep history is optional if the recent window and FRED cover enough
   }
-  const fred = parseFredCsv(await getText(FRED_CSV_URL), GBPUSD_FRED_SERIES);
-  if (fred.length < 365) {
-    throw new Error(`fetchGbpUsd: only ${fred.length} rate days available`);
+  try {
+    const recent = await fetchYahooDaily(GBPUSD_YAHOO_TICKERS);
+    parts.push(recent.series);
+  } catch {
+    // fall through to FRED for the tail
   }
-  return fred;
+  if (parts.length === 0 || fxLagDays(mergeRates(...parts), new Date().toISOString().slice(0, 10)) > MAX_FX_LAG_DAYS) {
+    try {
+      parts.push(parseFredCsv(await getText(FRED_CSV_URL), GBPUSD_FRED_SERIES));
+    } catch {
+      // keep whatever Yahoo returned
+    }
+  }
+  const merged = mergeRates(...parts);
+  if (merged.length < 365) {
+    throw new Error(`fetchGbpUsd: only ${merged.length} rate days available`);
+  }
+  return merged;
 }
