@@ -12,6 +12,7 @@ import {
   type Currency,
 } from '../lib/currency';
 import { dataFor } from '../lib/data';
+import { PAGES, pageForPath } from '../lib/routes';
 
 interface Props {
   title: string;
@@ -28,30 +29,16 @@ const { stats, fetchedAt } = dataFor(currency).btcDaily;
 const { money } = currencyFormatters(currency);
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const PAGES = [
-  { page: '', label: 'overview' },
-  { page: 'volatility', label: 'volatility & risk' },
-  { page: 'cycles', label: 'halving cycles' },
-  { page: 'correlation', label: 'correlation' },
-  { page: 'dca', label: 'dca' },
-  { page: 'flows', label: 'flows' },
-  { page: 'network', label: 'network' },
-];
 // Nav links keep the reader in their currency; the switcher swaps currency
 // while staying on the same page.
 const sections = PAGES.map(({ page, label }) => ({
   href: currencyPath(base, currency, page),
   label,
 }));
-const currentPage =
-  PAGES.find(({ page }) =>
-    page
-      ? Astro.url.pathname.replace(/\/$/, '').endsWith(`/${page}`)
-      : true,
-  ) ?? PAGES[0];
+const currentPage = pageForPath(Astro.url.pathname);
 const currencyLinks = CURRENCIES.map((c) => ({
   code: CURRENCY_META[c].label,
-  href: currencyPath(base, c, currentPage?.page ?? ''),
+  href: currencyPath(base, c, currentPage),
   active: c === currency,
 }));
 const current = (href: string): boolean =>
@@ -112,7 +99,7 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
       </nav>
       <div class="header-side">
         <p class="header-tick num">
-          BTC <span id="tick-price">{money.format(stats.latestPriceUsd)}</span>{' '}
+          BTC <span id="tick-price">{money.format(stats.latestPrice)}</span>{' '}
           <span class="tick-date" id="tick-label">close {stats.latestDate}</span>
         </p>
         <nav class="currency-switch num" aria-label="Currency">
@@ -173,15 +160,14 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
         });
       }
 
-      // Live spot ticker: the site's one runtime fetch (CoinGecko public
-      // endpoint). Committed close stays as the fallback when it fails.
+      // Live spot ticker: one of the site's two sanctioned runtime fetches.
       // CoinGecko's simple-price endpoint is queried in the page's currency,
       // so the live upgrade works on both; the committed close stays as the
       // fallback when it fails.
       const tickCurrency = document.documentElement.dataset.currency ?? 'usd';
       const priceEl = document.getElementById('tick-price');
       const labelEl = document.getElementById('tick-label');
-      const usd = new Intl.NumberFormat('en-US', {
+      const money = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: tickCurrency.toUpperCase(),
         maximumFractionDigits: 0,
@@ -197,7 +183,7 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
           const payload = (await res.json()) as { bitcoin?: Record<string, number> };
           const price = payload.bitcoin?.[tickCurrency];
           if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) return;
-          priceEl.textContent = usd.format(price);
+          priceEl.textContent = money.format(price);
           labelEl.textContent = 'live';
           labelEl.classList.add('tick-live');
         } catch {

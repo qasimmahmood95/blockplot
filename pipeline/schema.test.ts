@@ -25,15 +25,15 @@ describe('priceDatasetSchema', () => {
     rangeDays: '365',
     stats: {
       latestDate: '2024-03-08',
-      latestPriceUsd: 46620,
+      latestPrice: 46620,
       change7dPct: 11,
       change30dPct: null,
-      rangeHighUsd: 47000,
+      rangeHigh: 47000,
       rangeHighDate: '2024-03-07',
     },
     series: [
-      { date: '2024-03-07', priceUsd: 47000 },
-      { date: '2024-03-08', priceUsd: 46620 },
+      { date: '2024-03-07', price: 47000 },
+      { date: '2024-03-08', price: 46620 },
     ],
   };
 
@@ -45,7 +45,7 @@ describe('priceDatasetSchema', () => {
     expect(() =>
       priceDatasetSchema.parse({
         ...valid,
-        series: [valid.series[0], { date: '2024-03-08', priceUsd: 0 }],
+        series: [valid.series[0], { date: '2024-03-08', price: 0 }],
       }),
     ).toThrow();
     expect(() =>

@@ -13,14 +13,12 @@ import gbpHalvings from '../../data/gbp/halving-cycles.json';
 import gbpMonthly from '../../data/gbp/monthly-returns.json';
 import gbpRisk from '../../data/gbp/risk-metrics.json';
 import dominanceDataset from '../../data/dominance.json';
-import fxDataset from '../../data/fx-gbpusd.json';
 import networkDataset from '../../data/network.json';
 import stablecoinDataset from '../../data/stablecoins.json';
 import type {
   BenchmarkDataset,
   CorrelationDataset,
   DominanceDataset,
-  FxDataset,
   HalvingDataset,
   HistoryDataset,
   MonthlyDataset,
@@ -39,7 +37,6 @@ import type { Currency } from './currency';
 export const dominance = dominanceDataset as DominanceDataset;
 export const stablecoins = stablecoinDataset as StablecoinDataset;
 export const network = networkDataset as NetworkDataset;
-export const fxGbpUsd = fxDataset as FxDataset;
 
 interface CurrencyData {
   btcDaily: PriceDataset;

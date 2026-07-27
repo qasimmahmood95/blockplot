@@ -41,7 +41,7 @@ export function parseBlockchainChart(payload: unknown): DailyPrice[] {
   );
   const out = [...byDate.entries()]
     .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([date, priceUsd]) => ({ date, priceUsd }));
+    .map(([date, price]) => ({ date, price }));
   if (out.length === 0) throw new Error('parseBlockchainChart: no positive-price rows');
   return out;
 }

@@ -1,5 +1,6 @@
-export const CURRENCIES = ['usd', 'gbp'] as const;
-export type Currency = (typeof CURRENCIES)[number];
+import { CURRENCIES, type Currency } from '../../pipeline/schema';
+
+export { CURRENCIES, type Currency };
 
 interface CurrencyMeta {
   code: string;
@@ -25,14 +26,23 @@ export const GBP_METHOD_NOTE =
   'metric recomputed from the converted series, so a GBP reader sees the returns they actually ' +
   'experienced.';
 
+/**
+ * Correlation-page caveat. The dollar index measures the dollar itself, so
+ * converting it into GBP would be meaningless; it stays as quoted while BTC,
+ * the S&P 500 and gold are re-denominated.
+ */
+export const GBP_DXY_NOTE =
+  'The dollar index is a measure of the dollar and is left unconverted, so its pairs compare a ' +
+  'GBP-denominated series against a dollar-denominated one — which is exactly the exposure a GBP ' +
+  'holder has to it.';
+
+/** The DXY caveat when the page is in GBP, otherwise nothing. */
+export const dxyNote = (currency: Currency): string =>
+  currency === 'gbp' ? ` ${GBP_DXY_NOTE}` : '';
+
 /** The GBP note when the page is in GBP, otherwise nothing. */
 export const fxNote = (currency: Currency): string =>
   currency === 'gbp' ? ` ${GBP_METHOD_NOTE}` : '';
-
-/** Coerce a route param into a currency; anything unknown falls back to USD. */
-export function toCurrency(value: string | undefined): Currency {
-  return value === 'gbp' ? 'gbp' : 'usd';
-}
 
 /**
  * Path for a page in a currency. USD keeps the bare paths so existing links

@@ -37,10 +37,10 @@ export function buildHalvingDataset(
       cycle: i + 1,
       halvingDate,
       endDate,
-      basePriceUsd: base.priceUsd,
+      basePrice: base.price,
       series: slice.map((p) => ({
         day: daysBetween(halvingDate, p.date),
-        multiple: round4(p.priceUsd / base.priceUsd),
+        multiple: round4(p.price / base.price),
       })),
     };
   });

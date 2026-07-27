@@ -1,6 +1,12 @@
 import { fetchYahooDaily, parseFredCsv } from './benchmarks';
 import { getJson, getText } from './http';
-import { frankfurterSchema, type BenchmarkDay, type DailyPrice } from './schema';
+import {
+  frankfurterSchema,
+  type BenchmarkDay,
+  type Currency,
+  type DailyPrice,
+  type FxSource,
+} from './schema';
 
 /**
  * GBP/USD daily history, for re-denominating BTC metrics into GBP.
@@ -9,9 +15,6 @@ import { frankfurterSchema, type BenchmarkDay, type DailyPrice } from './schema'
  * drawdown, volatility and monthly returns genuinely differ from the USD
  * ones because the rate moves. So each daily close is converted at *that
  * day's* rate and every metric is recomputed from the converted series.
- *
- * Yahoo's `GBPUSD=X` reaches back further than FRED's 10-year `DEXUSUK`
- * window, so it leads and FRED is the fallback.
  */
 export const GBPUSD_YAHOO_TICKERS = ['GBPUSD=X'];
 export const GBPUSD_FRED_SERIES = 'DEXUSUK';
@@ -20,30 +23,44 @@ const FRED_CSV_URL = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${GBPUS
 /** ECB reference rates via Frankfurter: keyless and published every business day. */
 const FRANKFURTER_URL = 'https://api.frankfurter.app/1999-01-04..?from=GBP&to=USD';
 
-/** Supported display currencies. USD is the source currency and needs no rate. */
-export const CURRENCIES = ['usd', 'gbp'] as const;
-export type Currency = (typeof CURRENCIES)[number];
-
 /** Fetch-level floor: FX history should cover the BTC series with room to spare. */
 const MIN_FX_DAYS = 3650;
 
 /**
+ * Days the rate series may lag the BTC series before the carry-forward rule
+ * stops being a weekend convenience and starts silently pricing recent days
+ * at a stale rate. A long weekend plus a bank holiday is 4 days.
+ */
+export const MAX_FX_LAG_DAYS = 5;
+
+/**
  * Rate to divide a USD figure by, per date. FX markets close at weekends and
- * on bank holidays while BTC trades every day, so the last quoted rate is
- * carried forward — the standard convention, and the only one that lets a
- * daily BTC series be converted without inventing rates.
+ * on bank holidays while BTC trades every day, so the last quote is carried
+ * forward — the standard convention, and the only one that lets a daily BTC
+ * series be converted without inventing rates.
+ *
+ * Binary search rather than a forward cursor: an earlier implementation kept
+ * a cursor that never rewound, which returned a *later* rate if a caller ever
+ * queried out of order. Order-independence removes that class of bug.
  */
 export function rateLookup(rates: BenchmarkDay[]): (date: string) => number | null {
   const sorted = [...rates].sort((a, b) => (a.date < b.date ? -1 : 1));
-  let cursor = 0;
-  let current: number | null = null;
   return (date: string): number | null => {
-    // Callers walk dates forward, so the cursor only ever advances.
-    while (cursor < sorted.length && (sorted[cursor] as BenchmarkDay).date <= date) {
-      current = (sorted[cursor] as BenchmarkDay).close;
-      cursor++;
+    let lo = 0;
+    let hi = sorted.length - 1;
+    let found: number | null = null;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const entry = sorted[mid];
+      if (!entry) break;
+      if (entry.date <= date) {
+        found = entry.close;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
     }
-    return current;
+    return found;
   };
 }
 
@@ -51,6 +68,11 @@ export function rateLookup(rates: BenchmarkDay[]): (date: string) => number | nu
  * Convert a USD daily series into `currency`. Days before the first quoted
  * rate are dropped (there is no honest rate to use); every other day uses
  * that day's rate, or the most recent earlier one.
+ *
+ * Deliberately unrounded: BTC traded under $0.10 in 2010, where rounding a
+ * converted price to 2 dp is an error of up to 11% that propagates into the
+ * monthly heatmap. The metric builders round their own outputs, so precision
+ * is kept here and spent there.
  */
 export function convertSeries(
   series: DailyPrice[],
@@ -60,11 +82,11 @@ export function convertSeries(
   if (currency === 'usd') return series;
   const lookup = rateLookup(rates);
   const out: DailyPrice[] = [];
-  for (const { date, priceUsd } of series) {
+  for (const { date, price } of series) {
     const rate = lookup(date);
     if (rate === null) continue;
     if (!(rate > 0)) throw new Error(`convertSeries: non-positive rate ${rate} at ${date}`);
-    out.push({ date, priceUsd: Math.round((priceUsd / rate) * 100) / 100 });
+    out.push({ date, price: price / rate });
   }
   return out;
 }
@@ -82,7 +104,7 @@ export function convertBenchmark(
     const rate = lookup(date);
     if (rate === null) continue;
     if (!(rate > 0)) throw new Error(`convertBenchmark: non-positive rate ${rate} at ${date}`);
-    out.push({ date, close: Math.round((close / rate) * 10_000) / 10_000 });
+    out.push({ date, close: close / rate });
   }
   return out;
 }
@@ -97,13 +119,6 @@ export function mergeRates(...sources: BenchmarkDay[][]): BenchmarkDay[] {
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([date, close]) => ({ date, close }));
 }
-
-/**
- * Days the rate series may lag the BTC series before the carry-forward rule
- * stops being a weekend convenience and starts silently pricing recent days
- * at a stale rate. A long weekend plus a bank holiday is 4 days.
- */
-export const MAX_FX_LAG_DAYS = 5;
 
 export function fxLagDays(rates: BenchmarkDay[], throughDate: string): number {
   const last = rates.at(-1);
@@ -123,6 +138,12 @@ export function parseFrankfurter(payload: unknown): BenchmarkDay[] {
   return out;
 }
 
+export interface FxFetch {
+  /** Which sources actually contributed, so the dataset can say so. */
+  sources: FxSource[];
+  series: BenchmarkDay[];
+}
+
 /**
  * Rates come from three keyless sources because none is both deep and fresh:
  * Yahoo `range=max` reaches back to 1971 but its tail ran ten days stale on
@@ -131,27 +152,33 @@ export function parseFrankfurter(payload: unknown): BenchmarkDay[] {
  * supply the fresh end. Later sources win per date, so the merged series is
  * deep at the start and current at the tail.
  */
-export async function fetchGbpUsd(): Promise<BenchmarkDay[]> {
+export async function fetchGbpUsd(): Promise<FxFetch> {
   const parts: BenchmarkDay[][] = [];
+  const sources: FxSource[] = [];
   try {
     const deep = await fetchYahooDaily(GBPUSD_YAHOO_TICKERS, { range: 'max' });
-    if (deep.series.length >= MIN_FX_DAYS) parts.push(deep.series);
+    if (deep.series.length >= MIN_FX_DAYS) {
+      parts.push(deep.series);
+      sources.push('yahoo');
+    }
   } catch {
     // deep history is optional if the fresher sources cover enough
   }
   try {
     parts.push(parseFredCsv(await getText(FRED_CSV_URL), GBPUSD_FRED_SERIES));
+    sources.push('fred');
   } catch {
     // optional middle source
   }
   try {
     parts.push(parseFrankfurter(await getJson(FRANKFURTER_URL)));
+    sources.push('ecb');
   } catch {
     // optional; the lag guard in run.ts surfaces a stale tail
   }
-  const merged = mergeRates(...parts);
-  if (merged.length < 365) {
-    throw new Error(`fetchGbpUsd: only ${merged.length} rate days available`);
+  const series = mergeRates(...parts);
+  if (series.length < 365) {
+    throw new Error(`fetchGbpUsd: only ${series.length} rate days available`);
   }
-  return merged;
+  return { sources, series };
 }

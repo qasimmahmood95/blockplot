@@ -18,11 +18,11 @@ const rates = [
 const unsortedRates = [rates[1] as (typeof rates)[number], rates[0] as (typeof rates)[number]];
 
 const btc = [
-  { date: '2024-02-29', priceUsd: 50 }, // before the first quote
-  { date: '2024-03-01', priceUsd: 100 },
-  { date: '2024-03-02', priceUsd: 110 }, // Saturday: carries 1.25
-  { date: '2024-03-03', priceUsd: 90 }, // Sunday: carries 1.25
-  { date: '2024-03-04', priceUsd: 128 },
+  { date: '2024-02-29', price: 50 }, // before the first quote
+  { date: '2024-03-01', price: 100 },
+  { date: '2024-03-02', price: 110 }, // Saturday: carries 1.25
+  { date: '2024-03-03', price: 90 }, // Sunday: carries 1.25
+  { date: '2024-03-04', price: 128 },
 ];
 
 describe('rateLookup', () => {
@@ -47,10 +47,24 @@ describe('rateLookup', () => {
 describe('convertSeries', () => {
   it('divides each close by that day\'s rate, carrying rates over weekends', () => {
     expect(convertSeries(btc, rates, 'gbp')).toEqual([
-      { date: '2024-03-01', priceUsd: 80 }, // 100 / 1.25
-      { date: '2024-03-02', priceUsd: 88 }, // 110 / 1.25 (carried)
-      { date: '2024-03-03', priceUsd: 72 }, // 90 / 1.25 (carried)
-      { date: '2024-03-04', priceUsd: 100 }, // 128 / 1.28
+      { date: '2024-03-01', price: 80 }, // 100 / 1.25
+      { date: '2024-03-02', price: 88 }, // 110 / 1.25 (carried)
+      { date: '2024-03-03', price: 72 }, // 90 / 1.25 (carried)
+      { date: '2024-03-04', price: 100 }, // 128 / 1.28
+    ]);
+  });
+
+  // The blocker this unrounding fixed: rounding a converted close to 2 dp is
+  // an 11% error on a 2010 sub-dollar price, and it propagates straight into
+  // the monthly heatmap's early rows.
+  it('keeps full precision on sub-unit prices instead of rounding to pennies', () => {
+    const early = [
+      { date: '2024-03-01', price: 0.06 },
+      { date: '2024-03-04', price: 0.09 },
+    ];
+    expect(convertSeries(early, rates, 'gbp')).toEqual([
+      { date: '2024-03-01', price: 0.06 / 1.25 }, // 0.048, not 0.05
+      { date: '2024-03-04', price: 0.09 / 1.28 }, // 0.0703125, not 0.07
     ]);
   });
 
@@ -96,7 +110,7 @@ describe('fxLagDays', () => {
 });
 
 describe('convertBenchmark', () => {
-  it('converts benchmark closes at 4 dp and passes usd through', () => {
+  it('converts benchmark closes unrounded and passes usd through', () => {
     const sp500 = [
       { date: '2024-03-01', close: 5000 },
       { date: '2024-03-04', close: 5120 },

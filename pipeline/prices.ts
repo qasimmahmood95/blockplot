@@ -12,7 +12,7 @@ export function toDailySeries(prices: [number, number][]): DailyPrice[] {
   }
   return [...byDate.entries()]
     .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([date, priceUsd]) => ({ date, priceUsd }));
+    .map(([date, price]) => ({ date, price }));
 }
 
 function pctChange(latest: number, past: number): number {
@@ -36,15 +36,15 @@ export function computeStats(series: DailyPrice[]): PriceStats {
 
   let high = first;
   for (const day of series) {
-    if (day.priceUsd > high.priceUsd) high = day;
+    if (day.price > high.price) high = day;
   }
 
   return {
     latestDate: latest.date,
-    latestPriceUsd: latest.priceUsd,
-    change7dPct: week ? pctChange(latest.priceUsd, week.priceUsd) : null,
-    change30dPct: month ? pctChange(latest.priceUsd, month.priceUsd) : null,
-    rangeHighUsd: high.priceUsd,
+    latestPrice: latest.price,
+    change7dPct: week ? pctChange(latest.price, week.price) : null,
+    change30dPct: month ? pctChange(latest.price, month.price) : null,
+    rangeHigh: high.price,
     rangeHighDate: high.date,
   };
 }

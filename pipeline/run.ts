@@ -9,14 +9,7 @@ import {
   STABLECOIN_KEEP_DAYS,
   stablecoinChange30dPct,
 } from './flows';
-import {
-  convertBenchmark,
-  convertSeries,
-  CURRENCIES,
-  fetchGbpUsd,
-  fxLagDays,
-  MAX_FX_LAG_DAYS,
-} from './fx';
+import { convertBenchmark, convertSeries, fetchGbpUsd, fxLagDays, MAX_FX_LAG_DAYS } from './fx';
 import { buildHalvingDataset } from './halvings';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
@@ -35,6 +28,7 @@ import { buildRiskDataset } from './risk';
 import {
   benchmarkDatasetSchema,
   correlationDatasetSchema,
+  CURRENCIES,
   dominanceDatasetSchema,
   fxDatasetSchema,
   halvingDatasetSchema,
@@ -76,7 +70,7 @@ const [
   hashRate,
   txCount,
   feeTiers,
-  fxRates,
+  fxFetch,
 ] = await Promise.all([
   attempt('coingecko market chart', fetchBtcMarketChart()),
   attempt('fred sp500', fetchSp500()),
@@ -128,36 +122,39 @@ if (stablecoins) {
 // relabelling: each close is converted at that day's rate and every metric
 // recomputed, because a GBP investor's drawdown and volatility genuinely
 // differ from the USD ones. GBP files live under data/gbp/.
-if (fxRates) {
+if (fxFetch) {
   const fx = fxDatasetSchema.parse({
     schemaVersion: 1,
     pair: 'GBPUSD',
-    source: 'merged',
+    sources: fxFetch.sources,
     fetchedAt,
-    series: fxRates,
+    series: fxFetch.series,
   });
   await writeJson('data/fx-gbpusd.json', fx);
-  console.log(`data/fx-gbpusd.json: ${fxRates.length} quoted days to ${fxRates.at(-1)?.date}`);
+  console.log(
+    `data/fx-gbpusd.json: ${fx.series.length} quoted days to ${fx.series.at(-1)?.date} from ${fx.sources.join('+')}`,
+  );
 }
 
 // Carry-forward is meant to bridge weekends, not to price a week of BTC
 // closes at a stale rate — so surface a lagging FX feed rather than let it
 // pass as fresh GBP figures.
-if (fxRates && series) {
-  const lag = fxLagDays(fxRates, series.at(-1)?.date ?? '');
+const btcThrough = series?.at(-1)?.date ?? history?.at(-1)?.date;
+if (fxFetch && btcThrough) {
+  const lag = fxLagDays(fxFetch.series, btcThrough);
   if (lag > MAX_FX_LAG_DAYS) {
     console.warn(
-      `warning: GBP/USD rates lag the BTC series by ${lag} days (last quote ${fxRates.at(-1)?.date}) — recent GBP figures carry a stale rate`,
+      `warning: GBP/USD rates lag the BTC series by ${lag} days (last quote ${fxFetch.series.at(-1)?.date}) — recent GBP figures carry a stale rate`,
     );
   }
 }
 
 for (const currency of CURRENCIES) {
-  if (currency === 'gbp' && !fxRates) {
+  if (currency === 'gbp' && !fxFetch) {
     console.warn('warning: no GBP/USD rates — skipping the GBP datasets');
     continue;
   }
-  const rates = fxRates ?? [];
+  const rates = fxFetch?.series ?? [];
   const dir = currency === 'usd' ? 'data' : `data/${currency}`;
   const spot = series ? convertSeries(series, rates, currency) : null;
   const deep = history ? convertSeries(history, rates, currency) : null;
@@ -179,7 +176,7 @@ for (const currency of CURRENCIES) {
     });
     await writeJson(`${dir}/btc-price-daily.json`, prices);
     console.log(
-      `${dir}/btc-price-daily.json: ${spot.length} days, latest ${prices.stats.latestDate} at ${prices.stats.latestPriceUsd}`,
+      `${dir}/btc-price-daily.json: ${spot.length} days, latest ${prices.stats.latestDate} at ${prices.stats.latestPrice}`,
     );
   }
 
@@ -246,7 +243,7 @@ for (const currency of CURRENCIES) {
       const correlations = correlationDatasetSchema.parse({
         ...buildCorrelationDataset(
           {
-            btc: deep.map(({ date, priceUsd }) => ({ date, value: priceUsd })),
+            btc: deep.map(({ date, price }) => ({ date, value: price })),
             sp500: toPoints(sp),
             gold: toPoints(au),
             dxy: toPoints(dxy),

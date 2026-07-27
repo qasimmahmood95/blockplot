@@ -13,7 +13,7 @@ const payload = riskMetrics.rollingVol.filter((w) => w.series.length > 0);
 ---
 
 <figure class="chart-frame">
-  <script type="application/json" id="vol-chart-data" set:html={toJsonScript(payload)} />
+  <script is:inline type="application/json" id="vol-chart-data" set:html={toJsonScript(payload)} />
   <div id="vol-chart-legend" class="chart-legend" aria-hidden="true"></div>
   <div
     id="vol-chart"

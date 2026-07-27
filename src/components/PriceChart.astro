@@ -13,7 +13,7 @@ const payload = { code: CURRENCY_META[currency].code, series: btcDaily.series };
 ---
 
 <figure class="chart-frame">
-  <script type="application/json" id="price-chart-data" set:html={toJsonScript(payload)} />
+  <script is:inline type="application/json" id="price-chart-data" set:html={toJsonScript(payload)} />
   <div id="price-chart" role="img" aria-label="Line chart of the BTC daily closing price"></div>
 </figure>
 
@@ -21,11 +21,11 @@ const payload = { code: CURRENCY_META[currency].code, series: btcDaily.series };
   import * as Plot from '@observablehq/plot';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
 
-  const { code, series } = chartData<{ code: string; series: { date: string; priceUsd: number }[] }>(
+  const { code, series } = chartData<{ code: string; series: { date: string; price: number }[] }>(
     'price-chart-data',
   );
   const container = document.getElementById('price-chart');
-  const points = series.map((d) => ({ date: new Date(d.date), price: d.priceUsd }));
+  const points = series.map((d) => ({ date: new Date(d.date), price: d.price }));
   const money = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: code,

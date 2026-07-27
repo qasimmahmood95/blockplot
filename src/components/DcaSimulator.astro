@@ -14,7 +14,7 @@ const meta = CURRENCY_META[currency];
 const payload = { code: meta.code, series: btcHistory.series };
 ---
 
-<script type="application/json" id="dca-data" set:html={toJsonScript(payload)} />
+<script is:inline type="application/json" id="dca-data" set:html={toJsonScript(payload)} />
 
 <form class="sim-form" id="dca-form">
   <label>
@@ -30,7 +30,7 @@ const payload = { code: meta.code, series: btcHistory.series };
   </label>
   <label>
     <span>Amount / buy ({meta.symbol})</span>
-    <input type="number" name="amountUsd" min="1" step="1" value="100" required />
+    <input type="number" name="amount" min="1" step="1" value="100" required />
   </label>
   <label>
     <span>Fee / buy (%)</span>
@@ -55,7 +55,7 @@ const payload = { code: meta.code, series: btcHistory.series };
   import { compareDcaVsLumpSum, type DcaFrequency } from '../../pipeline/dca';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
 
-  const { code, series } = chartData<{ code: string; series: { date: string; priceUsd: number }[] }>(
+  const { code, series } = chartData<{ code: string; series: { date: string; price: number }[] }>(
     'dca-data',
   );
   const firstDate = series[0]?.date ?? '';
@@ -81,7 +81,7 @@ const payload = { code: meta.code, series: btcHistory.series };
     dateInput.value = threeYearsBack >= firstDate ? threeYearsBack : firstDate;
   }
 
-  const usd = new Intl.NumberFormat('en-US', {
+  const money = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: code,
     maximumFractionDigits: 0,
@@ -92,13 +92,13 @@ const payload = { code: meta.code, series: btcHistory.series };
     if (!form) return null;
     const data = new FormData(form);
     const startDate = String(data.get('startDate') ?? '');
-    const amountUsd = Number(data.get('amountUsd'));
+    const amount = Number(data.get('amount'));
     const feePct = Number(data.get('feePct'));
     const frequency = (data.get('frequency') === 'monthly' ? 'monthly' : 'weekly') as DcaFrequency;
-    if (!startDate || startDate > lastDate || !(amountUsd > 0) || !(feePct >= 0 && feePct < 100)) {
+    if (!startDate || startDate > lastDate || !(amount > 0) || !(feePct >= 0 && feePct < 100)) {
       return null;
     }
-    return { startDate, amountUsd, feePct, frequency };
+    return { startDate, amount, feePct, frequency };
   }
 
   function tile(label: string, value: string, sub: string, tone = ''): HTMLElement {
@@ -129,20 +129,20 @@ const payload = { code: meta.code, series: btcHistory.series };
       legend?.replaceChildren();
       return;
     }
-    const { dca, lumpSum, deltaUsd } = cmp;
+    const { dca, lumpSum, delta } = cmp;
 
     const buys = dca.purchases.length;
     const deltaLabel =
-      Math.abs(deltaUsd) < 0.005
+      Math.abs(delta) < 0.005
         ? 'even with DCA'
-        : `${deltaUsd > 0 ? 'leads' : 'trails'} by ${usd.format(Math.abs(deltaUsd))}`;
+        : `${delta > 0 ? 'leads' : 'trails'} by ${money.format(Math.abs(delta))}`;
     stats.replaceChildren(
-      tile('Invested', usd.format(dca.totalInvestedUsd), `${buys} ${buys === 1 ? 'buy' : 'buys'} · fees ${usd.format(dca.totalFeesUsd)}`),
+      tile('Invested', money.format(dca.totalInvested), `${buys} ${buys === 1 ? 'buy' : 'buys'} · fees ${money.format(dca.totalFees)}`),
       tile('BTC accumulated', dca.btcAccumulated.toFixed(4), 'BTC'),
-      tile('DCA value now', usd.format(dca.finalValueUsd), signedPct(dca.returnPct), dca.returnPct < 0 ? 'down' : 'up'),
+      tile('DCA value now', money.format(dca.finalValue), signedPct(dca.returnPct), dca.returnPct < 0 ? 'down' : 'up'),
       tile(
         'Lump sum now',
-        usd.format(lumpSum.finalValueUsd),
+        money.format(lumpSum.finalValue),
         `${signedPct(lumpSum.returnPct)} · ${deltaLabel}`,
         lumpSum.returnPct < 0 ? 'down' : 'up',
       ),
@@ -171,8 +171,8 @@ const payload = { code: meta.code, series: btcHistory.series };
       );
     }
 
-    const dcaPoints = dca.series.map((p) => ({ date: new Date(p.date), wealth: p.wealthUsd }));
-    const lumpPoints = lumpSum.series.map((p) => ({ date: new Date(p.date), wealth: p.wealthUsd }));
+    const dcaPoints = dca.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
+    const lumpPoints = lumpSum.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
     container.replaceChildren(
       Plot.plot({
         width: container.clientWidth || 720,
@@ -182,7 +182,7 @@ const payload = { code: meta.code, series: btcHistory.series };
         y: {
           label: null,
           grid: true,
-          tickFormat: (value: number) => usd.format(value),
+          tickFormat: (value: number) => money.format(value),
         },
         marks: [
           Plot.lineY(lumpPoints, {
@@ -199,7 +199,7 @@ const payload = { code: meta.code, series: btcHistory.series };
               x: 'date',
               y: 'wealth',
               title: (d: { date: Date; wealth: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\nDCA ${usd.format(d.wealth)}`,
+                `${d.date.toISOString().slice(0, 10)}\nDCA ${money.format(d.wealth)}`,
             }),
           ),
         ],

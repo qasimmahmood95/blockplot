@@ -182,14 +182,14 @@ export function buildRiskDataset(
   benchmarks: { sp500: BenchmarkDay[]; gold: BenchmarkDay[] },
   opts: { fetchedAt: string; rollingWindows?: number[]; history?: DailyPrice[] },
 ): Omit<RiskDataset, 'currency'> {
-  const points = btc.map(({ date, priceUsd }) => ({ date, value: priceUsd }));
+  const points = btc.map(({ date, price }) => ({ date, value: price }));
   const first = points[0];
   const last = points.at(-1);
   if (!first || !last) throw new Error('buildRiskDataset: empty BTC series');
   const windows = opts.rollingWindows ?? ROLLING_VOL_WINDOWS;
   const history = opts.history ?? [];
   const volPoints = history.length
-    ? history.map(({ date, priceUsd }) => ({ date, value: priceUsd }))
+    ? history.map(({ date, price }) => ({ date, value: price }))
     : points;
   const sp500 = clampToRange(benchmarks.sp500.map(toPoint), first.date, last.date);
   const gold = clampToRange(benchmarks.gold.map(toPoint), first.date, last.date);

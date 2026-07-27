@@ -15,8 +15,8 @@ describe('parseBlockchainChart', () => {
         ],
       }),
     ).toEqual([
-      { date: '2010-07-18', priceUsd: 0.05 },
-      { date: '2010-07-19', priceUsd: 0.09 },
+      { date: '2010-07-18', price: 0.05 },
+      { date: '2010-07-19', price: 0.09 },
     ]);
   });
 

@@ -13,6 +13,7 @@ const { riskMetrics } = dataFor(currency);
 
 <figure class="chart-frame">
   <script
+    is:inline
     type="application/json"
     id="drawdown-chart-data"
     set:html={toJsonScript(riskMetrics.drawdown.series)}

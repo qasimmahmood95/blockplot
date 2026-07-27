@@ -1,5 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
+
+// One 404 for both currencies, not one per currency: GitHub Pages serves the
+// site-root 404.html for every unmatched path, so a /gbp/404.html would be
+// built and never requested. It therefore renders in the default currency —
+// the overview link below is the way back, not the switcher.
 ---
 
 <Base title="blockplot · not found" description="Page not found.">

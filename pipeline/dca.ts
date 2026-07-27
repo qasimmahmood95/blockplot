@@ -5,6 +5,10 @@ import type { DailyPrice } from './schema';
  * island (the one interactive computation the architecture allows outside
  * the pipeline), but lives here so it is fixture-tested like every other
  * metric. No committed dataset: it consumes data/btc-price-history.json.
+ *
+ * Every money figure is in the display currency of the history passed in —
+ * the GBP page feeds it the GBP-converted history, so the same maths gives a
+ * GBP investor their own numbers rather than converted USD ones.
  */
 
 export type DcaFrequency = 'weekly' | 'monthly';
@@ -12,8 +16,8 @@ export type DcaFrequency = 'weekly' | 'monthly';
 export interface DcaOptions {
   /** First scheduled purchase date (UTC, YYYY-MM-DD). */
   startDate: string;
-  /** USD spent per purchase, fee inclusive. */
-  amountUsd: number;
+  /** Spent per purchase, fee inclusive. */
+  amount: number;
   frequency: DcaFrequency;
   /** Fee per purchase as a percentage of the amount, e.g. 0.5. */
   feePct: number;
@@ -21,24 +25,24 @@ export interface DcaOptions {
 
 export interface DcaPurchase {
   date: string;
-  priceUsd: number;
-  feeUsd: number;
+  price: number;
+  fee: number;
   btcBought: number;
 }
 
 export interface WealthPoint {
   date: string;
   /** BTC held valued at that day's close, plus undeployed cash. */
-  wealthUsd: number;
+  wealth: number;
 }
 
 export interface DcaResult {
   purchases: DcaPurchase[];
   /** Purchase count × amount: the budget both strategies start from. */
-  totalInvestedUsd: number;
-  totalFeesUsd: number;
+  totalInvested: number;
+  totalFees: number;
   btcAccumulated: number;
-  finalValueUsd: number;
+  finalValue: number;
   returnPct: number;
   series: WealthPoint[];
 }
@@ -46,8 +50,8 @@ export interface DcaResult {
 export interface DcaComparison {
   dca: DcaResult;
   lumpSum: DcaResult;
-  /** lumpSum final value minus DCA final value, USD. */
-  deltaUsd: number;
+  /** lumpSum final value minus DCA final value. */
+  delta: number;
 }
 
 const DAY_MS = 86_400_000;
@@ -98,16 +102,16 @@ export function purchaseDates(
   return out;
 }
 
-function assertOptions(amountUsd: number, feePct: number): void {
-  if (!(amountUsd > 0)) throw new Error('dca: amountUsd must be positive');
+function assertOptions(amount: number, feePct: number): void {
+  if (!(amount > 0)) throw new Error('dca: amount must be positive');
   if (!(feePct >= 0 && feePct < 100)) throw new Error('dca: feePct must be in [0, 100)');
 }
 
-function buildResult(history: DailyPrice[], purchases: DcaPurchase[], amountUsd: number): DcaResult {
+function buildResult(history: DailyPrice[], purchases: DcaPurchase[], amount: number): DcaResult {
   const first = purchases[0];
   const final = history.at(-1);
   if (!first || !final) throw new Error('dca: no purchases within history');
-  const budget = purchases.length * amountUsd;
+  const budget = purchases.length * amount;
   const byDate = new Map(purchases.map((p) => [p.date, p]));
   let btcHeld = 0;
   let spent = 0;
@@ -117,26 +121,26 @@ function buildResult(history: DailyPrice[], purchases: DcaPurchase[], amountUsd:
     const purchase = byDate.get(day.date);
     if (purchase) {
       btcHeld += purchase.btcBought;
-      spent += amountUsd;
+      spent += amount;
     }
-    series.push({ date: day.date, wealthUsd: round2(btcHeld * day.priceUsd + (budget - spent)) });
+    series.push({ date: day.date, wealth: round2(btcHeld * day.price + (budget - spent)) });
   }
   const btcAccumulated = round8(btcHeld);
-  const finalValueUsd = round2(btcHeld * final.priceUsd + (budget - spent));
+  const finalValue = round2(btcHeld * final.price + (budget - spent));
   return {
     purchases,
-    totalInvestedUsd: round2(budget),
-    totalFeesUsd: round2(purchases.reduce((s, p) => s + p.feeUsd, 0)),
+    totalInvested: round2(budget),
+    totalFees: round2(purchases.reduce((s, p) => s + p.fee, 0)),
     btcAccumulated,
-    finalValueUsd,
-    returnPct: round2((finalValueUsd / budget - 1) * 100),
+    finalValue,
+    returnPct: round2((finalValue / budget - 1) * 100),
     series,
   };
 }
 
 export function simulateDca(history: DailyPrice[], opts: DcaOptions): DcaResult {
-  assertOptions(opts.amountUsd, opts.feePct);
-  const priceByDate = new Map(history.map((p) => [p.date, p.priceUsd]));
+  assertOptions(opts.amount, opts.feePct);
+  const priceByDate = new Map(history.map((p) => [p.date, p.price]));
   const dates = purchaseDates(
     history.map((p) => p.date),
     opts.startDate,
@@ -144,29 +148,29 @@ export function simulateDca(history: DailyPrice[], opts: DcaOptions): DcaResult 
   );
   const purchases: DcaPurchase[] = dates.map((date) => {
     // Safe: purchaseDates only returns members of the same history array.
-    const priceUsd = priceByDate.get(date) as number;
-    const feeUsd = (opts.amountUsd * opts.feePct) / 100;
-    return { date, priceUsd, feeUsd, btcBought: (opts.amountUsd - feeUsd) / priceUsd };
+    const price = priceByDate.get(date) as number;
+    const fee = (opts.amount * opts.feePct) / 100;
+    return { date, price, fee, btcBought: (opts.amount - fee) / price };
   });
-  return buildResult(history, purchases, opts.amountUsd);
+  return buildResult(history, purchases, opts.amount);
 }
 
 /** The whole budget invested at the first available date, same fee rate applied once. */
 export function simulateLumpSum(
   history: DailyPrice[],
-  opts: { startDate: string; totalUsd: number; feePct: number },
+  opts: { startDate: string; total: number; feePct: number },
 ): DcaResult {
-  assertOptions(opts.totalUsd, opts.feePct);
+  assertOptions(opts.total, opts.feePct);
   const start = history.find((p) => p.date >= opts.startDate);
   if (!start) throw new Error('dca: no purchases within history');
-  const feeUsd = (opts.totalUsd * opts.feePct) / 100;
+  const fee = (opts.total * opts.feePct) / 100;
   const purchase: DcaPurchase = {
     date: start.date,
-    priceUsd: start.priceUsd,
-    feeUsd,
-    btcBought: (opts.totalUsd - feeUsd) / start.priceUsd,
+    price: start.price,
+    fee,
+    btcBought: (opts.total - fee) / start.price,
   };
-  return buildResult(history, [purchase], opts.totalUsd);
+  return buildResult(history, [purchase], opts.total);
 }
 
 /** DCA and an equal-budget lump sum from the same start date, for the comparison view. */
@@ -174,8 +178,8 @@ export function compareDcaVsLumpSum(history: DailyPrice[], opts: DcaOptions): Dc
   const dca = simulateDca(history, opts);
   const lumpSum = simulateLumpSum(history, {
     startDate: opts.startDate,
-    totalUsd: dca.totalInvestedUsd,
+    total: dca.totalInvested,
     feePct: opts.feePct,
   });
-  return { dca, lumpSum, deltaUsd: round2(lumpSum.finalValueUsd - dca.finalValueUsd) };
+  return { dca, lumpSum, delta: round2(lumpSum.finalValue - dca.finalValue) };
 }

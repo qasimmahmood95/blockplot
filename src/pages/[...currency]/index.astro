@@ -2,7 +2,7 @@
 import MonthlyHeatmap from '../../components/MonthlyHeatmap.astro';
 import PriceChart from '../../components/PriceChart.astro';
 import Base from '../../layouts/Base.astro';
-import { CURRENCY_META, currencyFormatters, type Currency } from '../../lib/currency';
+import { CURRENCY_META, currencyFormatters, fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { formatPct } from '../../lib/format';
 import { currencyPaths } from '../../lib/routes';
@@ -27,7 +27,7 @@ const changes = [
   <dl class="stat-grid">
     <div class="stat">
       <dt>Spot (daily close)</dt>
-      <dd class="num">{money.format(stats.latestPriceUsd)}</dd>
+      <dd class="num">{money.format(stats.latestPrice)}</dd>
       <dd class="sub num">{stats.latestDate}</dd>
     </div>
     {
@@ -42,7 +42,7 @@ const changes = [
     }
     <div class="stat">
       <dt>{rangeDays}d high</dt>
-      <dd class="num">{money.format(stats.rangeHighUsd)}</dd>
+      <dd class="num">{money.format(stats.rangeHigh)}</dd>
       <dd class="sub num">{stats.rangeHighDate}</dd>
     </div>
   </dl>
@@ -54,7 +54,9 @@ const changes = [
       Daily UTC closes from CoinGecko's public market-chart endpoint (history is capped at 365 days
       on the keyless tier; the newest point is the price at the last pipeline run). The site is
       fully static: a scheduled GitHub Actions job validates and commits the dataset
-      to <code>/data</code>, and every figure above is derived from it by tested pure functions.
+      to <code>/data</code>, and every figure above is derived from it by tested pure functions.{
+        fxNote(currency)
+      }
     </p>
   </section>
 
@@ -80,7 +82,7 @@ const changes = [
       months, so a partial year is a partial figure. Shading uses fixed magnitude bands (5/15/30%)
       rather than data-relative scaling, so a colour means the same thing in every row; figures are
       printed in every cell, so colour is never the only signal. Computed in the pipeline from
-      blockchain.com's full daily history by fixture-tested pure functions.
+      blockchain.com's full daily history by fixture-tested pure functions.{fxNote(currency)}
     </p>
   </section>
 </Base>

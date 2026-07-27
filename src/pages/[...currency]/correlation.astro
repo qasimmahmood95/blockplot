@@ -1,7 +1,7 @@
 ---
 import CorrelationChart from '../../components/CorrelationChart.astro';
 import Base from '../../layouts/Base.astro';
-import { fxNote, type Currency } from '../../lib/currency';
+import { dxyNote, fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
 
@@ -106,7 +106,7 @@ const btcPairs = [
       uses blockchain.com's daily series, the S&amp;P 500 FRED's, and gold and the dollar index
       Yahoo Finance's (DXY falls back to front-month futures when the index itself is
       unavailable). All values are computed in the pipeline by fixture-tested pure functions and
-      committed to <code>/data</code>.{fxNote(currency)}
+      committed to <code>/data</code>.{fxNote(currency)}{dxyNote(currency)}
     </p>
   </section>
 </Base>

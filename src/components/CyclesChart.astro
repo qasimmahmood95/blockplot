@@ -23,7 +23,7 @@ const payload = halvingCycles.cycles.map((c) => ({
       <button type="button" data-scale="linear" aria-pressed="false">linear</button>
     </div>
   </div>
-  <script type="application/json" id="cycles-chart-data" set:html={toJsonScript(payload)} />
+  <script is:inline type="application/json" id="cycles-chart-data" set:html={toJsonScript(payload)} />
   <div
     id="cycles-chart"
     role="img"

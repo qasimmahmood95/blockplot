@@ -1,7 +1,7 @@
 ---
 import DcaSimulator from '../../components/DcaSimulator.astro';
 import Base from '../../layouts/Base.astro';
-import type { Currency } from '../../lib/currency';
+import { fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
 
@@ -30,7 +30,7 @@ const asOf = dataFor(currency).btcHistory.series.at(-1)?.date;
       strategies start from the same budget and the comparison is like-for-like. Prices are
       blockchain.com daily closes through {asOf}; the simulation runs entirely in
       the browser on the committed dataset with the same fixture-tested functions as the pipeline,
-      and ignores taxes, slippage, and yield on idle cash.
+      and ignores taxes, slippage, and yield on idle cash.{fxNote(currency)}
     </p>
   </section>
 </Base>

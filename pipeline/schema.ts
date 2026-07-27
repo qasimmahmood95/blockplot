@@ -16,6 +16,11 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
  */
 export const currencySchema = z.enum(['usd', 'gbp']);
 
+/** The supported currencies, derived from the schema so the two cannot drift. */
+export const CURRENCIES = currencySchema.options;
+
+export type Currency = z.infer<typeof currencySchema>;
+
 /** Raw response shape of Frankfurter's ECB time-series endpoint. */
 export const frankfurterSchema = z.object({
   rates: z.record(
@@ -24,11 +29,21 @@ export const frankfurterSchema = z.object({
   ),
 });
 
+/** Rate feeds the merged GBP/USD series can draw on. */
+export const fxSourceSchema = z.enum(['yahoo', 'fred', 'ecb']);
+
+export type FxSource = z.infer<typeof fxSourceSchema>;
+
 /** Versioned on-disk format of data/fx-gbpusd.json. */
 export const fxDatasetSchema = z.object({
   schemaVersion: z.literal(1),
   pair: z.literal('GBPUSD'),
-  source: z.literal('merged'),
+  /**
+   * Which feeds actually contributed to this file. Recorded rather than
+   * hard-coded because each is individually optional: a run that lost the
+   * ECB leg is still valid, just staler, and the file should say so.
+   */
+  sources: z.array(fxSourceSchema).min(1),
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
   /** USD per GBP, one entry per quoted weekday. */
@@ -50,11 +65,11 @@ function refineAscendingDates(series: { date: string }[], ctx: z.RefinementCtx):
   }
 }
 
-/** One UTC calendar day of the BTC/USD series. */
+/** One UTC calendar day of the BTC series, priced in the dataset's currency. */
 const dailyPriceShape = z.object({
   /** UTC date, YYYY-MM-DD. */
   date: isoDate,
-  priceUsd: z.number().positive(),
+  price: z.number().positive(),
 });
 
 export type DailyPrice = z.infer<typeof dailyPriceShape>;
@@ -62,11 +77,11 @@ export type DailyPrice = z.infer<typeof dailyPriceShape>;
 /** Headline figures derived from the daily series. Percentages are rounded to 2 dp. */
 const priceStatsSchema = z.object({
   latestDate: isoDate,
-  latestPriceUsd: z.number().positive(),
+  latestPrice: z.number().positive(),
   change7dPct: z.number().nullable(),
   change30dPct: z.number().nullable(),
   /** Highest close within the fetched range — not an all-time high. */
-  rangeHighUsd: z.number().positive(),
+  rangeHigh: z.number().positive(),
   rangeHighDate: isoDate,
 });
 
@@ -134,7 +149,7 @@ const halvingCycleSchema = z.object({
   halvingDate: isoDate,
   /** Next halving date, or null for the open current cycle. */
   endDate: isoDate.nullable(),
-  basePriceUsd: z.number().positive(),
+  basePrice: z.number().positive(),
   series: z.array(cyclePointSchema).min(1),
 });
 

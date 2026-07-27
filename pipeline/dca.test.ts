@@ -22,7 +22,7 @@ const january: DailyPrice[] = Array.from({ length: 31 }, (_, i) => {
     '2024-01-29': 120,
     '2024-01-31': 110,
   };
-  return { date, priceUsd: specials[date] ?? 100 };
+  return { date, price: specials[date] ?? 100 };
 });
 
 describe('addMonthsClamped', () => {
@@ -66,7 +66,7 @@ describe('purchaseDates', () => {
 describe('simulateDca', () => {
   const result = simulateDca(january, {
     startDate: '2024-01-01',
-    amountUsd: 100,
+    amount: 100,
     frequency: 'weekly',
     feePct: 1,
   });
@@ -79,34 +79,34 @@ describe('simulateDca', () => {
       99 / 99,
       99 / 120,
     ]);
-    expect(result.totalInvestedUsd).toBe(500);
-    expect(result.totalFeesUsd).toBe(5);
+    expect(result.totalInvested).toBe(500);
+    expect(result.totalFees).toBe(5);
     expect(result.btcAccumulated).toBe(4.815);
   });
 
   it('derives the exact final value and return', () => {
-    expect(result.finalValueUsd).toBe(529.65); // 4.815 BTC × $110
+    expect(result.finalValue).toBe(529.65); // 4.815 BTC × $110
     expect(result.returnPct).toBe(5.93);
   });
 
   it('counts undeployed cash toward wealth so the series starts at the full budget', () => {
-    expect(result.series[0]).toEqual({ date: '2024-01-01', wealthUsd: 499 }); // 0.99×100 + 400
+    expect(result.series[0]).toEqual({ date: '2024-01-01', wealth: 499 }); // 0.99×100 + 400
     const jan8 = result.series.find((p) => p.date === '2024-01-08');
-    expect(jan8?.wealthUsd).toBe(507.9); // (0.99+0.9)×110 + 300
-    expect(result.series.at(-1)?.wealthUsd).toBe(529.65);
+    expect(jan8?.wealth).toBe(507.9); // (0.99+0.9)×110 + 300
+    expect(result.series.at(-1)?.wealth).toBe(529.65);
     expect(result.series).toHaveLength(31);
   });
 
   it('handles monthly schedules with month-end clamping over a gapped history', () => {
     const gapped: DailyPrice[] = [
-      { date: '2024-01-31', priceUsd: 100 },
-      { date: '2024-02-29', priceUsd: 125 },
-      { date: '2024-03-31', priceUsd: 80 },
-      { date: '2024-04-30', priceUsd: 51 },
+      { date: '2024-01-31', price: 100 },
+      { date: '2024-02-29', price: 125 },
+      { date: '2024-03-31', price: 80 },
+      { date: '2024-04-30', price: 51 },
     ];
     const monthly = simulateDca(gapped, {
       startDate: '2024-01-31',
-      amountUsd: 100,
+      amount: 100,
       frequency: 'monthly',
       feePct: 0,
     });
@@ -117,7 +117,7 @@ describe('simulateDca', () => {
       '2024-04-30',
     ]);
     expect(monthly.btcAccumulated).toBe(5.01078431); // 1 + 0.8 + 1.25 + 100/51, 8 dp
-    expect(monthly.finalValueUsd).toBe(255.55);
+    expect(monthly.finalValue).toBe(255.55);
     expect(monthly.returnPct).toBe(-36.11);
   });
 
@@ -126,51 +126,51 @@ describe('simulateDca', () => {
     // only 2 of 3 scheduled buys happen and the budget is 200, not 300 —
     // the lump sum then gets the same post-collapse budget.
     const sparse: DailyPrice[] = [
-      { date: '2024-01-01', priceUsd: 100 },
-      { date: '2024-01-20', priceUsd: 50 },
+      { date: '2024-01-01', price: 100 },
+      { date: '2024-01-20', price: 50 },
     ];
     const cmp = compareDcaVsLumpSum(sparse, {
       startDate: '2024-01-01',
-      amountUsd: 100,
+      amount: 100,
       frequency: 'weekly',
       feePct: 0,
     });
     expect(cmp.dca.purchases.map((p) => p.date)).toEqual(['2024-01-01', '2024-01-20']);
-    expect(cmp.dca.totalInvestedUsd).toBe(200);
+    expect(cmp.dca.totalInvested).toBe(200);
     expect(cmp.dca.btcAccumulated).toBe(3); // 1 + 2
-    expect(cmp.lumpSum.totalInvestedUsd).toBe(200);
+    expect(cmp.lumpSum.totalInvested).toBe(200);
     expect(cmp.lumpSum.btcAccumulated).toBe(2); // 200/100 at day one
   });
 
   it('rejects non-positive amounts, out-of-range fees, and starts beyond history', () => {
     const opts = { startDate: '2024-01-01', frequency: 'weekly' as const };
-    expect(() => simulateDca(january, { ...opts, amountUsd: 0, feePct: 1 })).toThrow('positive');
-    expect(() => simulateDca(january, { ...opts, amountUsd: 100, feePct: 100 })).toThrow('[0, 100)');
+    expect(() => simulateDca(january, { ...opts, amount: 0, feePct: 1 })).toThrow('positive');
+    expect(() => simulateDca(january, { ...opts, amount: 100, feePct: 100 })).toThrow('[0, 100)');
     expect(() =>
-      simulateDca(january, { startDate: '2024-06-01', amountUsd: 100, frequency: 'weekly', feePct: 1 }),
+      simulateDca(january, { startDate: '2024-06-01', amount: 100, frequency: 'weekly', feePct: 1 }),
     ).toThrow('no purchases');
   });
 });
 
 describe('simulateLumpSum and compareDcaVsLumpSum', () => {
   it('invests the whole budget once with the same fee rate', () => {
-    const lump = simulateLumpSum(january, { startDate: '2024-01-01', totalUsd: 500, feePct: 1 });
+    const lump = simulateLumpSum(january, { startDate: '2024-01-01', total: 500, feePct: 1 });
     expect(lump.purchases).toHaveLength(1);
     expect(lump.btcAccumulated).toBe(4.95); // 495/100
-    expect(lump.totalFeesUsd).toBe(5);
-    expect(lump.finalValueUsd).toBe(544.5);
+    expect(lump.totalFees).toBe(5);
+    expect(lump.finalValue).toBe(544.5);
     expect(lump.returnPct).toBe(8.9);
   });
 
   it('compares both strategies over the same budget and start', () => {
     const cmp = compareDcaVsLumpSum(january, {
       startDate: '2024-01-01',
-      amountUsd: 100,
+      amount: 100,
       frequency: 'weekly',
       feePct: 1,
     });
-    expect(cmp.dca.finalValueUsd).toBe(529.65);
-    expect(cmp.lumpSum.finalValueUsd).toBe(544.5);
-    expect(cmp.deltaUsd).toBe(14.85);
+    expect(cmp.dca.finalValue).toBe(529.65);
+    expect(cmp.lumpSum.finalValue).toBe(544.5);
+    expect(cmp.delta).toBe(14.85);
   });
 });
