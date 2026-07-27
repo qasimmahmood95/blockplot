@@ -76,7 +76,7 @@ const payload = {
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
   import {
     clearHoldings,
-    HOLDINGS_EVENT,
+    HOLDINGS_EXTERNAL_EVENT,
     readHoldings,
     writeHoldings,
   } from '../lib/holdings-store';
@@ -331,9 +331,19 @@ const payload = {
     renderChart(holdings && holdings.btc > 0 ? holdings.btc : 0);
   }
 
-  function load(): void {
+  /** Populate the fields from storage; returns the status to show afterwards. */
+  function load(): string {
+    if (!form) return '';
     const stored = readHoldings();
-    if (!form || !stored) return;
+    if (!stored) {
+      // Another tab forgot the holdings. This one must too, or it keeps the
+      // reader's figures on screen after they asked the site to drop them —
+      // and writes them back on the next keystroke.
+      form.reset();
+      costEdited = false;
+      storedCost = null;
+      return 'forgotten in another tab';
+    }
     const btcInput = form.elements.namedItem('btc') as HTMLInputElement | null;
     const costInput = form.elements.namedItem('cost') as HTMLInputElement | null;
     if (btcInput) btcInput.value = String(stored.btc);
@@ -351,7 +361,7 @@ const payload = {
           : stored.cost * impliedRate(data.latest, stored.costCurrency, data.currency);
       costInput.value = String(Math.round(shown * 100) / 100);
     }
-    setStatus('loaded from this browser');
+    return 'loaded from this browser';
   }
 
   form?.addEventListener('input', (event) => {
@@ -379,11 +389,28 @@ const payload = {
     setStatus('cleared — nothing is stored for this browser');
   });
 
+  /**
+   * Resync once focus leaves the form. `focusout` also fires when tabbing
+   * between this form's own two fields, and syncing then would rewrite the
+   * field the reader is moving into — hence the relatedTarget check. Defined
+   * once at module scope so add and remove refer to the same function; a fresh
+   * closure per event made every removal a no-op and every keystroke add
+   * another full resync to the eventual blur.
+   */
+  function onLeave(event: FocusEvent): void {
+    const to = event.relatedTarget;
+    if (to instanceof Node && form?.contains(to)) return;
+    form?.removeEventListener('focusout', onLeave);
+    syncFromStorage();
+  }
+
   function syncFromStorage(): void {
-    load();
+    const message = load();
     render();
     const holdings = formHoldings();
     renderChart(holdings && holdings.btc > 0 ? holdings.btc : 0);
+    // After render(), which blanks the status when there is nothing to show.
+    setStatus(message);
   }
 
   /**
@@ -395,7 +422,7 @@ const payload = {
    * writes a stale cost over the one the other tab just set. The fields catch
    * up when focus leaves.
    */
-  window.addEventListener(HOLDINGS_EVENT, () => {
+  window.addEventListener(HOLDINGS_EXTERNAL_EVENT, () => {
     if (!document.activeElement?.closest('#holdings-form')) {
       syncFromStorage();
       return;
@@ -404,21 +431,12 @@ const payload = {
     storedCost =
       stored?.cost == null ? null : { cost: stored.cost, costCurrency: stored.costCurrency };
     setStatus('changed in another tab');
-    // focusout fires when tabbing between this form's own fields too, and
-    // syncing then would rewrite the field the reader is moving into. Wait for
-    // focus to leave the form entirely.
-    const onLeave = (event: FocusEvent): void => {
-      const to = event.relatedTarget;
-      if (to instanceof Node && form?.contains(to)) return;
-      form?.removeEventListener('focusout', onLeave);
-      syncFromStorage();
-    };
-    form?.removeEventListener('focusout', onLeave);
     form?.addEventListener('focusout', onLeave);
   });
 
-  load();
+  const loaded = load();
   render();
+  setStatus(loaded);
   // watchOtherTabs is registered by the layout, which is on every page; adding
   // it here too would double every cross-tab dispatch.
   responsiveChart(() => {

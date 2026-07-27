@@ -16,8 +16,20 @@ import { CURRENCIES, type Currency } from '../../pipeline/currencies';
  */
 export const HOLDINGS_KEY = 'blockplot:holdings';
 
-/** Emitted on this tab when the stored holdings change, so islands can re-render. */
+/**
+ * Emitted on this tab when the stored holdings change, so sibling islands —
+ * the header tile and the panel — can re-render.
+ */
 export const HOLDINGS_EVENT = 'blockplot:holdingschange';
+
+/**
+ * Emitted when *another* tab changed the stored holdings. Distinct from the
+ * event above because the panel must treat the two differently: its own write
+ * needs no reaction, while another tab's may need the fields resynced. Folding
+ * them together made the panel react to itself, which destroyed the cost
+ * snapshot mid-edit and piled up focus listeners.
+ */
+export const HOLDINGS_EXTERNAL_EVENT = 'blockplot:holdingsexternal';
 
 const isCurrency = (value: unknown): value is Currency =>
   typeof value === 'string' && (CURRENCIES as readonly string[]).includes(value);
@@ -82,7 +94,9 @@ export function writeHoldings(holdings: Holdings): void {
  */
 export function watchOtherTabs(): void {
   window.addEventListener('storage', (event) => {
-    if (event.key === HOLDINGS_KEY) window.dispatchEvent(new Event(HOLDINGS_EVENT));
+    if (event.key !== HOLDINGS_KEY) return;
+    window.dispatchEvent(new Event(HOLDINGS_EVENT));
+    window.dispatchEvent(new Event(HOLDINGS_EXTERNAL_EVENT));
   });
 }
 

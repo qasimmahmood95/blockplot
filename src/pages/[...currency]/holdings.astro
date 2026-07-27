@@ -19,7 +19,7 @@ const { currency } = Astro.props as { currency: Currency };
   <section class="chart-section">
     <h2>Your holdings · stored only in this browser</h2>
     <p class="method-note privacy-note">
-      <strong>This stays on your device.</strong> What you enter is written to this browser's
+      <strong>This stays on your device.</strong> What you enter is written to this browser's{' '}
       <code>localStorage</code> and read back by this page. It is never transmitted: blockplot is a
       static site with no server, no account, and no analytics, so there is nowhere for it to go
       even in principle. Every page — this one included — asks CoinGecko for the live BTC price

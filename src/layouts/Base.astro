@@ -146,7 +146,12 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
       import { valueHoldings } from '../../pipeline/holdings';
       import type { Currency } from '../../pipeline/currencies';
       import { chartData } from '../lib/charts';
-      import { HOLDINGS_EVENT, readHoldings, watchOtherTabs } from '../lib/holdings-store';
+      import {
+        HOLDINGS_EVENT,
+        HOLDINGS_EXTERNAL_EVENT,
+        readHoldings,
+        watchOtherTabs,
+      } from '../lib/holdings-store';
 
       const headerLatest = chartData<Record<Currency, number>>('header-latest');
       const pageCurrency = (document.documentElement.dataset.currency ?? 'usd') as Currency;
@@ -220,6 +225,7 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
       }
       renderHoldings();
       window.addEventListener(HOLDINGS_EVENT, renderHoldings);
+      window.addEventListener(HOLDINGS_EXTERNAL_EVENT, renderHoldings);
       watchOtherTabs();
 
       // Live spot ticker: one of the site's two sanctioned runtime fetches.
