@@ -1,9 +1,16 @@
 ---
-import DrawdownChart from '../components/DrawdownChart.astro';
-import VolChart from '../components/VolChart.astro';
-import Base from '../layouts/Base.astro';
-import { benchmarksDaily, riskMetrics } from '../lib/data';
-import { formatPct, formatRatio, formatUnsignedPct } from '../lib/format';
+import DrawdownChart from '../../components/DrawdownChart.astro';
+import VolChart from '../../components/VolChart.astro';
+import Base from '../../layouts/Base.astro';
+import { fxNote, type Currency } from '../../lib/currency';
+import { dataFor } from '../../lib/data';
+import { currencyPaths } from '../../lib/routes';
+
+export const getStaticPaths = currencyPaths;
+
+const { currency } = Astro.props as { currency: Currency };
+const { benchmarksDaily, riskMetrics } = dataFor(currency);
+import { formatPct, formatRatio, formatUnsignedPct } from '../../lib/format';
 
 const { rollingVol, drawdown, comparison, windowDays, asOf } = riskMetrics;
 
@@ -24,6 +31,7 @@ const assetLabels: Record<string, string> = {
 ---
 
 <Base
+  currency={currency}
   title="blockplot · volatility & risk"
   description="BTC realized volatility, drawdown, and risk-adjusted returns vs S&P 500 and gold, from a versioned pipeline-committed dataset."
 >
@@ -54,7 +62,7 @@ const assetLabels: Record<string, string> = {
 
   <section class="chart-section">
     <h2>Realized volatility · rolling 30/90/365d · annualized</h2>
-    <VolChart />
+    <VolChart currency={currency} />
     <p class="method-note">
       Rolling sample standard deviation of daily log returns, annualized by √365 and shown as a
       percentage; each point uses the window of returns ending that day. The vol curves (and the
@@ -66,7 +74,7 @@ const assetLabels: Record<string, string> = {
 
   <section class="chart-section">
     <h2>Drawdown from running peak · past {windowDays}d</h2>
-    <DrawdownChart />
+    <DrawdownChart currency={currency} />
     <p class="method-note">
       Daily close relative to the highest close seen so far in the window. The deepest decline
       was {formatPct(drawdown.maxDrawdownPct)}, from the {drawdown.peakDate} peak to the trough
@@ -115,7 +123,7 @@ const assetLabels: Record<string, string> = {
       Sharpe uses a 0% risk-free rate; Sortino uses target downside deviation below 0% over all
       observations. Both annualize by √365 for BTC and √252 for market-hours assets, so figures are
       indicative rather than strictly like-for-like. All metrics are computed in the pipeline by
-      fixture-tested pure functions and committed to <code>/data</code>.
+      fixture-tested pure functions and committed to <code>/data</code>.{fxNote(currency)}
     </p>
   </section>
 </Base>

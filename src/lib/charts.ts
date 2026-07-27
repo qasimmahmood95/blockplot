@@ -1,5 +1,15 @@
 /** Shared client-side helpers for Observable Plot chart islands. */
 
+/**
+ * Read an island's dataset from the inline JSON the page embedded. Keeps
+ * datasets out of client bundles and lets one island serve any currency.
+ */
+export function chartData<T>(id: string): T {
+  const el = document.getElementById(id);
+  if (!el?.textContent) throw new Error(`chartData: missing #${id}`);
+  return JSON.parse(el.textContent) as T;
+}
+
 export const cssVar = (name: string): string =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 

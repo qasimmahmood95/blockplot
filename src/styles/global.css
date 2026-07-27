@@ -113,6 +113,27 @@ code {
   color: var(--pos);
 }
 
+.currency-switch {
+  display: flex;
+  border: 1px solid var(--line);
+}
+
+.currency-switch a {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  text-decoration: none;
+  padding: 0.2rem 0.5rem;
+}
+
+.currency-switch a:hover {
+  color: var(--ink);
+}
+
+.currency-switch a[aria-current='true'] {
+  color: var(--surface);
+  background: var(--accent);
+}
+
 .theme-toggle {
   font-size: 0.72rem;
   color: var(--ink-muted);

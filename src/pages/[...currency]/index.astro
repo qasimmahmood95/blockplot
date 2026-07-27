@@ -1,10 +1,18 @@
 ---
-import MonthlyHeatmap from '../components/MonthlyHeatmap.astro';
-import PriceChart from '../components/PriceChart.astro';
-import Base from '../layouts/Base.astro';
-import { btcDaily, monthlyReturns } from '../lib/data';
-import { formatPct, formatUsd } from '../lib/format';
+import MonthlyHeatmap from '../../components/MonthlyHeatmap.astro';
+import PriceChart from '../../components/PriceChart.astro';
+import Base from '../../layouts/Base.astro';
+import { CURRENCY_META, currencyFormatters, type Currency } from '../../lib/currency';
+import { dataFor } from '../../lib/data';
+import { formatPct } from '../../lib/format';
+import { currencyPaths } from '../../lib/routes';
 
+export const getStaticPaths = currencyPaths;
+
+const { currency } = Astro.props as { currency: Currency };
+const { btcDaily, monthlyReturns } = dataFor(currency);
+const { money } = currencyFormatters(currency);
+const code = CURRENCY_META[currency].code;
 const { stats, rangeDays } = btcDaily;
 
 const changes = [
@@ -13,13 +21,13 @@ const changes = [
 ];
 ---
 
-<Base title="blockplot · Bitcoin analytics">
+<Base currency={currency} title="blockplot · Bitcoin analytics">
   <h1 class="visually-hidden">Bitcoin analytics</h1>
 
   <dl class="stat-grid">
     <div class="stat">
       <dt>Spot (daily close)</dt>
-      <dd class="num">{formatUsd(stats.latestPriceUsd)}</dd>
+      <dd class="num">{money.format(stats.latestPriceUsd)}</dd>
       <dd class="sub num">{stats.latestDate}</dd>
     </div>
     {
@@ -34,14 +42,14 @@ const changes = [
     }
     <div class="stat">
       <dt>{rangeDays}d high</dt>
-      <dd class="num">{formatUsd(stats.rangeHighUsd)}</dd>
+      <dd class="num">{money.format(stats.rangeHighUsd)}</dd>
       <dd class="sub num">{stats.rangeHighDate}</dd>
     </div>
   </dl>
 
   <section class="chart-section">
-    <h2>BTC / USD · daily close · past {rangeDays} days</h2>
-    <PriceChart />
+    <h2>BTC / {code} · daily close · past {rangeDays} days</h2>
+    <PriceChart currency={currency} />
     <p class="method-note">
       Daily UTC closes from CoinGecko's public market-chart endpoint (history is capped at 365 days
       on the keyless tier; the newest point is the price at the last pipeline run). The site is
@@ -52,7 +60,7 @@ const changes = [
 
   <section class="chart-section">
     <h2>Monthly returns · {monthlyReturns.years[0]?.year}–{monthlyReturns.asOf.slice(0, 4)}</h2>
-    <MonthlyHeatmap />
+    <MonthlyHeatmap currency={currency} />
     <p class="heat-legend" aria-hidden="true">
       <span>−30%+</span>
       <span class="swatch heat-neg-4"></span>

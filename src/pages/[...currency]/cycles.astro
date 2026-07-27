@@ -1,8 +1,15 @@
 ---
-import CyclesChart from '../components/CyclesChart.astro';
-import Base from '../layouts/Base.astro';
-import { halvingCycles } from '../lib/data';
-import { formatMultiple } from '../lib/format';
+import CyclesChart from '../../components/CyclesChart.astro';
+import Base from '../../layouts/Base.astro';
+import { fxNote, type Currency } from '../../lib/currency';
+import { dataFor } from '../../lib/data';
+import { currencyPaths } from '../../lib/routes';
+
+export const getStaticPaths = currencyPaths;
+
+const { currency } = Astro.props as { currency: Currency };
+const { halvingCycles } = dataFor(currency);
+import { formatMultiple } from '../../lib/format';
 
 const { cycles, asOf } = halvingCycles;
 
@@ -21,6 +28,7 @@ const priorCycles = cycles.slice(0, -1).reverse();
 ---
 
 <Base
+  currency={currency}
   title="blockplot · halving cycles"
   description="BTC price normalised to days since each halving: four-cycle overlay on a log or linear scale."
 >
@@ -50,14 +58,14 @@ const priorCycles = cycles.slice(0, -1).reverse();
 
   <section class="chart-section">
     <h2>Price vs halving-day close · days since halving</h2>
-    <CyclesChart />
+    <CyclesChart currency={currency} />
     <p class="method-note">
       Each line is one halving epoch — {cycles.map((c) => c.halvingDate).join(', ')} — with the
       daily close divided by that epoch's halving-day close, plotted against days since the
       halving (log scale by default; cycles end at the next halving, the current one is open).
       History comes from blockchain.com's archival market-price series, which reaches back past
       CoinGecko's keyless 365-day cap; data through {asOf}. Normalisation is computed in the
-      pipeline by fixture-tested pure functions and committed to <code>/data</code>.
+      pipeline by fixture-tested pure functions and committed to <code>/data</code>.{fxNote(currency)}
     </p>
   </section>
 </Base>

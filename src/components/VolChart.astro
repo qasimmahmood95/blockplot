@@ -1,4 +1,19 @@
+---
+import type { Currency } from '../lib/currency';
+import { dataFor } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
+
+interface Props {
+  currency: Currency;
+}
+
+const { currency } = Astro.props;
+const { riskMetrics } = dataFor(currency);
+const payload = riskMetrics.rollingVol.filter((w) => w.series.length > 0);
+---
+
 <figure class="chart-frame">
+  <script type="application/json" id="vol-chart-data" set:html={toJsonScript(payload)} />
   <div id="vol-chart-legend" class="chart-legend" aria-hidden="true"></div>
   <div
     id="vol-chart"
@@ -10,22 +25,19 @@
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import dataset from '../../data/risk-metrics.json';
-  import { cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
 
+  const windows = chartData<{ windowDays: number; series: { date: string; volPct: number }[] }[]>(
+    'vol-chart-data',
+  );
   const container = document.getElementById('vol-chart');
   const legend = document.getElementById('vol-chart-legend');
 
   // Ordinal ramp: shorter window -> lighter accent step (shares the validated
   // cycle ramp); only populated windows render.
   const RAMP: Record<string, string> = { '30d': '--cycle-2', '90d': '--cycle-3', '365d': '--cycle-4' };
-  const windows = dataset.rollingVol.filter((w) => w.series.length > 0);
   const points = windows.flatMap((w) =>
-    w.series.map((p) => ({
-      window: `${w.windowDays}d`,
-      date: new Date(p.date),
-      volPct: p.volPct,
-    })),
+    w.series.map((p) => ({ window: `${w.windowDays}d`, date: new Date(p.date), volPct: p.volPct })),
   );
   const lineEnds = windows.flatMap((w) => {
     const last = w.series[w.series.length - 1];
@@ -58,19 +70,10 @@
         marginLeft: 48,
         marginRight: 44,
         x: { label: null },
-        y: {
-          label: null,
-          grid: true,
-          tickFormat: (value: number) => `${value}%`,
-        },
+        y: { label: null, grid: true, tickFormat: (value: number) => `${value}%` },
         color: { domain, range },
         marks: [
-          Plot.lineY(points, {
-            x: 'date',
-            y: 'volPct',
-            stroke: 'window',
-            strokeWidth: 1.75,
-          }),
+          Plot.lineY(points, { x: 'date', y: 'volPct', stroke: 'window', strokeWidth: 1.75 }),
           Plot.text(lineEnds, {
             x: 'date',
             y: 'volPct',

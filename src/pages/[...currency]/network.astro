@@ -1,16 +1,26 @@
 ---
-import FeeTiers from '../components/FeeTiers.astro';
-import NetworkCharts from '../components/NetworkCharts.astro';
-import Base from '../layouts/Base.astro';
-import { network } from '../lib/data';
-import { formatPct } from '../lib/format';
+import { currencyPaths } from '../../lib/routes';
+import FeeTiers from '../../components/FeeTiers.astro';
+import NetworkCharts from '../../components/NetworkCharts.astro';
+import Base from '../../layouts/Base.astro';
+import { network } from '../../lib/data';
+import { formatPct } from '../../lib/format';
 
 const { hashRate, txCount, asOf, keepDays } = network;
 const latestTx = txCount.series.at(-1)?.value ?? null;
 const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+
+export const getStaticPaths = currencyPaths;
+
+// This view is currency-free — stablecoin supply and total market cap are
+// USD-pegged by definition, and network metrics are in hashes, transactions
+// and sat/vB — but the layout still needs the reader's currency so the nav
+// and switcher keep them in it.
+const { currency } = Astro.props as { currency: import('../../lib/currency').Currency };
 ---
 
 <Base
+  currency={currency}
   title="blockplot · network"
   description="Bitcoin network hash rate, daily transaction count, and current recommended fee tiers."
 >

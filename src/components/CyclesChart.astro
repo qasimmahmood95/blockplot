@@ -1,3 +1,20 @@
+---
+import type { Currency } from '../lib/currency';
+import { dataFor } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
+
+interface Props {
+  currency: Currency;
+}
+
+const { currency } = Astro.props;
+const { halvingCycles } = dataFor(currency);
+const payload = halvingCycles.cycles.map((c) => ({
+  label: c.halvingDate.slice(0, 4),
+  series: c.series,
+}));
+---
+
 <figure class="chart-frame">
   <div class="chart-controls">
     <div id="cycles-legend" class="chart-legend" aria-hidden="true"></div>
@@ -6,6 +23,7 @@
       <button type="button" data-scale="linear" aria-pressed="false">linear</button>
     </div>
   </div>
+  <script type="application/json" id="cycles-chart-data" set:html={toJsonScript(payload)} />
   <div
     id="cycles-chart"
     role="img"
@@ -16,23 +34,25 @@
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import dataset from '../../data/halving-cycles.json';
-  import { cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
 
+  const cyclesData = chartData<{ label: string; series: { day: number; multiple: number }[] }[]>(
+    'cycles-chart-data',
+  );
   const container = document.getElementById('cycles-chart');
   const legend = document.getElementById('cycles-legend');
   const toggle = document.querySelectorAll<HTMLButtonElement>('.chart-toggle button');
 
   // Ordinal ramp: oldest cycle lightest, current cycle the strongest step.
   const RAMP = ['--cycle-1', '--cycle-2', '--cycle-3', '--cycle-4'];
-  const labelOf = (halvingDate: string): string => halvingDate.slice(0, 4);
-  const cycles = dataset.cycles.map((c) => ({
-    label: labelOf(c.halvingDate),
-    points: c.series.map((p) => ({ cycle: labelOf(c.halvingDate), day: p.day, multiple: p.multiple })),
-  }));
-  const points = cycles.flatMap((c) => c.points);
-  const lineEnds = cycles.flatMap((c) => c.points.slice(-1));
-  const domain = cycles.map((c) => c.label);
+  const points = cyclesData.flatMap((c) =>
+    c.series.map((p) => ({ cycle: c.label, day: p.day, multiple: p.multiple })),
+  );
+  const lineEnds = cyclesData.flatMap((c) => {
+    const last = c.series[c.series.length - 1];
+    return last ? [{ cycle: c.label, day: last.day, multiple: last.multiple }] : [];
+  });
+  const domain = cyclesData.map((c) => c.label);
 
   let scale: 'log' | 'linear' = 'log';
 
@@ -67,12 +87,7 @@
         },
         color: { domain, range },
         marks: [
-          Plot.lineY(points, {
-            x: 'day',
-            y: 'multiple',
-            stroke: 'cycle',
-            strokeWidth: 1.5,
-          }),
+          Plot.lineY(points, { x: 'day', y: 'multiple', stroke: 'cycle', strokeWidth: 1.5 }),
           Plot.text(lineEnds, {
             x: 'day',
             y: 'multiple',

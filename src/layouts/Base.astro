@@ -4,30 +4,56 @@ import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import '../styles/tokens.css';
 import '../styles/global.css';
-import { btcDaily } from '../lib/data';
-import { formatUsd } from '../lib/format';
+import {
+  CURRENCIES,
+  CURRENCY_META,
+  currencyFormatters,
+  currencyPath,
+  type Currency,
+} from '../lib/currency';
+import { dataFor } from '../lib/data';
 
 interface Props {
   title: string;
   description?: string;
+  currency?: Currency;
 }
 
 const {
   title,
   description = 'Bitcoin financial analytics built from a versioned, pipeline-committed dataset.',
+  currency = 'usd',
 } = Astro.props;
-const { stats, fetchedAt } = btcDaily;
+const { stats, fetchedAt } = dataFor(currency).btcDaily;
+const { money } = currencyFormatters(currency);
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const sections = [
-  { href: `${base}/`, label: 'overview' },
-  { href: `${base}/volatility/`, label: 'volatility & risk' },
-  { href: `${base}/cycles/`, label: 'halving cycles' },
-  { href: `${base}/correlation/`, label: 'correlation' },
-  { href: `${base}/dca/`, label: 'dca' },
-  { href: `${base}/flows/`, label: 'flows' },
-  { href: `${base}/network/`, label: 'network' },
+const PAGES = [
+  { page: '', label: 'overview' },
+  { page: 'volatility', label: 'volatility & risk' },
+  { page: 'cycles', label: 'halving cycles' },
+  { page: 'correlation', label: 'correlation' },
+  { page: 'dca', label: 'dca' },
+  { page: 'flows', label: 'flows' },
+  { page: 'network', label: 'network' },
 ];
+// Nav links keep the reader in their currency; the switcher swaps currency
+// while staying on the same page.
+const sections = PAGES.map(({ page, label }) => ({
+  href: currencyPath(base, currency, page),
+  label,
+}));
+const currentPage =
+  PAGES.find(({ page }) =>
+    page
+      ? Astro.url.pathname.replace(/\/$/, '').endsWith(`/${page}`)
+      : true,
+  ) ?? PAGES[0];
+const currencyLinks = CURRENCIES.map((c) => ({
+  code: CURRENCY_META[c].label,
+  href: currencyPath(base, c, currentPage?.page ?? ''),
+  active: c === currency,
+}));
 const current = (href: string): boolean =>
   Astro.url.pathname.replace(/\/$/, '') === href.replace(/\/$/, '');
 
@@ -36,7 +62,7 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-currency={currency}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -86,9 +112,18 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
       </nav>
       <div class="header-side">
         <p class="header-tick num">
-          BTC <span id="tick-price">{formatUsd(stats.latestPriceUsd)}</span>{' '}
+          BTC <span id="tick-price">{money.format(stats.latestPriceUsd)}</span>{' '}
           <span class="tick-date" id="tick-label">close {stats.latestDate}</span>
         </p>
+        <nav class="currency-switch num" aria-label="Currency">
+          {
+            currencyLinks.map(({ code, href, active }) => (
+              <a href={href} aria-current={active ? 'true' : undefined}>
+                {code}
+              </a>
+            ))
+          }
+        </nav>
         <button type="button" class="theme-toggle num" id="theme-toggle" aria-live="polite">
           theme: auto
         </button>
@@ -140,23 +175,27 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
 
       // Live spot ticker: the site's one runtime fetch (CoinGecko public
       // endpoint). Committed close stays as the fallback when it fails.
+      // CoinGecko's simple-price endpoint is queried in the page's currency,
+      // so the live upgrade works on both; the committed close stays as the
+      // fallback when it fails.
+      const tickCurrency = document.documentElement.dataset.currency ?? 'usd';
       const priceEl = document.getElementById('tick-price');
       const labelEl = document.getElementById('tick-label');
       const usd = new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD',
+        currency: tickCurrency.toUpperCase(),
         maximumFractionDigits: 0,
       });
       async function refreshTicker(): Promise<void> {
         if (document.hidden || !priceEl || !labelEl) return;
         try {
           const res = await fetch(
-            'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
+            `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${tickCurrency}`,
             { headers: { accept: 'application/json' } },
           );
           if (!res.ok) return;
-          const payload = (await res.json()) as { bitcoin?: { usd?: number } };
-          const price = payload.bitcoin?.usd;
+          const payload = (await res.json()) as { bitcoin?: Record<string, number> };
+          const price = payload.bitcoin?.[tickCurrency];
           if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) return;
           priceEl.textContent = usd.format(price);
           labelEl.textContent = 'live';

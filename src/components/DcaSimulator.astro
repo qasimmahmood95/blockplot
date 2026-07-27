@@ -1,3 +1,21 @@
+---
+import type { Currency } from '../lib/currency';
+import { CURRENCY_META } from '../lib/currency';
+import { dataFor } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
+
+interface Props {
+  currency: Currency;
+}
+
+const { currency } = Astro.props;
+const { btcHistory } = dataFor(currency);
+const meta = CURRENCY_META[currency];
+const payload = { code: meta.code, series: btcHistory.series };
+---
+
+<script type="application/json" id="dca-data" set:html={toJsonScript(payload)} />
+
 <form class="sim-form" id="dca-form">
   <label>
     <span>Start date</span>
@@ -11,7 +29,7 @@
     </select>
   </label>
   <label>
-    <span>Amount / buy ($)</span>
+    <span>Amount / buy ({meta.symbol})</span>
     <input type="number" name="amountUsd" min="1" step="1" value="100" required />
   </label>
   <label>
@@ -34,11 +52,12 @@
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import history from '../../data/btc-price-history.json';
   import { compareDcaVsLumpSum, type DcaFrequency } from '../../pipeline/dca';
-  import { cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
 
-  const series = history.series;
+  const { code, series } = chartData<{ code: string; series: { date: string; priceUsd: number }[] }>(
+    'dca-data',
+  );
   const firstDate = series[0]?.date ?? '';
   const lastDate = series.at(-1)?.date ?? '';
 
@@ -64,7 +83,7 @@
 
   const usd = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: code,
     maximumFractionDigits: 0,
   });
   const signedPct = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
