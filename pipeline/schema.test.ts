@@ -20,6 +20,7 @@ describe('priceDatasetSchema', () => {
   const valid = {
     schemaVersion: 1,
     source: 'coingecko',
+    currency: 'usd',
     fetchedAt: '2024-03-08T12:00:00.000Z',
     rangeDays: '365',
     stats: {
@@ -56,6 +57,7 @@ describe('priceDatasetSchema', () => {
 describe('benchmarkDatasetSchema', () => {
   const valid = {
     schemaVersion: 1,
+    currency: 'usd',
     fetchedAt: '2024-03-08T12:00:00.000Z',
     keepDays: 400,
     benchmarks: [
@@ -138,6 +140,7 @@ describe('benchmarkDatasetSchema', () => {
 describe('correlationDatasetSchema', () => {
   const valid = {
     schemaVersion: 1,
+    currency: 'usd',
     fetchedAt: '2024-03-08T12:00:00.000Z',
     asOf: '2024-03-08',
     windowDays: 90,
@@ -171,6 +174,7 @@ describe('correlationDatasetSchema', () => {
 describe('riskDatasetSchema', () => {
   const valid = {
     schemaVersion: 2,
+    currency: 'usd',
     fetchedAt: '2024-03-08T12:00:00.000Z',
     asOf: '2024-03-08',
     windowDays: 8,

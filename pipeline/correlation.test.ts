@@ -103,6 +103,6 @@ describe('buildCorrelationDataset', () => {
   });
 
   it('produces output the on-disk schema accepts', () => {
-    expect(() => correlationDatasetSchema.parse(dataset)).not.toThrow();
+    expect(() => correlationDatasetSchema.parse({ ...dataset, currency: 'usd' })).not.toThrow();
   });
 });

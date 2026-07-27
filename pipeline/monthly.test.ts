@@ -45,7 +45,7 @@ describe('buildMonthlyDataset', () => {
     expect(dataset.asOf).toBe('2025-01-31');
     expect(dataset.months).toHaveLength(4);
     expect(dataset.years).toHaveLength(2);
-    expect(() => monthlyDatasetSchema.parse(dataset)).not.toThrow();
+    expect(() => monthlyDatasetSchema.parse({ ...dataset, currency: 'usd' })).not.toThrow();
   });
 
   it('rejects empty history', () => {

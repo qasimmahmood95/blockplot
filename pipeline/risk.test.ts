@@ -170,7 +170,7 @@ describe('buildRiskDataset', () => {
   });
 
   it('produces output the on-disk schema accepts', () => {
-    expect(() => riskDatasetSchema.parse(dataset)).not.toThrow();
+    expect(() => riskDatasetSchema.parse({ ...dataset, currency: 'usd' })).not.toThrow();
   });
 
   it('derives rolling vol from deep history when provided, clipped to the window', () => {

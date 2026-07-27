@@ -9,6 +9,7 @@ import {
   STABLECOIN_KEEP_DAYS,
   stablecoinChange30dPct,
 } from './flows';
+import { convertBenchmark, convertSeries, CURRENCIES, fetchGbpUsd } from './fx';
 import { buildHalvingDataset } from './halvings';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
@@ -28,6 +29,7 @@ import {
   benchmarkDatasetSchema,
   correlationDatasetSchema,
   dominanceDatasetSchema,
+  fxDatasetSchema,
   halvingDatasetSchema,
   historyDatasetSchema,
   monthlyDatasetSchema,
@@ -67,6 +69,7 @@ const [
   hashRate,
   txCount,
   feeTiers,
+  fxRates,
 ] = await Promise.all([
   attempt('coingecko market chart', fetchBtcMarketChart()),
   attempt('fred sp500', fetchSp500()),
@@ -78,6 +81,7 @@ const [
   attempt('blockchain.com hash-rate', fetchHashRate()),
   attempt('blockchain.com n-transactions', fetchTxCount()),
   attempt('mempool.space fees', fetchFeeTiers()),
+  attempt('yahoo gbpusd', fetchGbpUsd()),
 ]);
 
 const series = raw ? toDailySeries(raw.prices) : null;
@@ -113,105 +117,130 @@ if (stablecoins) {
   );
 }
 
-if (series) {
-  const prices = priceDatasetSchema.parse({
+// Currency-dependent datasets are built once per currency. GBP is not a
+// relabelling: each close is converted at that day's rate and every metric
+// recomputed, because a GBP investor's drawdown and volatility genuinely
+// differ from the USD ones. GBP files live under data/gbp/.
+if (fxRates) {
+  const fx = fxDatasetSchema.parse({
     schemaVersion: 1,
-    source: 'coingecko',
+    pair: 'GBPUSD',
+    source: 'yahoo',
     fetchedAt,
-    rangeDays: PRICE_RANGE_DAYS,
-    stats: computeStats(series),
-    series,
+    series: fxRates,
   });
-  await writeJson('data/btc-price-daily.json', prices);
-  console.log(
-    `data/btc-price-daily.json: ${series.length} days, latest ${prices.stats.latestDate} at $${prices.stats.latestPriceUsd}`,
-  );
+  await writeJson('data/fx-gbpusd.json', fx);
+  console.log(`data/fx-gbpusd.json: ${fxRates.length} quoted days to ${fxRates.at(-1)?.date}`);
 }
 
-if (sp500 && goldFetch && dxyFetch) {
-  const benchmarks = benchmarkDatasetSchema.parse({
-    schemaVersion: 1,
-    fetchedAt,
-    keepDays: BENCHMARK_KEEP_DAYS,
-    benchmarks: [
-      { asset: 'sp500', source: 'fred', sourceSeries: SP500_FRED_SERIES, series: sp500 },
-      { asset: 'gold', source: 'yahoo', sourceSeries: goldFetch.ticker, series: goldFetch.series },
-      { asset: 'dxy', source: 'yahoo', sourceSeries: dxyFetch.ticker, series: dxyFetch.series },
-    ],
-  });
-  await writeJson('data/benchmarks-daily.json', benchmarks);
-  console.log(
-    `data/benchmarks-daily.json: sp500 ${sp500.length} days, gold ${goldFetch.series.length} days (${goldFetch.ticker}), dxy ${dxyFetch.series.length} days (${dxyFetch.ticker})`,
-  );
-}
-
-if (history) {
-  const historyDataset = historyDatasetSchema.parse({
-    schemaVersion: 1,
-    source: 'blockchain.info',
-    fetchedAt,
-    series: history,
-  });
-  await writeJson('data/btc-price-history.json', historyDataset);
-  console.log(
-    `data/btc-price-history.json: ${history.length} days from ${history[0]?.date} to ${history.at(-1)?.date}`,
-  );
-
-  const halvings = halvingDatasetSchema.parse(buildHalvingDataset(history, { fetchedAt }));
-  await writeJson('data/halving-cycles.json', halvings);
-  console.log(
-    `data/halving-cycles.json: ${halvings.cycles.map((c) => `c${c.cycle}=${c.series.length}`).join(' ')}`,
-  );
-
-  const monthly = monthlyDatasetSchema.parse(buildMonthlyDataset(history, { fetchedAt }));
-  await writeJson('data/monthly-returns.json', monthly);
-  console.log(
-    `data/monthly-returns.json: ${monthly.months.length} months over ${monthly.years.length} years`,
-  );
-}
-
-// The clip only bounds the vol curves; if the history source lags the spot
-// series the curves silently end early, so surface that in the run log.
-if (series && history) {
-  const historyEnd = history.at(-1)?.date ?? '';
-  const spotEnd = series.at(-1)?.date ?? '';
-  if (historyEnd < spotEnd) {
-    console.warn(`warning: history ends ${historyEnd}, before spot ${spotEnd} — vol curves stop there`);
+for (const currency of CURRENCIES) {
+  if (currency === 'gbp' && !fxRates) {
+    console.warn('warning: no GBP/USD rates — skipping the GBP datasets');
+    continue;
   }
-}
+  const rates = fxRates ?? [];
+  const dir = currency === 'usd' ? 'data' : `data/${currency}`;
+  const spot = series ? convertSeries(series, rates, currency) : null;
+  const deep = history ? convertSeries(history, rates, currency) : null;
+  const sp = sp500 ? convertBenchmark(sp500, rates, currency) : null;
+  const au = goldFetch ? convertBenchmark(goldFetch.series, rates, currency) : null;
+  // DXY is a dollar index by construction, so it is never converted; the
+  // correlation page notes that its pairs stay dollar-denominated.
+  const dxy = dxyFetch?.series ?? null;
 
-// history is technically optional for buildRiskDataset, but a run without it
-// would commit degraded vol curves over yesterday's full-quality file — so
-// risk (and correlations, which must share its asOf) skip instead.
-if (series && sp500 && goldFetch && history) {
-  const risk = riskDatasetSchema.parse(
-    buildRiskDataset(series, { sp500, gold: goldFetch.series }, { fetchedAt, history }),
-  );
-  await writeJson('data/risk-metrics.json', risk);
-  console.log(
-    `data/risk-metrics.json: as of ${risk.asOf}, max drawdown ${risk.drawdown.maxDrawdownPct}% (${risk.drawdown.peakDate} -> ${risk.drawdown.troughDate})`,
-  );
-
-  if (dxyFetch) {
-    // BTC's leg uses the deep-history series and benchmarks keep a 460d
-    // trailing window, so every pair has a full 90d of pre-window returns.
-    const toPoints = (rows: { date: string; close: number }[]) =>
-      rows.map(({ date, close }) => ({ date, value: close }));
-    const correlations = correlationDatasetSchema.parse(
-      buildCorrelationDataset(
-        {
-          btc: history.map(({ date, priceUsd }) => ({ date, value: priceUsd })),
-          sp500: toPoints(sp500),
-          gold: toPoints(goldFetch.series),
-          dxy: toPoints(dxyFetch.series),
-        },
-        { fetchedAt, asOf: risk.asOf, displayFrom: series[0]?.date ?? risk.asOf },
-      ),
-    );
-    await writeJson('data/correlations.json', correlations);
+  if (spot) {
+    const prices = priceDatasetSchema.parse({
+      schemaVersion: 1,
+      source: 'coingecko',
+      currency,
+      fetchedAt,
+      rangeDays: PRICE_RANGE_DAYS,
+      stats: computeStats(spot),
+      series: spot,
+    });
+    await writeJson(`${dir}/btc-price-daily.json`, prices);
     console.log(
-      `data/correlations.json: ${correlations.pairs.map((p) => `${p.pair}=${p.series.length}`).join(' ')}`,
+      `${dir}/btc-price-daily.json: ${spot.length} days, latest ${prices.stats.latestDate} at ${prices.stats.latestPriceUsd}`,
     );
+  }
+
+  if (sp && au && dxy && goldFetch && dxyFetch) {
+    const benchmarks = benchmarkDatasetSchema.parse({
+      schemaVersion: 1,
+      currency,
+      fetchedAt,
+      keepDays: BENCHMARK_KEEP_DAYS,
+      benchmarks: [
+        { asset: 'sp500', source: 'fred', sourceSeries: SP500_FRED_SERIES, series: sp },
+        { asset: 'gold', source: 'yahoo', sourceSeries: goldFetch.ticker, series: au },
+        { asset: 'dxy', source: 'yahoo', sourceSeries: dxyFetch.ticker, series: dxy },
+      ],
+    });
+    await writeJson(`${dir}/benchmarks-daily.json`, benchmarks);
+    console.log(`${dir}/benchmarks-daily.json: sp500 ${sp.length}, gold ${au.length}, dxy ${dxy.length} days`);
+  }
+
+  if (deep) {
+    const historyDataset = historyDatasetSchema.parse({
+      schemaVersion: 1,
+      source: 'blockchain.info',
+      currency,
+      fetchedAt,
+      series: deep,
+    });
+    await writeJson(`${dir}/btc-price-history.json`, historyDataset);
+    console.log(`${dir}/btc-price-history.json: ${deep.length} days from ${deep[0]?.date}`);
+
+    const halvings = halvingDatasetSchema.parse({
+      ...buildHalvingDataset(deep, { fetchedAt }),
+      currency,
+    });
+    await writeJson(`${dir}/halving-cycles.json`, halvings);
+    console.log(
+      `${dir}/halving-cycles.json: ${halvings.cycles.map((c) => `c${c.cycle}=${c.series.length}`).join(' ')}`,
+    );
+
+    const monthly = monthlyDatasetSchema.parse({
+      ...buildMonthlyDataset(deep, { fetchedAt }),
+      currency,
+    });
+    await writeJson(`${dir}/monthly-returns.json`, monthly);
+    console.log(`${dir}/monthly-returns.json: ${monthly.months.length} months`);
+  }
+
+  if (spot && deep && sp && au) {
+    const historyEnd = deep.at(-1)?.date ?? '';
+    const spotEnd = spot.at(-1)?.date ?? '';
+    if (historyEnd < spotEnd) {
+      console.warn(`warning: ${currency} history ends ${historyEnd}, before spot ${spotEnd}`);
+    }
+    const risk = riskDatasetSchema.parse({
+      ...buildRiskDataset(spot, { sp500: sp, gold: au }, { fetchedAt, history: deep }),
+      currency,
+    });
+    await writeJson(`${dir}/risk-metrics.json`, risk);
+    console.log(`${dir}/risk-metrics.json: as of ${risk.asOf}, max drawdown ${risk.drawdown.maxDrawdownPct}%`);
+
+    if (dxy) {
+      const toPoints = (rows: { date: string; close: number }[]) =>
+        rows.map(({ date, close }) => ({ date, value: close }));
+      const correlations = correlationDatasetSchema.parse({
+        ...buildCorrelationDataset(
+          {
+            btc: deep.map(({ date, priceUsd }) => ({ date, value: priceUsd })),
+            sp500: toPoints(sp),
+            gold: toPoints(au),
+            dxy: toPoints(dxy),
+          },
+          { fetchedAt, asOf: risk.asOf, displayFrom: spot[0]?.date ?? risk.asOf },
+        ),
+        currency,
+      });
+      await writeJson(`${dir}/correlations.json`, correlations);
+      console.log(
+        `${dir}/correlations.json: ${correlations.pairs.map((p) => `${p.pair}=${p.series.length}`).join(' ')}`,
+      );
+    }
   }
 }
 

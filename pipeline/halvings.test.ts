@@ -55,7 +55,7 @@ describe('buildHalvingDataset', () => {
   });
 
   it('produces output the on-disk schema accepts', () => {
-    expect(() => halvingDatasetSchema.parse(dataset)).not.toThrow();
+    expect(() => halvingDatasetSchema.parse({ ...dataset, currency: 'usd' })).not.toThrow();
   });
 
   it('rejects history that ends before a halving', () => {

@@ -9,6 +9,28 @@ export type MarketChart = z.infer<typeof marketChartSchema>;
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
+/**
+ * Display currency of a derived dataset. USD is the source currency; GBP
+ * files are rebuilt from closes converted at each day's rate, so every
+ * percentage metric in them is genuinely GBP-denominated, not relabelled.
+ */
+export const currencySchema = z.enum(['usd', 'gbp']);
+
+/** Versioned on-disk format of data/fx-gbpusd.json. */
+export const fxDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  pair: z.literal('GBPUSD'),
+  source: z.enum(['yahoo', 'fred']),
+  /** ISO 8601 instant of the pipeline run that produced this file. */
+  fetchedAt: z.string(),
+  /** USD per GBP, one entry per quoted weekday. */
+  series: z
+    .array(z.object({ date: isoDate, close: z.number().positive() }))
+    .min(365),
+});
+
+export type FxDataset = z.infer<typeof fxDatasetSchema>;
+
 /** superRefine body pinning strictly ascending dates on a series. */
 function refineAscendingDates(series: { date: string }[], ctx: z.RefinementCtx): void {
   for (let i = 1; i < series.length; i++) {
@@ -46,6 +68,7 @@ export type PriceStats = z.infer<typeof priceStatsSchema>;
 export const priceDatasetSchema = z.object({
   schemaVersion: z.literal(1),
   source: z.literal('coingecko'),
+  currency: currencySchema,
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
   /** History window requested from the source, in days. */
@@ -81,6 +104,7 @@ export const blockchainChartSchema = z.object({
 export const historyDatasetSchema = z.object({
   schemaVersion: z.literal(1),
   source: z.literal('blockchain.info'),
+  currency: currencySchema,
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
   series: z.array(dailyPriceShape).min(1000),
@@ -112,6 +136,7 @@ export type HalvingCycle = z.infer<typeof halvingCycleSchema>;
 export const halvingDatasetSchema = z.object({
   schemaVersion: z.literal(1),
   source: z.literal('blockchain.info'),
+  currency: currencySchema,
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
   /** Last history date the cycles run up to. */
@@ -132,6 +157,7 @@ export type BenchmarkDay = z.infer<typeof benchmarkDaySchema>;
 /** Versioned on-disk format of data/benchmarks-daily.json. */
 export const benchmarkDatasetSchema = z.object({
   schemaVersion: z.literal(1),
+  currency: currencySchema,
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
   /** Calendar days of history kept per series (trailing window). */
@@ -333,6 +359,7 @@ export type YearlyReturn = z.infer<typeof yearlyReturnSchema>;
 export const monthlyDatasetSchema = z.object({
   schemaVersion: z.literal(1),
   source: z.literal('blockchain.info'),
+  currency: currencySchema,
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
   asOf: isoDate,
@@ -366,6 +393,7 @@ export type PairId = z.infer<typeof pairIdSchema>;
 /** Versioned on-disk format of data/correlations.json. */
 export const correlationDatasetSchema = z.object({
   schemaVersion: z.literal(1),
+  currency: currencySchema,
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
   asOf: isoDate,
@@ -388,6 +416,7 @@ export type CorrelationDataset = z.infer<typeof correlationDatasetSchema>;
 /** Versioned on-disk format of data/risk-metrics.json. */
 export const riskDatasetSchema = z.object({
   schemaVersion: z.literal(2),
+  currency: currencySchema,
   /** ISO 8601 instant of the pipeline run that produced this file. */
   fetchedAt: z.string(),
   /** Latest BTC date all metrics run up to. */
