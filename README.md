@@ -5,7 +5,7 @@ pipeline fetches market data, validates it with zod, derives every metric in
 tested pure TypeScript, and commits versioned JSON to `/data`; Astro builds
 the site from that dataset alone, charted with Observable Plot.
 
-**Status:** Phase 1 (M0–M6) shipped; Phase 2 (M7–M12) planned.
+**Status:** Phase 1 (M0–M6) shipped; Phase 2 (M7–M14) planned.
 [PLAN.md](PLAN.md) holds the milestone plan, [CLAUDE.md](CLAUDE.md) the
 development rules.
 
