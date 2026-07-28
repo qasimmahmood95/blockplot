@@ -26,6 +26,7 @@ currency, since the same key holds dollars at the root and pounds under
 | `btc-price-history.json` | Full BTC daily history from 2010 (blockchain.com charts API) |
 | `benchmarks-daily.json` | S&P 500 (FRED `SP500`), gold and DXY (Yahoo Finance — see `sourceSeries`) daily closes, trailing 460 days — the window the risk page needs |
 | `risk-metrics.json` | Derived risk metrics: rolling 30/90/365d realized vol, drawdown curve, Sharpe/Sortino comparison vs S&P 500 and gold |
+| `signals.json` | Confirmed daily signal states — volatility band, drawdown band, all-time high, halving-cycle high, dominance move — plus the raw span counts the page quotes. Per currency. |
 | `halving-cycles.json` | Per-halving-epoch price series normalised to the halving-day close, for the cycle overlay |
 | `monthly-returns.json` | Month-over-month BTC returns from full history plus compounded yearly totals, for the heatmap |
 | `correlations.json` | Rolling 90d Pearson correlations of aligned daily log returns for all pairs of BTC, S&P 500, gold, DXY, plus each pair's regime segmentation. Pairs with BTC carry full shared history; the other three keep 365 days |

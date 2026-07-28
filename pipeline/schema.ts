@@ -513,3 +513,83 @@ export const riskDatasetSchema = z.object({
 });
 
 export type RiskDataset = z.infer<typeof riskDatasetSchema>;
+
+const bandSpanSchema = z.object({
+  state: z.string().min(1),
+  since: isoDate,
+  observations: z.number().int().positive(),
+});
+
+/**
+ * A confirmed band state plus the candidate queueing behind it. `pending` is
+ * not decoration: it is what stops the page reporting "low" the day a reading
+ * drifts a fraction under a threshold, while still admitting that it has.
+ */
+const bandSignalSchema = z.object({
+  state: z.string().min(1),
+  since: isoDate,
+  observations: z.number().int().positive(),
+  pending: bandSpanSchema.nullable(),
+  history: z.array(bandSpanSchema).min(1),
+});
+
+/** Versioned on-disk format of data/signals.json. */
+export const signalsDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  currency: currencySchema,
+  fetchedAt: z.iso.datetime(),
+  asOf: isoDate,
+  /** Thresholds recorded alongside the states, so a reader can check the call. */
+  thresholds: z.object({
+    volWindowDays: z.number().int().positive(),
+    volLowPct: z.number().positive(),
+    volHighPct: z.number().positive(),
+    drawdownBandsPct: z.array(z.number().negative()).min(1),
+    confirmDays: z.number().int().positive(),
+  }),
+  /**
+   * Spans a bare threshold test would produce over the same series. Committed
+   * because the page cites it to justify the hysteresis, and a page must not
+   * assert a number about its own data that nothing computed.
+   */
+  rawSpans: z.object({ vol: z.number().int().nonnegative(), drawdown: z.number().int().nonnegative() }),
+  vol: bandSignalSchema.nullable(),
+  drawdown: bandSignalSchema.nullable(),
+  ath: z
+    .object({
+      date: isoDate,
+      price: z.number().positive(),
+      latestDate: isoDate,
+      latestPrice: z.number().positive(),
+      fromAthPct: z.number(),
+      daysSince: z.number().int().nonnegative(),
+      isNew: z.boolean(),
+    })
+    .nullable(),
+  cycle: z
+    .object({
+      /** Halving that opened the running cycle. */
+      halvingDate: isoDate,
+      peakMultiple: z.number().positive(),
+      peakDay: z.number().int().nonnegative(),
+      latestMultiple: z.number().positive(),
+      latestDay: z.number().int().nonnegative(),
+      isNew: z.boolean(),
+    })
+    .nullable(),
+  /**
+   * Null until the accreted dominance series is deep enough to carry a signal.
+   * Nullable rather than omitted so the absence is explicit in the file.
+   */
+  dominance: z
+    .object({
+      latestPct: z.number().positive(),
+      latestDate: isoDate,
+      changePp: z.number(),
+      overDays: z.number().int().positive(),
+      fromDate: isoDate,
+    })
+    .nullable(),
+});
+
+export type SignalsDataset = z.infer<typeof signalsDatasetSchema>;

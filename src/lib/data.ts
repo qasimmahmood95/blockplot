@@ -5,6 +5,7 @@ import usdCorrelations from '../../data/correlations.json';
 import usdHalvings from '../../data/halving-cycles.json';
 import usdMonthly from '../../data/monthly-returns.json';
 import usdRisk from '../../data/risk-metrics.json';
+import usdSignals from '../../data/signals.json';
 import gbpBenchmarks from '../../data/gbp/benchmarks-daily.json';
 import gbpPrice from '../../data/gbp/btc-price-daily.json';
 import gbpHistory from '../../data/gbp/btc-price-history.json';
@@ -12,6 +13,7 @@ import gbpCorrelations from '../../data/gbp/correlations.json';
 import gbpHalvings from '../../data/gbp/halving-cycles.json';
 import gbpMonthly from '../../data/gbp/monthly-returns.json';
 import gbpRisk from '../../data/gbp/risk-metrics.json';
+import gbpSignals from '../../data/gbp/signals.json';
 import dominanceDataset from '../../data/dominance.json';
 import networkDataset from '../../data/network.json';
 import stablecoinDataset from '../../data/stablecoins.json';
@@ -25,6 +27,7 @@ import {
   networkDatasetSchema,
   priceDatasetSchema,
   riskDatasetSchema,
+  signalsDatasetSchema,
   stablecoinDatasetSchema,
 } from '../../pipeline/schema';
 import type {
@@ -35,6 +38,7 @@ import type {
   MonthlyDataset,
   PriceDataset,
   RiskDataset,
+  SignalsDataset,
 } from '../../pipeline/schema';
 import type { Currency } from './currency';
 
@@ -84,6 +88,7 @@ interface CurrencyData {
   correlations: CorrelationDataset;
   btcHistory: HistoryDataset;
   monthlyReturns: MonthlyDataset;
+  signals: SignalsDataset;
 }
 
 /** One currency's tree, each file named so a zod path is unambiguous. */
@@ -95,6 +100,7 @@ const currencyData = (dir: string, raw: Record<keyof CurrencyData, unknown>): Cu
   correlations: parseOne(`${dir}correlations.json`, correlationDatasetSchema, raw.correlations),
   btcHistory: parseOne(`${dir}btc-price-history.json`, historyDatasetSchema, raw.btcHistory),
   monthlyReturns: parseOne(`${dir}monthly-returns.json`, monthlyDatasetSchema, raw.monthlyReturns),
+  signals: parseOne(`${dir}signals.json`, signalsDatasetSchema, raw.signals),
 });
 
 const BY_CURRENCY: Record<Currency, CurrencyData> = {
@@ -106,6 +112,7 @@ const BY_CURRENCY: Record<Currency, CurrencyData> = {
     correlations: usdCorrelations,
     btcHistory: usdHistory,
     monthlyReturns: usdMonthly,
+    signals: usdSignals,
   }),
   gbp: currencyData('gbp/', {
     btcDaily: gbpPrice,
@@ -115,6 +122,7 @@ const BY_CURRENCY: Record<Currency, CurrencyData> = {
     correlations: gbpCorrelations,
     btcHistory: gbpHistory,
     monthlyReturns: gbpMonthly,
+    signals: gbpSignals,
   }),
 };
 
