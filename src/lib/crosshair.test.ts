@@ -141,35 +141,38 @@ describe('crosshairAnchors', () => {
  */
 describe('tipLineWidth', () => {
   it('actually binds at phone widths', () => {
-    // Container widths measured off the built site at 280/320/380px viewports.
-    // Every one of these must come out below Plot's default of 20.
+    // Container widths measured off the built site at 280/320/360/380px
+    // viewports. Every one must come out below Plot's default of 20.
     expect(tipLineWidth(246)).toBe(9);
-    expect(tipLineWidth(286)).toBe(12);
-    expect(tipLineWidth(306)).toBe(14);
+    expect(tipLineWidth(286)).toBe(10);
+    expect(tipLineWidth(306)).toBe(11);
+    expect(tipLineWidth(340)).toBe(13);
   });
 
-  it('budgets for the worst placement, not the best', () => {
-    // Half the plot, less the axis margin and the tip's own ~22px of chrome:
-    // (306 − 70) / 2 − 22 = 96px of text, at ~7px an em.
-    //
-    // Budgeting half the whole SVG instead — on the true observation that the
-    // tip may overlap the axis labels — let the box be clipped again, because
-    // Plot flips it to whichever side has room and at 320px neither side does.
-    expect(tipLineWidth(306)).toBe(14);
-    expect(tipLineWidth(306)).toBeLessThan(19);
+  it('budgets half the SVG, less the tip’s chrome', () => {
+    // Plot tries the right of the cursor, then the left, and overflows if
+    // neither side fits — so the box has to fit the smaller side.
+    // (360 / 2) − 28 = 152px of text, at ~10.5px a unit.
+    expect(tipLineWidth(360)).toBe(14);
+  });
+
+  it('does not deduct an axis margin, which was cancelling a bad em', () => {
+    // A 70px deduction paired with a 7px-per-unit assumption gave roughly the
+    // right answer for the wrong reason; removing only one of them put the
+    // clipping back at 360px, the commonest phone width there is.
+    expect(tipLineWidth(360)).toBeGreaterThan(11);
+  });
+
+  it('rounds down, because rounding up spends text it has not got', () => {
+    // (340 / 2) − 28 = 142; 142 / 10.5 = 13.52. Rounding gives 14 units —
+    // 10px more text than the frame can hold.
+    expect(tipLineWidth(340)).toBe(13);
   });
 
   it('leaves desktop at Plot’s default, so wide charts are untouched', () => {
     expect(tipLineWidth(694)).toBe(20);
     expect(tipLineWidth(886)).toBe(20);
     expect(tipLineWidth(1400)).toBe(20);
-  });
-
-  it('reaches Plot’s default only once the plot is genuinely wide', () => {
-    // Past ~400px the budget already exceeds the default, so the cap stops
-    // mattering and every desktop chart keeps the wrap it always had.
-    expect(tipLineWidth(400)).toBe(20);
-    expect(tipLineWidth(360)).toBe(18);
   });
 
   it('has a legible floor rather than a column of single words', () => {
@@ -179,7 +182,7 @@ describe('tipLineWidth', () => {
 
   it('falls back to the default for a width that is not a width', () => {
     // `container.clientWidth` is 0 for a display:none chart, and the charts
-    // pass `|| 720` — but a 0 slipping through must not produce an 8em tip.
+    // pass `|| 720` — but a 0 slipping through must not produce an 8-unit tip.
     expect(tipLineWidth(0)).toBe(20);
     expect(tipLineWidth(-50)).toBe(20);
     expect(tipLineWidth(Number.NaN)).toBe(20);

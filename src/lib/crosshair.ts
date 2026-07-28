@@ -97,27 +97,27 @@ export const isoDay = (x: Date): string => x.toISOString().slice(0, 10);
 const PLOT_DEFAULT_LINE_WIDTH = 20;
 
 /**
- * Chrome around the tip's text: its own padding and border, in pixels.
- * Measured off the rendered chart (box 155px against 133px of text).
+ * Chrome around the tip's text, in pixels: Plot's `pointerSize` (12) plus
+ * `textPadding` (8) on each side. Read off Plot's own defaults, not guessed.
  */
-const TIP_PADDING_PX = 22;
+const TIP_CHROME_PX = 28;
 
 /**
- * The widest left margin any chart reserves for its y-axis, in pixels. The tip
- * may overlap it, but budgeting as if it may not is what keeps the box inside
- * the frame when the cursor is mid-plot and neither side has room.
+ * Pixels of text one unit of `lineWidth` actually buys.
+ *
+ * `monospace: true` does not make Plot's measurement *accurate* — it makes it
+ * *predictable*. Plot switches to a flat 63 width-units per grapheme, and
+ * these charts render the tip at 11px IBM Plex Mono, measured at 6.6234px per
+ * character. So one unit buys 100/63 × 6.6234 ≈ 10.5px, not the 7 assumed
+ * before.
+ *
+ * That error was 1.5× and it was being hidden: an earlier version deducted a
+ * 70px axis margin from the budget, which happened to cancel most of it. When
+ * that deduction was removed — on the correct observation that the tip may
+ * overlap the axis — the compensation went with it and the clipping came back,
+ * which made the margin look load-bearing. It never was. This constant was.
  */
-const MAX_PLOT_MARGIN_PX = 70;
-
-/**
- * Pixels per em of wrap budget. Plot's `lineWidth` is in ems, but it measures
- * against a table built at **10px system-ui** — while every chart here renders
- * the tip at 11px IBM Plex Mono, whose advance is wider. Measured
- * underestimate on a real label: Plot 103px, rendered 125px, a factor of 1.22.
- * Marks pass `monospace: true`, which switches Plot to a fixed advance and
- * removes most of that error; this is the remaining allowance.
- */
-const PX_PER_EM = 7;
+const PX_PER_LINE_WIDTH_UNIT = 10.5;
 
 /**
  * How wide the tooltip may wrap, in ems, for a plot of `width` pixels.
@@ -128,28 +128,32 @@ const PX_PER_EM = 7;
  * gets "500 -0.04" where the label said "2019-01-02 / BTC – S&P 500 -0.04",
  * which is worse than a truncation they can see coming.
  *
- * Half the plot, less the axis margin and the tip's own chrome.
+ * Half the SVG, less the tip's chrome. Half, because Plot tries the right of
+ * the cursor then the left and takes neither if neither fits — so the box has
+ * to fit the smaller side at the worst cursor position. The SVG rather than the
+ * plot area, because Plot's own fit test (`marks/tip.js`) is against the full
+ * width and the tip is free to overlap the axis labels.
  *
- * Loosening this to half the *SVG* — on the reasoning that the tip may sit over
- * the axis labels, which it may — put the guillotine back: Plot flips the tip
- * to whichever side has room, and at 320px with the cursor mid-plot neither
- * side does. The budget has to assume the worst placement, not the best.
+ * No margin deduction: that was compensation for a mis-measured em, and two
+ * errors cancelling is not a calibration.
  *
- * The cost is that a genuinely long label truncates on a small phone. That is
- * the better failure: an ellipsis tells the reader something is missing, where
- * a clipped box hands them "500 -0.04" and lets them believe it.
+ * `floor`, not `round` — rounding up hands back a unit the budget does not
+ * have, which is a whole 10px of text.
  *
- * Floored at 8 ems so a very narrow chart truncates rather than becoming a
+ * Floored at 8 units so a very narrow chart truncates rather than becoming a
  * column of single words, and never above Plot's own default, so desktop is
- * untouched.
+ * untouched. The cost of the cap is that a long label truncates on a small
+ * phone, which is the better failure: an ellipsis tells the reader something
+ * is missing, where a clipped box hands them "024-07-16" and lets them
+ * believe it.
  *
- * The first version of this was arithmetically incapable of returning anything
- * but the default; the second ignored the padding and the font; the third
- * over-corrected, and the fourth under-corrected. The numbers are measured
- * against the built site, not derived.
+ * The numbers are measured against the built site, not derived.
  */
 export function tipLineWidth(width: number): number {
   if (!Number.isFinite(width) || width <= 0) return PLOT_DEFAULT_LINE_WIDTH;
-  const usable = (width - MAX_PLOT_MARGIN_PX) / 2 - TIP_PADDING_PX;
-  return Math.max(8, Math.min(PLOT_DEFAULT_LINE_WIDTH, Math.round(usable / PX_PER_EM)));
+  const usable = width / 2 - TIP_CHROME_PX;
+  return Math.max(
+    8,
+    Math.min(PLOT_DEFAULT_LINE_WIDTH, Math.floor(usable / PX_PER_LINE_WIDTH_UNIT)),
+  );
 }

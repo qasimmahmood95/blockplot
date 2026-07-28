@@ -23,16 +23,21 @@ describe('compactMoney', () => {
   it('spells out figures a reader would want exactly', () => {
     expect(fmt(0)).toBe('$0');
     expect(fmt(23_486)).toBe('$23,486');
-    expect(fmt(1_234_567)).toBe('$1,234,567');
+    expect(fmt(999_999)).toBe('$999,999');
   });
 
-  it('switches to compact at eight figures, and not before', () => {
-    // The boundary is the whole rule; a mutation moving it to 1e8 or 1e9
-    // silently restores the overflow this exists to prevent.
-    expect(COMPACT_ABOVE).toBe(1e7);
-    expect(fmt(9_999_998)).toBe('$9,999,998');
-    expect(fmt(1e7)).toBe('$10.00M');
+  it('switches to compact at seven figures, and not before', () => {
+    // The boundary is the whole rule; a mutation moving it up silently
+    // restores the overflow this exists to prevent. Measured: at 360px,
+    // `$6,067,043` truncates and `$6.07M` does not.
+    expect(COMPACT_ABOVE).toBe(1e6);
+    expect(fmt(999_998)).toBe('$999,998');
+    expect(fmt(6_067_043)).toBe('$6.07M');
     expect(fmt(23_486_210)).toBe('$23.49M');
+    // Not an exact string: Node's ICU renders 1e6 as "$1.00M" and Chromium's
+    // as "$1M", and only the browser's output is ever shown to anyone.
+    // Asserting which *branch* was taken is the part that is ours to get right.
+    expect(fmt(1e6)).toMatch(/^\$1(\.00)?M$/);
   });
 
   it('stays short at the sizes that broke the tooltip', () => {

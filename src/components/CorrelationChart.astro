@@ -135,8 +135,15 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
             points.map((d) => ({
               x: d.date,
               y: d.corr,
-              // Just the counterpart, not the pair: the chart's heading and its
-              // aria-label both already say this is BTC against something.
+              // Drop a leading "BTC – ", because the pressed pair button
+              // beside the chart already spells the pair out in full and the
+              // tooltip has to fit a phone. Only the leading side is dropped,
+              // so the three non-BTC pairs still read "S&P 500 – gold 0.11"
+              // and no label is ambiguous about which two things it relates.
+              //
+              // Not justified by the heading or the aria-label: neither says
+              // "BTC". Worth stating, because a previous version of this
+              // comment claimed they did.
               label: `${pairLabel(pair).replace(/^BTC\s*[–-]\s*/, '')} ${d.corr.toFixed(2)}`,
             })),
             isoDay,
