@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultStartDate, wealthExtent } from './dca';
+import { defaultStartDate, wealthExtent } from './dca-shared';
 import { bandFill, pairLabel, regimeFrom, type Segment } from './correlation';
 import { billions } from './flows';
 import { volColor } from './vol';

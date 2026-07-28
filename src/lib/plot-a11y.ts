@@ -24,6 +24,9 @@ export function stripMarkAriaLabels(root: AriaScrubbable): void {
   for (const el of root.querySelectorAll('g[aria-label]')) el.removeAttribute('aria-label');
 }
 
+/** Containers already under observation, so a redraw cannot stack another. */
+const observed = new WeakSet<Element>();
+
 /**
  * Keep them stripped once the chart is live.
  *
@@ -33,11 +36,22 @@ export function stripMarkAriaLabels(root: AriaScrubbable): void {
  * `''` and `false` all still emit the mark's default — so the labels have to be
  * removed as they appear.
  *
+ * Exactly one observer per container, for the container's lifetime. It watches
+ * the container rather than the SVG precisely so it survives a redraw
+ * replacing the children — which also means calling this again after each
+ * redraw would attach another observer to the same element, and every observer
+ * fires on every mutation, so the work would grow quadratically. Left
+ * unguarded that reached 476 live observers and 7,245 callbacks eight seconds
+ * into a single hover.
+ *
  * Only added nodes are inspected, and removing an attribute raises no
  * childList record, so this cannot feed itself.
  */
-export function keepMarkAriaLabelsStripped(container: Element): MutationObserver {
+export function keepMarkAriaLabelsStripped(container: Element): void {
   stripMarkAriaLabels(container);
+  if (observed.has(container)) return;
+  observed.add(container);
+
   const observer = new MutationObserver((records) => {
     for (const record of records) {
       for (const node of record.addedNodes) {
@@ -48,5 +62,4 @@ export function keepMarkAriaLabelsStripped(container: Element): MutationObserver
     }
   });
   observer.observe(container, { childList: true, subtree: true });
-  return observer;
 }

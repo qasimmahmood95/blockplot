@@ -2,8 +2,7 @@
 import type { Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
-import { renderChartSvg } from '../lib/plot-ssr';
-import { SSR_WIDTH } from '../lib/plot-theme';
+import { renderResponsiveChart } from '../lib/plot-ssr';
 import {
   bandFill,
   correlationSpec,
@@ -29,7 +28,7 @@ const active = pairs[0];
 // matter — all six are a few dozen rows, and rendering them here means the
 // pair switch is a visibility change rather than a DOM build.
 const svg = active
-  ? renderChartSvg(correlationSpec(active, correlations.regimeThreshold, SSR_WIDTH, false))
+  ? renderResponsiveChart((w) => correlationSpec(active, correlations.regimeThreshold, w, false))
   : '';
 ---
 
@@ -144,18 +143,29 @@ const svg = active
       drawChart(container, correlationSpec(pair, threshold, width, true));
     });
 
+    const show = (pair: string): void => {
+      toggle
+        ?.querySelectorAll('button')
+        .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pair === pair)));
+      // The tables are all already here; switching pair only changes which one
+      // is shown.
+      tables.forEach((t) => {
+        t.hidden = t.dataset.pair !== pair;
+      });
+    };
+
     toggle?.querySelectorAll('button').forEach((button) => {
       button.addEventListener('click', () => {
+        const previous = active;
         active = button.dataset.pair ?? active;
-        toggle
-          .querySelectorAll('button')
-          .forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-        // The tables are all already here; switching pair only changes which
-        // one is shown.
-        tables.forEach((t) => {
-          t.hidden = t.dataset.pair !== active;
+        show(active);
+        // If Plot never arrives the chart is still the old pair's, so put the
+        // pressed button and the table back rather than captioning the wrong
+        // chart with the right label.
+        upgrade().catch(() => {
+          active = previous;
+          show(active);
         });
-        upgrade();
       });
     });
   }

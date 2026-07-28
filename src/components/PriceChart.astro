@@ -2,8 +2,7 @@
 import { CURRENCY_META, type Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
-import { renderChartSvg } from '../lib/plot-ssr';
-import { SSR_WIDTH } from '../lib/plot-theme';
+import { renderResponsiveChart } from '../lib/plot-ssr';
 import { priceSpec } from '../lib/specs/price';
 
 interface Props {
@@ -17,11 +16,11 @@ const payload = { code, series: btcDaily.series };
 
 // Drawn here, once, at the width the viewBox scales from. The reader gets a
 // finished chart in the HTML; Plot is fetched only if they hover it.
-const svg = renderChartSvg(
+const svg = renderResponsiveChart((w) =>
   priceSpec(
     btcDaily.series.map((d) => ({ date: new Date(d.date), price: d.price })),
     code,
-    SSR_WIDTH,
+    w,
   ),
 );
 ---

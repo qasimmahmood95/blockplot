@@ -2,8 +2,7 @@
 import type { Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
-import { renderChartSvg } from '../lib/plot-ssr';
-import { SSR_WIDTH } from '../lib/plot-theme';
+import { renderResponsiveChart } from '../lib/plot-ssr';
 import { cycleColor, cyclesSpec } from '../lib/specs/cycles';
 
 interface Props {
@@ -27,7 +26,7 @@ const lineEnds = payload.flatMap((c) => {
 const domain = payload.map((c) => c.label);
 
 // Log is the pressed default, so that is the state the build draws.
-const svg = renderChartSvg(cyclesSpec(points, lineEnds, domain, 'log', SSR_WIDTH));
+const svg = renderResponsiveChart((w) => cyclesSpec(points, lineEnds, domain, 'log', w));
 ---
 
 <figure class="chart-frame">
@@ -106,13 +105,23 @@ const svg = renderChartSvg(cyclesSpec(points, lineEnds, domain, 'log', SSR_WIDTH
       drawChart(container, cyclesSpec(points, lineEnds, domain, scale, width, anchors));
     });
 
+    const show = (next: CycleScale): void => {
+      toggle.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.scale === next)));
+    };
+
     toggle.forEach((button) => {
       button.addEventListener('click', () => {
+        const previous = scale;
         scale = button.dataset.scale === 'linear' ? 'linear' : 'log';
-        toggle.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+        show(scale);
         // Pressing the toggle is what asks for a chart the build did not draw,
-        // so this is where the scale switch pays for Plot.
-        upgrade();
+        // so this is where the scale switch pays for Plot — and if Plot never
+        // arrives, the pressed state goes back rather than claiming a linear
+        // axis over the log chart still on screen.
+        upgrade().catch(() => {
+          scale = previous;
+          show(scale);
+        });
       });
     });
   }

@@ -56,11 +56,17 @@ and never gitignored.
   - Colours are `var(--token)` strings, never resolved with `cssVar()`. SVG
     presentation attributes are mapped to CSS properties, so both themes and
     the theme toggle are handled by CSS with no redraw.
-  - Plot is loaded only by a dynamic `import()` behind `upgradeChart`, on the
-    interaction that needs it: a hover for the crosshair, a press for a
-    scale or pair switch, an entered amount for the holdings line. Importing
-    Plot at the top level of an island puts it back on the critical path —
-    which is the specific regression this replaced.
+  - Plot is loaded only by a dynamic `import()`, on the interaction that needs
+    it: a hover for the crosshair, a press for a scale or pair switch, an
+    entered amount for the holdings line. Charts drawn from `/data` go through
+    `upgradeChart`; the holdings chart has no build-time form to upgrade, so
+    it imports Plot inside its own render, which runs only once an amount
+    exists. Importing Plot at the top level of any island puts it back on the
+    critical path — the specific regression this replaced.
+  - Each chart is drawn at two widths and CSS shows the one that fits. An SVG
+    with a viewBox scales *uniformly*, so a single rendered width is a size,
+    not an aspect ratio: one 720px chart in a 301px phone container came out
+    at 4.6px axis type with twelve overlapping month labels.
 - Reader-entered data stays in the browser. It must never appear in a URL,
   query string, page title, form action, or any request — a "share this"
   feature is a violation, not an exception — and is never committed. It is

@@ -1,11 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 /**
  * `cssVar` reads from `document`, which does not exist here, and the module
  * under test is only ever imported by chart islands. Stubbing it keeps this a
  * unit test of the marks rather than a DOM test.
  */
-vi.mock('./charts', () => ({ cssVar: (name: string) => `var(${name})` }));
 
 const { crosshairMarks, crosshairMarksFrom } = await import('./crosshair-marks');
 const { crosshairAnchors, tipLineWidth } = await import('./crosshair');

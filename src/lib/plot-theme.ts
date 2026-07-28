@@ -36,13 +36,3 @@ export const PLOT_STYLE = {
   fontFamily: 'var(--font-mono)',
   fontSize: '11px',
 } as const;
-
-/**
- * The width a chart is rendered at during the build.
- *
- * The SVG carries a viewBox and Plot's own `max-width: 100%; height: auto`, so
- * this is an aspect ratio rather than a size — the served chart scales to its
- * container. It only stops being exact when the reader interacts, at which
- * point the live chart re-renders at the true measured width.
- */
-export const SSR_WIDTH = 720;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { renderChartSvg } from './plot-ssr';
+import { renderChartSvg, NARROW_WIDTH, WIDE_WIDTH, renderResponsiveChart } from './plot-ssr';
 import { stripMarkAriaLabels } from './plot-a11y';
 import { priceSpec } from './specs/price';
 
@@ -64,5 +64,38 @@ describe('stripMarkAriaLabels', () => {
 
   it('is a no-op when there are none', () => {
     expect(() => stripMarkAriaLabels({ querySelectorAll: () => [] })).not.toThrow();
+  });
+});
+
+describe('renderResponsiveChart', () => {
+  const html = renderResponsiveChart((width) => priceSpec(POINTS, 'USD', width));
+
+  it('emits both variants, each wrapped for the stylesheet to pick', () => {
+    expect(html).toContain('<span class="chart-at-narrow">');
+    expect(html).toContain('<span class="chart-at-wide">');
+    expect(html.match(/<svg/g)).toHaveLength(2);
+  });
+
+  it('lays each variant out at its own width rather than scaling one', () => {
+    // The bug this replaced: one 720px SVG shown in a 301px phone container
+    // became 4.6px axis type, because an SVG with a viewBox scales uniformly.
+    expect(html).toContain(`viewBox="0 0 ${NARROW_WIDTH}`);
+    expect(html).toContain(`viewBox="0 0 ${WIDE_WIDTH}`);
+  });
+
+  it('gives the narrow variant fewer axis ticks, not smaller ones', () => {
+    const narrow = html.slice(html.indexOf('chart-at-narrow'), html.indexOf('chart-at-wide'));
+    const wide = html.slice(html.indexOf('chart-at-wide'));
+    const ticks = (s: string): number => (s.match(/<text/g) ?? []).length;
+    expect(ticks(narrow)).toBeLessThan(ticks(wide));
+  });
+});
+
+describe('coordinate trimming', () => {
+  it('rounds path data to a tenth of a pixel', () => {
+    const svg = renderChartSvg(priceSpec(POINTS, 'USD', 720));
+    const d = /\sd="([^"]+)"/.exec(svg)?.[1] ?? '';
+    expect(d).not.toBe('');
+    expect(d).not.toMatch(/\d\.\d{2,}/);
   });
 });

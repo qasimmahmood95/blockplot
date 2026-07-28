@@ -2,8 +2,7 @@
 import type { Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
-import { renderChartSvg } from '../lib/plot-ssr';
-import { SSR_WIDTH } from '../lib/plot-theme';
+import { renderResponsiveChart } from '../lib/plot-ssr';
 import { drawdownSpec } from '../lib/specs/drawdown';
 
 interface Props {
@@ -13,10 +12,10 @@ interface Props {
 const { currency } = Astro.props;
 const { riskMetrics } = dataFor(currency);
 
-const svg = renderChartSvg(
+const svg = renderResponsiveChart((w) =>
   drawdownSpec(
     riskMetrics.drawdown.series.map((p) => ({ date: new Date(p.date), drawdownPct: p.drawdownPct })),
-    SSR_WIDTH,
+    w,
   ),
 );
 ---

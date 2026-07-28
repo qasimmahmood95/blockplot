@@ -2,8 +2,7 @@
 import type { Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
-import { renderChartSvg } from '../lib/plot-ssr';
-import { SSR_WIDTH } from '../lib/plot-theme';
+import { renderResponsiveChart } from '../lib/plot-ssr';
 import { volColor, volSpec } from '../lib/specs/vol';
 
 interface Props {
@@ -23,7 +22,7 @@ const lineEnds = payload.flatMap((w) => {
 });
 const domain = payload.map((w) => `${w.windowDays}d`);
 
-const svg = renderChartSvg(volSpec(points, lineEnds, domain, SSR_WIDTH));
+const svg = renderResponsiveChart((w) => volSpec(points, lineEnds, domain, w));
 ---
 
 <figure class="chart-frame">

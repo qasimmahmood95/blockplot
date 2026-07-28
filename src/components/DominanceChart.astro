@@ -1,14 +1,13 @@
 ---
 import { dominance } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
-import { renderChartSvg } from '../lib/plot-ssr';
-import { SSR_WIDTH } from '../lib/plot-theme';
+import { renderResponsiveChart } from '../lib/plot-ssr';
 import { dominanceSpec } from '../lib/specs/flows';
 
-const svg = renderChartSvg(
+const svg = renderResponsiveChart((w) =>
   dominanceSpec(
     dominance.series.map((p) => ({ date: new Date(p.date), pct: p.btcDominancePct })),
-    SSR_WIDTH,
+    w,
   ),
 );
 ---

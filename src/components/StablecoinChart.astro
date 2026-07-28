@@ -1,14 +1,13 @@
 ---
 import { stablecoins } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
-import { renderChartSvg } from '../lib/plot-ssr';
-import { SSR_WIDTH } from '../lib/plot-theme';
+import { renderResponsiveChart } from '../lib/plot-ssr';
 import { stablecoinSpec } from '../lib/specs/flows';
 
-const svg = renderChartSvg(
+const svg = renderResponsiveChart((w) =>
   stablecoinSpec(
     stablecoins.series.map((p) => ({ date: new Date(p.date), totalUsd: p.totalUsd })),
-    SSR_WIDTH,
+    w,
   ),
 );
 ---
