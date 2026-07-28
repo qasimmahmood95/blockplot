@@ -38,7 +38,7 @@ const svg = active
     <div class="chart-toggle" id="pair-toggle" role="group" aria-label="Asset pair">
       {
         pairs.map((p, i) => (
-          <button type="button" data-pair={p.pair} aria-pressed={String(i === 0)}>
+          <button type="button" data-pair={p.pair} aria-pressed={i === 0 ? 'true' : 'false'}>
             {pairLabel(p)}
           </button>
         ))
