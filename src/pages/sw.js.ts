@@ -77,10 +77,17 @@ self.addEventListener('fetch', (event) => {
             // network-first branch below already guarded this; the asymmetry
             // was an oversight.
             if (response.ok) {
+              // Clone SYNCHRONOUSLY, before the body is handed to
+              // respondWith. Cloning inside the caches.open() callback runs
+              // after the response has been returned and its body consumed, so
+              // it throws "Response body is already used" on every asset — and
+              // the .catch below swallows it, leaving an empty cache and no
+              // error anywhere. That is how this shipped once.
+              const copy = response.clone();
               event.waitUntil(
                 caches
                   .open(VERSION)
-                  .then((cache) => cache.put(request, response.clone()))
+                  .then((cache) => cache.put(request, copy))
                   .catch(() => {}),
               );
             }
@@ -97,10 +104,12 @@ self.addEventListener('fetch', (event) => {
     fetch(request)
       .then((response) => {
         if (response.ok) {
+          // Synchronous clone, for the reason in the branch above.
+          const copy = response.clone();
           event.waitUntil(
             caches
               .open(VERSION)
-              .then((cache) => cache.put(request, response.clone()))
+              .then((cache) => cache.put(request, copy))
               .catch(() => {}),
           );
         }

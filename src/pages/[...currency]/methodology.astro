@@ -89,9 +89,9 @@ const t = signals.thresholds;
       <strong>Sharpe</strong> is mean return over standard deviation, annualised, at a zero risk-free
       rate — stated rather than assumed, since a non-zero rate would change the ranking between
       assets. <strong>Sortino</strong> replaces the denominator with downside deviation, counting
-      only negative returns. Both are null rather than zero when undefined, but for different
-      reasons: Sharpe when there are fewer than two returns or the variance is zero, Sortino when
-      there are no negative returns at all to form a downside deviation from.
+      only negative returns. Both are null rather than zero when undefined: either with fewer than two
+      returns, and then Sharpe additionally when the variance is zero, Sortino when there are no
+      negative returns at all to form a downside deviation from.
     </p>
   </section>
 
@@ -127,7 +127,9 @@ const t = signals.thresholds;
       on the snapshot dated 13 March 2020 met the S&amp;P's +9.29% rebound while its flat 12th met the
       S&amp;P's −9.51%: one inverted outlier pair then dominated a 60-observation window for three
       months, and the site reported BTC and equities as <em>inverse</em> through the most famous
-      co-crash on record. Correcting the offset moves the trailing correlation from +0.09 to +0.44.
+      co-crash on record. Correcting the offset flips that window's sign — the magnitude depends on
+      when you look, since it is a trailing figure, so the number is on the correlation page rather
+      than quoted here; the sign flip is what a unit test pins.
       And the re-dating happens <em>before</em> currency conversion, not after: conversion is itself
       a per-date join, so re-dating afterwards leaves the two legs on different days and the FX term
       stops cancelling — measured at 0.16 of noise in GBP correlations, against a 0.25 threshold.
