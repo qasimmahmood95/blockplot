@@ -1,4 +1,4 @@
-import { confirmSpans, leadConfirmed, type ConfirmedSpan } from './hysteresis';
+import { confirmSpans, leadConfirmed } from './hysteresis';
 import type { CyclePoint, DailyPrice, DominancePoint, DrawdownPoint, VolPoint } from './schema';
 
 /**
@@ -59,6 +59,42 @@ export const SIGNAL_CONFIRM_DAYS = 10;
 export const MIN_DOMINANCE_OBS = 30;
 
 export type VolBand = 'low' | 'normal' | 'high';
+
+/**
+ * How many spans a bare threshold test would produce — the number hysteresis
+ * exists to reduce, and the one the page quotes to justify itself.
+ *
+ * Derived rather than written down. The first version of the panel hardcoded
+ * "9" and "42": both were run counts described as *change* counts, so both
+ * were off by one, and the literal was rendered identically on the GBP page
+ * where the volatility figure is 5 rather than 9. A number a page asserts
+ * about its own data has to be computed from that data.
+ */
+export function rawSpanCount<T, S extends string>(
+  series: readonly T[],
+  stateOf: (item: T) => S,
+): number {
+  let spans = 0;
+  let previous: S | null = null;
+  for (const item of series) {
+    const state = stateOf(item);
+    if (state !== previous) spans += 1;
+    previous = state;
+  }
+  return spans;
+}
+
+/** Raw span counts for the two band signals, for the page's own methodology note. */
+export function rawSpanCounts(
+  volSeries: readonly VolPoint[],
+  drawdownSeries: readonly DrawdownPoint[],
+  opts: { low?: number; high?: number; bands?: readonly number[] } = {},
+): { vol: number; drawdown: number } {
+  return {
+    vol: rawSpanCount(volSeries, (p) => volBand(p.volPct, opts.low ?? VOL_LOW_PCT, opts.high ?? VOL_HIGH_PCT)),
+    drawdown: rawSpanCount(drawdownSeries, (p) => drawdownBand(p.drawdownPct, opts.bands ?? DRAWDOWN_BANDS_PCT)),
+  };
+}
 
 /** A confirmed state, and the candidate queueing up behind it. */
 export interface BandSignal<S extends string> {
@@ -123,11 +159,22 @@ function bandSignal<T, S extends string>(
   // An opening span seeded from one reading is not a confirmed state. Absorb it
   // into what follows — by the time this series starts, that was already the
   // state — exactly as the correlation regimes do.
-  if (lead && next && !leadConfirmed(series, lead, stateOf, confirmDays)) {
-    next.startIdx = lead.startIdx;
-    spans.shift();
+  if (lead && !leadConfirmed(series, lead, stateOf, confirmDays)) {
+    if (next) {
+      next.startIdx = lead.startIdx;
+      spans.shift();
+    } else {
+      // Nothing to absorb into: no state ever held for confirmDays anywhere in
+      // this series, so there is no confirmed state to report. Returning the
+      // lead would publish index 0's reading as a state — the exact artefact
+      // the hysteresis exists to prevent, and with `pending: null` implying
+      // nothing was queued behind it. The caller renders a signal it has, and
+      // omits one it does not.
+      return null;
+    }
   }
-  const last = spans[spans.length - 1] as ConfirmedSpan<S>;
+  const last = spans[spans.length - 1];
+  if (!last) return null;
 
   // How long the latest disagreeing run has been going, if any.
   let pending: BandSignal<S>['pending'] = null;

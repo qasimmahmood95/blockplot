@@ -61,6 +61,8 @@ const latestJson = toJsonScript({
   ratesAligned: usdDaily.stats.latestDate === gbpDaily.stats.latestDate,
 });
 
+const feedBase = `${base}${CURRENCY_META[currency].segment ? `/${CURRENCY_META[currency].segment}` : ''}`;
+
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(`${base}/og.png`, Astro.site);
 ---
@@ -73,18 +75,21 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
     <meta name="description" content={description} />
     <title>{title}</title>
     <link rel="canonical" href={canonical} />
-    {/* Discovery for the signal feed: readers look in the head, not the page. */}
+    {/* Discovery for the signal feed: readers look in the head, not the page.
+        Scoped to this page's currency — the bands genuinely differ between the
+        two trees, so advertising the USD feed on a GBP page would offer a feed
+        that contradicts the page carrying it. */}
     <link
       rel="alternate"
       type="application/rss+xml"
-      title="blockplot · signals"
-      href={`${base}/rss.xml`}
+      title={`blockplot · signals · ${CURRENCY_META[currency].label}`}
+      href={`${feedBase}/rss.xml`}
     />
     <link
       rel="alternate"
       type="application/feed+json"
-      title="blockplot · signals"
-      href={`${base}/feed.json`}
+      title={`blockplot · signals · ${CURRENCY_META[currency].label}`}
+      href={`${feedBase}/feed.json`}
     />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="blockplot" />

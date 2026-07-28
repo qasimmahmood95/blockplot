@@ -14,6 +14,7 @@ const base = {
     drawdownBandsPct: [-10, -20, -30, -50],
     confirmDays: 10,
   },
+  rawSpans: { vol: 9, drawdown: 42 },
   vol: null,
   drawdown: null,
   ath: null,

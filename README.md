@@ -121,8 +121,31 @@ fixed fixtures with exact, independently derived expected values.
   monthly heatmap. The dollar index is never converted: it measures the
   dollar itself.
 
+- **Signal states** are hysteretic. A volatility or drawdown band is only
+  entered once 10 consecutive observations agree, and is then dated to the
+  first of them — the day the change began, not the day it became certain. On
+  the committed series a bare threshold test yields 9 volatility spans and 42
+  drawdown spans in a year; confirmation reduces both to 4. A candidate that
+  has not yet earned the switch is published as `pending` rather than hidden,
+  so a state sitting on its threshold says so rather than flapping. The same
+  machine drives the correlation regimes.
+
 Rounding is applied at the serialization edge (2 dp percentages, 8 dp BTC,
 4 dp multiples) and every page carries a methodology note for its own view.
+
+## Feeds
+
+Confirmed signal turns are published as RSS and JSON Feed, one entry per
+transition rather than one per day:
+
+- `/rss.xml` and `/feed.json` — USD
+- `/gbp/rss.xml` and `/gbp/feed.json` — GBP
+
+Two feeds because the states genuinely differ: GBP metrics are recomputed from
+converted closes, so sterling's own volatility enters the band test. Entry
+dates, ids and `lastBuildDate` all come from the committed data rather than
+build time, so the six-hourly pipeline does not republish the whole feed as new
+four times a day.
 
 ## Develop
 

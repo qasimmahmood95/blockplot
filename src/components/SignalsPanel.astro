@@ -11,6 +11,8 @@ interface Props {
 const { currency } = Astro.props;
 const { signals } = dataFor(currency);
 const meta = CURRENCY_META[currency];
+/** This currency's own feed — see rss.xml.ts for why they are not shared. */
+const feedBase = `${base}${meta.segment ? `/${meta.segment}` : ''}`;
 const money = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: meta.code,
@@ -78,7 +80,13 @@ if (signals.cycle) {
   const c = signals.cycle;
   rows.push({
     label: 'Cycle high',
-    value: c.isNew ? 'today' : `×${c.latestMultiple.toFixed(2)}`,
+    // Three places within half a percent of parity: 0.9982 rendered as
+    // "×1.00" claims the cycle is exactly back to its halving-day close when
+    // it is 0.18% below, on a page whose whole argument is not overstating
+    // what the data says.
+    value: c.isNew
+      ? 'today'
+      : `×${c.latestMultiple.toFixed(Math.abs(c.latestMultiple - 1) < 0.005 ? 3 : 2)}`,
     sub: c.isNew
       ? `day ${c.latestDay} since the ${c.halvingDate} halving`
       : `peak ×${c.peakMultiple.toFixed(2)} on day ${c.peakDay} · now day ${c.latestDay}`,
@@ -113,18 +121,24 @@ if (signals.dominance) {
   <p class="method-note">
     States, not readings. A band is only entered once {t.confirmDays} consecutive observations agree,
     and is then dated to the first of them — the day the change began, not the day it became
-    certain. Without that the {t.volWindowDays}d volatility band changes 9 times a year on this data
-    and the drawdown band 42, which is noise with a label on it. A candidate that has not yet earned
-    the switch is shown as pending rather than hidden, so a state sitting on its threshold says so.
+    certain. Without that, this {meta.label} series would sit in {signals.rawSpans.vol} volatility
+    bands and {signals.rawSpans.drawdown} drawdown bands over the same window, which is noise with a
+    label on it. A candidate that has not yet earned the switch is shown as pending rather than
+    hidden, so a state sitting on its threshold says so.
     Volatility bands are below {t.volLowPct}% and above {t.volHighPct}% annualised; drawdown bands
-    are {t.drawdownBandsPct.join('%, ')}% from the running peak.{
+    are {t.drawdownBandsPct.join('%, ')}% from the running peak. The all-time high is read from
+    blockchain.com's full history; the drawdown band and the volatility windows come from
+    CoinGecko's trailing year, which is why the two peak figures differ by a fraction of a percent
+    and the distance below the peak does not reconcile exactly with the drawdown chart. Each is
+    labelled with its source rather than quietly reconciled.{
       signals.dominance ? '' : ' Dominance is omitted: its source publishes no history, so the series accretes one point per run and is not yet deep enough to carry a signal.'
     }
   </p>
   <p class="method-note">
     Every confirmed turn is also published as a feed —{' '}
-    <a href={`${base}/rss.xml`}>RSS</a> and <a href={`${base}/feed.json`}>JSON</a> — one entry per
-    transition rather than one per day, dated from the committed data so a rebuild never resurfaces
-    an old entry as new.
+    <a href={`${feedBase}/rss.xml`}>RSS</a> and <a href={`${feedBase}/feed.json`}>JSON</a> — one
+    entry per transition rather than one per day, dated from the committed data so a rebuild never
+    resurfaces an old entry as new. One feed per currency: the bands are recomputed from converted
+    closes, so sterling's own volatility enters the test and the two trees genuinely disagree.
   </p>
 </section>

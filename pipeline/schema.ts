@@ -547,6 +547,12 @@ export const signalsDatasetSchema = z.object({
     drawdownBandsPct: z.array(z.number().negative()).min(1),
     confirmDays: z.number().int().positive(),
   }),
+  /**
+   * Spans a bare threshold test would produce over the same series. Committed
+   * because the page cites it to justify the hysteresis, and a page must not
+   * assert a number about its own data that nothing computed.
+   */
+  rawSpans: z.object({ vol: z.number().int().nonnegative(), drawdown: z.number().int().nonnegative() }),
   vol: bandSignalSchema.nullable(),
   drawdown: bandSignalSchema.nullable(),
   ath: z

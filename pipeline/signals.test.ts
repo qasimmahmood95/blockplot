@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { ROLLING_VOL_WINDOWS } from './risk';
 import {
   athSignal,
+  rawSpanCount,
+  rawSpanCounts,
+  VOL_WINDOW_DAYS,
   cycleHighSignal,
   dominanceSignal,
   drawdownBand,
@@ -118,6 +122,40 @@ describe('volSignal', () => {
     expect(volSignal([])).toBeNull();
   });
 
+  it('is null when nothing ever held long enough to be confirmed', () => {
+    // Twelve low readings and thirteen normal, none holding for ten. An
+    // earlier version published "low" here — decided entirely by index 0,
+    // with pending:null implying nothing was queued. That is the artefact the
+    // hysteresis exists to prevent, dressed as its output.
+    const choppy = [
+      ...vol(1, 1, 20),
+      ...vol(2, 2, 50),
+      ...vol(4, 2, 20),
+      ...vol(6, 2, 50),
+      ...vol(8, 2, 20),
+      ...vol(10, 2, 50),
+      ...vol(12, 2, 20),
+      ...vol(14, 2, 50),
+      ...vol(16, 2, 20),
+      ...vol(18, 2, 50),
+      ...vol(20, 2, 20),
+      ...vol(22, 4, 50),
+    ];
+    expect(volSignal(choppy, { confirmDays: 10 })).toBeNull();
+  });
+
+  it('is null for a single reading, which confirms nothing', () => {
+    expect(volSignal(vol(1, 1, 20), { confirmDays: 10 })).toBeNull();
+    // ...but a series that does hold for confirmDays is confirmed.
+    expect(volSignal(vol(1, 10, 20), { confirmDays: 10 })?.state).toBe('low');
+  });
+
+  it('reads a window that risk.ts actually produces', () => {
+    // The two constants live in different files and nothing else ties them.
+    // If they diverge the tile vanishes from the page with no message.
+    expect(ROLLING_VOL_WINDOWS).toContain(VOL_WINDOW_DAYS);
+  });
+
   it('rejects bands that are not a band', () => {
     expect(() => volSignal(vol(1, 5, 40), { low: 60, high: 35 })).toThrow('below high');
   });
@@ -187,9 +225,16 @@ describe('athSignal', () => {
     expect(signal?.daysSince).toBe(0);
   });
 
-  it('counts a tie as reaching the high, not missing it', () => {
+  it('counts a tie as reaching the high, and dates it to the tie', () => {
+    // Not just isNew: the record has to be internally consistent. Selecting
+    // the peak with `>` instead of `>=` still sets isNew while leaving date
+    // and daysSince on the older peak — "new high today, 122 days ago".
     const tied = [...history, { date: '2024-07-01', price: 70000 }];
-    expect(athSignal(tied)?.isNew).toBe(true);
+    const signal = athSignal(tied);
+    expect(signal?.isNew).toBe(true);
+    expect(signal?.date).toBe('2024-07-01');
+    expect(signal?.daysSince).toBe(0);
+    expect(signal?.fromAthPct).toBe(0);
   });
 
   it('is null for no history', () => {
@@ -212,6 +257,17 @@ describe('cycleHighSignal', () => {
       latestDay: 200,
       isNew: false,
     });
+  });
+
+  it('keeps the peak record consistent with isNew on a tie', () => {
+    // A `>=` that becomes `>` in peak selection still reports isNew (a
+    // separate comparison) while leaving the peak on the older date — a
+    // record that says "new high today" and "peak was 100 days ago" at once.
+    const tied = [...series, { day: 300, multiple: 2.5 }];
+    const signal = cycleHighSignal(tied);
+    expect(signal?.isNew).toBe(true);
+    expect(signal?.peakDay).toBe(300);
+    expect(signal?.peakMultiple).toBe(signal?.latestMultiple);
   });
 
   it('is a new cycle high when the latest multiple is the peak', () => {
@@ -259,5 +315,48 @@ describe('dominanceSignal', () => {
 
   it('signs a fall negative', () => {
     expect(dominanceSignal(dom(40, (i) => 60 - i * 0.1))?.changePp).toBe(-3);
+  });
+
+  it('rounds the change to two places', () => {
+    // 0.07pp a day over 30 days is 2.0999999999999996 in floating point.
+    expect(dominanceSignal(dom(40, (i) => 50 + i * 0.07))?.changePp).toBe(2.1);
+  });
+
+  it('is null at exactly the window length, and answers one observation later', () => {
+    // 31 points is the first length that can span a 30-observation gap:
+    // series[0] to series[30]. At 30 the lookback index would be -1.
+    expect(dominanceSignal(dom(30, (i) => 50 + i * 0.1), { minObs: 1 })).toBeNull();
+    const signal = dominanceSignal(dom(31, (i) => 50 + i * 0.1), { minObs: 1 });
+    expect(signal?.fromDate).toBe('2024-01-01');
+    expect(signal?.changePp).toBe(3);
+  });
+});
+
+describe('rawSpanCount', () => {
+  it('counts runs of the same state, which is what the page cites', () => {
+    expect(rawSpanCount([1, 1, 2, 2, 2, 1], (n) => String(n))).toBe(3);
+    expect(rawSpanCount([], () => 'x')).toBe(0);
+    expect(rawSpanCount([1], () => 'x')).toBe(1);
+  });
+
+  it('is spans, not transitions — one more than the number of changes', () => {
+    // The page's methodology note got this backwards and quoted 9 and 42 as
+    // change counts when they are span counts, so both were off by one.
+    expect(rawSpanCount([1, 2], (n) => String(n))).toBe(2);
+  });
+
+  it('pairs the two band series the panel quotes', () => {
+    const counts = rawSpanCounts(
+      [
+        { date: day(1), volPct: 20 },
+        { date: day(2), volPct: 50 },
+      ],
+      [
+        { date: day(1), drawdownPct: -5 },
+        { date: day(2), drawdownPct: -15 },
+        { date: day(3), drawdownPct: -35 },
+      ],
+    );
+    expect(counts).toEqual({ vol: 2, drawdown: 3 });
   });
 });

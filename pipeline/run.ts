@@ -33,6 +33,7 @@ import {
   cycleHighSignal,
   dominanceSignal,
   drawdownSignal,
+  rawSpanCounts,
   volSignal,
   DRAWDOWN_BANDS_PCT,
   SIGNAL_CONFIRM_DAYS,
@@ -346,7 +347,19 @@ for (const currency of CURRENCIES) {
 
     // Signals last in this block: they read what the others just computed, so
     // a failure here costs today's signals and nothing else.
-    const volSeries = risk.rollingVol.find((w) => w.windowDays === VOL_WINDOW_DAYS)?.series ?? [];
+    // Not `?? []`: the volatility signal reads a window that risk.ts must
+    // actually produce, and the two constants are declared in different files.
+    // If they ever diverge the tile silently disappears from the panel and half
+    // the feed with it — while dominance, the other absent signal, gets a
+    // sentence explaining itself. A missing window is a bug, not a data gap.
+    const volWindow = risk.rollingVol.find((w) => w.windowDays === VOL_WINDOW_DAYS);
+    if (!volWindow) {
+      throw new Error(
+        `signals: no ${VOL_WINDOW_DAYS}d rolling-vol window in risk-metrics — ` +
+          `VOL_WINDOW_DAYS and ROLLING_VOL_WINDOWS have diverged`,
+      );
+    }
+    const volSeries = volWindow.series;
     const signals = signalsDatasetSchema.parse({
       schemaVersion: 1,
       currency,
@@ -359,6 +372,7 @@ for (const currency of CURRENCIES) {
         drawdownBandsPct: [...DRAWDOWN_BANDS_PCT],
         confirmDays: SIGNAL_CONFIRM_DAYS,
       },
+      rawSpans: rawSpanCounts(volSeries, risk.drawdown.series),
       vol: volSignal(volSeries),
       drawdown: drawdownSignal(risk.drawdown.series),
       ath: athSignal(deep),
