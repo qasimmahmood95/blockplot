@@ -178,6 +178,14 @@ mempool.space fee tiers — are excluded outright: a cached "live" price is wors
 than no live price, so offline they fall back to the committed close exactly as
 they do on a failed request.
 
+One consequence of drawing charts at build time: offline, every chart is fully
+readable, because it is markup in the cached page. The crosshair is not, unless
+Plot has been fetched at least once — it is only requested on a first hover, and
+the worker caches what it has actually served. So a reader who installs the app,
+goes offline and has never hovered a chart gets the charts and no tooltips. The
+alternative is precaching 84 KB on every first visit for a feature most visits
+never use, which is the cost this milestone existed to remove.
+
 ## Develop
 
 ```
