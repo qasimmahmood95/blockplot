@@ -141,12 +141,22 @@ describe('crosshairAnchors', () => {
  */
 describe('tipLineWidth', () => {
   it('actually binds at phone widths', () => {
-    // Container widths measured off the built site at 320/360/380/414px
-    // viewports. Every one of these must come out below Plot's default of 20.
-    expect(tipLineWidth(246)).toBe(12);
-    expect(tipLineWidth(286)).toBe(14);
-    expect(tipLineWidth(306)).toBe(15);
-    expect(tipLineWidth(340)).toBe(17);
+    // Container widths measured off the built site at 280/320/380px viewports.
+    // Every one of these must come out below Plot's default of 20.
+    expect(tipLineWidth(246)).toBe(9);
+    expect(tipLineWidth(286)).toBe(12);
+    expect(tipLineWidth(306)).toBe(14);
+  });
+
+  it('budgets for the worst placement, not the best', () => {
+    // Half the plot, less the axis margin and the tip's own ~22px of chrome:
+    // (306 − 70) / 2 − 22 = 96px of text, at ~7px an em.
+    //
+    // Budgeting half the whole SVG instead — on the true observation that the
+    // tip may overlap the axis labels — let the box be clipped again, because
+    // Plot flips it to whichever side has room and at 320px neither side does.
+    expect(tipLineWidth(306)).toBe(14);
+    expect(tipLineWidth(306)).toBeLessThan(19);
   });
 
   it('leaves desktop at Plot’s default, so wide charts are untouched', () => {
@@ -155,9 +165,9 @@ describe('tipLineWidth', () => {
     expect(tipLineWidth(1400)).toBe(20);
   });
 
-  it('is half the plot width, in ems against a ~10px tip font', () => {
-    // The bound that survives the cursor at either end, whichever side Plot
-    // puts the tip on.
+  it('reaches Plot’s default only once the plot is genuinely wide', () => {
+    // Past ~400px the budget already exceeds the default, so the cap stops
+    // mattering and every desktop chart keeps the wrap it always had.
     expect(tipLineWidth(400)).toBe(20);
     expect(tipLineWidth(360)).toBe(18);
   });

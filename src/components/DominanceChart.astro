@@ -24,7 +24,7 @@ import { toJsonScript } from '../lib/embed';
   const points = series.map((p) => ({ date: new Date(p.date), pct: p.btcDominancePct }));
 
   const crosshair = crosshairAnchors(
-    points.map((d) => ({ x: d.date, y: d.pct, label: `BTC dominance ${d.pct.toFixed(2)}%` })),
+    points.map((d) => ({ x: d.date, y: d.pct, label: `${d.pct.toFixed(2)}%` })),
     isoDay,
   );
 

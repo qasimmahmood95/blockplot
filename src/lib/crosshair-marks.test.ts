@@ -42,12 +42,32 @@ describe('crosshairMarksFrom', () => {
     expect(tip?.data).toBe(anchors);
   });
 
+  it('points the title channel at the field that holds the text', () => {
+    // The single worst mutation found: changing `title: 'title'` to any other
+    // field name makes every tooltip on the site silently fail to render —
+    // no error, no tip — and the rest of this file passes, because it checks
+    // the mark's identity, order and options but never what it reads.
+    const [, tip] = crosshairMarksFrom(anchors, 720) as { channels?: Record<string, unknown> }[];
+    expect(tip?.channels?.title).toBeDefined();
+    expect((tip?.channels?.title as { value?: unknown })?.value).toBe('title');
+  });
+
+  it('tells Plot the tip is monospace, or its width budget is fiction', () => {
+    // Plot measures against a 10px system-ui table; these charts render the
+    // tip in IBM Plex Mono. Without this the underestimate is ~1.22x, which is
+    // enough for a capped tip to overflow the frame and be clipped mid-word.
+    const [, tip] = crosshairMarksFrom(anchors, 720) as { monospace?: boolean }[];
+    expect(tip?.monospace).toBe(true);
+  });
+
   // Not asserted here: that the transform is `pointerX` rather than `pointer`.
   // Reverting it undoes the whole feature — one tip per x becomes nearest in
   // x *and* y — but the two produce marks with no enumerable difference, since
-  // the transform is a closure. It is observable only in a rendered chart, so
-  // the browser sweep over dist/ is what covers it; pretending a unit test
-  // does would be worse than saying this.
+  // the transform is a closure, so it cannot be caught at this level. It *is*
+  // catchable in a browser (hold x, vary y, assert the heading does not move),
+  // and that check is currently manual against dist/ rather than committed.
+  // A browser-test layer is M14's job; this note is here so the gap is a known
+  // one rather than an assumed absence.
 
   it('passes the width through to the tip’s wrap width', () => {
     const [, narrow] = crosshairMarksFrom(anchors, 306) as { lineWidth?: number }[];

@@ -37,7 +37,7 @@ const { riskMetrics } = dataFor(currency);
   const points = series.map((p) => ({ date: new Date(p.date), drawdownPct: p.drawdownPct }));
 
   const crosshair = crosshairAnchors(
-    points.map((d) => ({ x: d.date, y: d.drawdownPct, label: `drawdown ${d.drawdownPct.toFixed(1)}%` })),
+    points.map((d) => ({ x: d.date, y: d.drawdownPct, label: `${d.drawdownPct.toFixed(1)}%` })),
     isoDay,
   );
 

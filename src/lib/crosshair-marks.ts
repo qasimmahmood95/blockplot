@@ -37,7 +37,18 @@ export function crosshairMarksFrom<X extends Date | number>(
     Plot.ruleX(anchors, Plot.pointerX({ x: 'x', stroke: cssVar('--ink-muted'), strokeOpacity: 0.4 })),
     Plot.tip(
       anchors,
-      Plot.pointerX({ x: 'x', y: 'y', title: 'title', lineWidth, textOverflow: 'ellipsis-end' }),
+      Plot.pointerX({
+        x: 'x',
+        y: 'y',
+        title: 'title',
+        lineWidth,
+        textOverflow: 'ellipsis-end',
+        // Every chart renders this in IBM Plex Mono. Without it Plot measures
+        // against a proportional-font table and underestimates the width by
+        // about a fifth, which is how a "cap" let a 155px tip through a 120px
+        // budget and straight into the frame's clip path.
+        monospace: true,
+      }),
     ),
   ];
 }

@@ -26,7 +26,7 @@ import { toJsonScript } from '../lib/embed';
     v >= 1e12 ? `$${(v / 1e12).toFixed(2)}T` : `$${(v / 1e9).toFixed(0)}B`;
 
   const crosshair = crosshairAnchors(
-    points.map((d) => ({ x: d.date, y: d.totalUsd, label: `${billions(d.totalUsd)} stablecoins` })),
+    points.map((d) => ({ x: d.date, y: d.totalUsd, label: billions(d.totalUsd) })),
     isoDay,
   );
 
