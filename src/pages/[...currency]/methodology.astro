@@ -89,8 +89,9 @@ const t = signals.thresholds;
       <strong>Sharpe</strong> is mean return over standard deviation, annualised, at a zero risk-free
       rate — stated rather than assumed, since a non-zero rate would change the ranking between
       assets. <strong>Sortino</strong> replaces the denominator with downside deviation, counting
-      only negative returns. Both are null rather than zero when undefined: fewer than two
-      observations, or no negative returns at all.
+      only negative returns. Both are null rather than zero when undefined, but for different
+      reasons: Sharpe when there are fewer than two returns or the variance is zero, Sortino when
+      there are no negative returns at all to form a downside deviation from.
     </p>
   </section>
 
@@ -122,11 +123,14 @@ const t = signals.thresholds;
     </p>
     <p class="method-note">
       BTC closes at 00:00 UTC while equities and metals close at 21:00 UTC the previous session, so
-      BTC is re-dated to the session it actually shares before pairing. Without that, March 2020
-      reads as −0.30 — inverse — where the aligned figure is +0.48. And the re-dating happens
-      <em>before</em> currency conversion, not after: converting first joins two series on a date
-      that has not been fixed yet, which leaks FX movement into a correlation that is supposed to be
-      between two assets.
+      BTC is re-dated to the session it actually shares before pairing. Without that, BTC's −49.7%
+      on the snapshot dated 13 March 2020 met the S&amp;P's +9.29% rebound while its flat 12th met the
+      S&amp;P's −9.51%: one inverted outlier pair then dominated a 60-observation window for three
+      months, and the site reported BTC and equities as <em>inverse</em> through the most famous
+      co-crash on record. Correcting the offset moves the trailing correlation from +0.09 to +0.44.
+      And the re-dating happens <em>before</em> currency conversion, not after: conversion is itself
+      a per-date join, so re-dating afterwards leaves the two legs on different days and the FX term
+      stops cancelling — measured at 0.16 of noise in GBP correlations, against a 0.25 threshold.
     </p>
   </section>
 
@@ -135,13 +139,13 @@ const t = signals.thresholds;
     <p class="method-note">
       Band states are hysteretic. A band is entered only once {t.confirmDays} consecutive
       observations agree, and is then dated to the first of them — the day the change began, not the
-      day it became certain. On this {meta.label} series a bare threshold test would give
+      day it became certain. On this {meta.label} series a bare threshold test would give{' '}
       {signals.rawSpans.vol} volatility spans and {signals.rawSpans.drawdown} drawdown spans over the
       same window; confirmation is what turns that into a state worth reporting. A candidate that
       has not yet earned the switch is published as pending rather than hidden.
     </p>
     <p class="method-note">
-      Volatility bands: below {t.volLowPct}% and above {t.volHighPct}% annualised, on the
+      Volatility bands: below {t.volLowPct}% and above {t.volHighPct}% annualised, on the{' '}
       {t.volWindowDays}-day window. Drawdown bands: {t.drawdownBandsPct.join('%, ')}% from the
       running peak, deepest reached. The same confirmation machine drives the correlation regimes.
     </p>

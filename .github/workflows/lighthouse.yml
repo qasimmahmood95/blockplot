@@ -2,8 +2,7 @@ name: Lighthouse
 
 # Kept out of ci.yml on purpose. Lighthouse needs a build, a server and a
 # browser, so it is slower and flakier than lint/typecheck/test, and a
-# performance regression should not look like a broken test. It runs on the
-# same events but reports separately.
+# performance regression should not look like a broken test.
 on:
   pull_request:
   push:
@@ -21,9 +20,18 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Audit the built site
-        run: npx --yes @lhci/cli@0.14.x autorun
-        env:
-          # Assertions live in lighthouserc.json so they are reviewable in the
-          # diff rather than buried in a workflow argument.
-          LHCI_BUILD_CONTEXT__CURRENT_BRANCH: ${{ github.head_ref || github.ref_name }}
+      # The site deploys under /blockplot/ and every asset URL says so, so the
+      # audit has to be served from a tree where the build sits at that path.
+      # Serving dist/ at the root scores a bare HTML document with no CSS and
+      # no JS — which looks like a perfect performance score and measures
+      # nothing.
+      - name: Stage the build at its deploy path
+        run: mkdir -p .lhci-root && cp -r dist .lhci-root/blockplot
+      - run: npx --yes @lhci/cli@0.14.x autorun
+      # A red badge with no report is unactionable.
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/
+          retention-days: 14

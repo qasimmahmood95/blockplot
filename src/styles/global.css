@@ -580,6 +580,14 @@ code {
   margin: 0 0 1.5rem;
 }
 
+.theme-toggle,
+.header-holdings a {
+  /* Both measured under the 24px floor at 375px: 23.4 and 18. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
 .holdings-status {
   font-size: 0.72rem;
   color: var(--ink-muted);
@@ -620,21 +628,25 @@ code {
  * print, but the interactive furniture around them does not.
  */
 @media print {
-  :root {
+  /*
+   * Every selector here is (0,2,0) or better, because tokens.css sets the dark
+   * palette at `:root:not([data-theme='light'])` inside a colour-scheme query.
+   * A bare `:root` is (0,1,0) and loses to it — which meant the *default*
+   * theme, the one nobody pins, printed black stat tiles and a solid black
+   * chart frame on white paper. The accent pair and the heatmap's up/down
+   * colours have to come along too, or the monthly grid prints in dark-mode
+   * hues against a light page.
+   */
+  :root,
+  :root:not([data-theme='nothing']) {
     --bg: #fff;
     --surface: #fff;
     --ink: #111;
     --ink-muted: #444;
     --line: #bbb;
-  }
-
-  /* Force the light palette regardless of the pinned theme. */
-  :root[data-theme='dark'] {
-    --bg: #fff;
-    --surface: #fff;
-    --ink: #111;
-    --ink-muted: #444;
-    --line: #bbb;
+    --accent: #a33f07;
+    --pos: #1f6b3a;
+    --neg: #9c2b19;
   }
 
   body {
@@ -646,12 +658,31 @@ code {
   .site-nav,
   .currency-switch,
   .theme-toggle,
-  .chart-toggle,
   .header-holdings,
-  .sim-form,
-  .holdings-actions,
-  .chart-legend {
+  .holdings-actions {
     display: none !important;
+  }
+
+  /*
+   * Deliberately NOT hidden: the chart legends are the colour key, the pair
+   * toggle is the only thing on the correlation page naming which pair is
+   * charted, and the DCA form is the only record of the start date, amount and
+   * fee that produced the figures beside it. Hiding them printed an anonymous
+   * chart and an unreproducible result.
+   */
+  .chart-toggle button[aria-pressed='false'] {
+    display: none;
+  }
+
+  .chart-toggle button[aria-pressed='true'] {
+    border-color: #bbb;
+  }
+
+  .sim-form input,
+  .sim-form select {
+    border-color: #bbb;
+    background: #fff;
+    color: #111;
   }
 
   /* A URL the reader cannot click is a URL they cannot follow. */

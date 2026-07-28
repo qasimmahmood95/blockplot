@@ -25,7 +25,9 @@ export const GET: APIRoute = () => {
     icons: [
       { src: `${base}/icon-192.png`, sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: `${base}/icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'any' },
-      { src: `${base}/icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      // A separate file: the same art at 'any' framing has ink 4.9% outside
+      // the maskable safe zone, so Android crops the chart's corners.
+      { src: `${base}/icon-maskable-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   };
   return new Response(JSON.stringify(body, null, 2), {

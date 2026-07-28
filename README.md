@@ -11,7 +11,7 @@ the site from that dataset alone, charted with Observable Plot.
 
 ![blockplot — overview, volatility, halving cycles, DCA, holdings and methodology](docs/demo.gif)
 
-**Status:** Phase 1 (M0–M6) shipped; Phase 2 in progress (M7–M12 done, M13–M14 planned).
+**Status:** Phase 1 (M0–M6) shipped; Phase 2 complete (M7–M14 shipped).
 [PLAN.md](PLAN.md) holds the milestone plan, [CLAUDE.md](CLAUDE.md) the
 development rules.
 

@@ -1,15 +1,14 @@
 {
   "ci": {
     "collect": {
-      "staticDistDir": "./dist",
+      "staticDistDir": "./.lhci-root",
       "url": [
-        "http://localhost/index.html",
-        "http://localhost/methodology/index.html",
-        "http://localhost/holdings/index.html"
+        "http://localhost/blockplot/index.html",
+        "http://localhost/blockplot/methodology/index.html",
+        "http://localhost/blockplot/holdings/index.html"
       ],
       "numberOfRuns": 3,
       "settings": {
-        "preset": "desktop",
         "chromeFlags": "--no-sandbox --disable-dev-shm-usage"
       }
     },
@@ -38,11 +37,7 @@
           {
             "minScore": 0.9
           }
-        ],
-        "unused-javascript": "off",
-        "uses-long-cache-ttl": "off",
-        "csp-xss": "off",
-        "errors-in-console": "off"
+        ]
       }
     },
     "upload": {
