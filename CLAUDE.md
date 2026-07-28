@@ -36,14 +36,37 @@ and never gitignored.
 ## Architecture invariants
 
 - Astro + TypeScript strict; static output only. Client islands only for
-  interactive charts, the DCA simulator, the live header ticker, the
-  network page's fee tiers (added in M8: fees move on a ~10-minute
-  timescale, so a 6-hourly committed value would be stale on arrival; the
-  committed snapshot renders and the island upgrades it, falling back on
-  failure — the same pattern as the ticker), and the holdings panel and its
-  header tile (added in M12: the input is the reader's own and is held in
-  `localStorage`, so it cannot be baked at build time — this is the one
-  island class whose state is personal rather than derived from `/data`).
+  the live header ticker, the network page's fee tiers (added in M8: fees
+  move on a ~10-minute timescale, so a 6-hourly committed value would be
+  stale on arrival; the committed snapshot renders and the island upgrades
+  it, falling back on failure — the same pattern as the ticker), and the
+  holdings panel and its header tile (added in M12: the input is the
+  reader's own and is held in `localStorage`, so it cannot be baked at build
+  time — this is the one island class whose state is personal rather than
+  derived from `/data`).
+- Charts are rendered to SVG at build time and are not islands (changed in
+  M15; they were client-rendered from M0). A chart of a dataset that only
+  moves when the pipeline commits is a static asset, and drawing it in the
+  browser cost 88 KB gzipped and ~190 ms of scripting on every chart page.
+  Three rules keep it that way:
+  - Every chart's Plot options live in one pure `spec` function under
+    `src/lib/specs/`, called by the build and by the browser. Two
+    definitions would drift, and the drift shows as the chart changing shape
+    under the reader's cursor.
+  - Colours are `var(--token)` strings, never resolved with `cssVar()`. SVG
+    presentation attributes are mapped to CSS properties, so both themes and
+    the theme toggle are handled by CSS with no redraw.
+  - Plot is loaded only by a dynamic `import()`, on the interaction that needs
+    it: a hover for the crosshair, a press for a scale or pair switch, an
+    entered amount for the holdings line. Charts drawn from `/data` go through
+    `upgradeChart`; the holdings chart has no build-time form to upgrade, so
+    it imports Plot inside its own render, which runs only once an amount
+    exists. Importing Plot at the top level of any island puts it back on the
+    critical path — the specific regression this replaced.
+  - Each chart is drawn at two widths and CSS shows the one that fits. An SVG
+    with a viewBox scales *uniformly*, so a single rendered width is a size,
+    not an aspect ratio: one 720px chart in a 301px phone container came out
+    at 4.6px axis type with twelve overlapping month labels.
 - Reader-entered data stays in the browser. It must never appear in a URL,
   query string, page title, form action, or any request — a "share this"
   feature is a violation, not an exception — and is never committed. It is

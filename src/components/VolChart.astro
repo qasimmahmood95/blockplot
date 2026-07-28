@@ -2,6 +2,8 @@
 import type { Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
+import { renderResponsiveChart } from '../lib/plot-ssr';
+import { volColor, volSpec } from '../lib/specs/vol';
 
 interface Props {
   currency: Currency;
@@ -10,100 +12,81 @@ interface Props {
 const { currency } = Astro.props;
 const { riskMetrics } = dataFor(currency);
 const payload = riskMetrics.rollingVol.filter((w) => w.series.length > 0);
+
+const points = payload.flatMap((w) =>
+  w.series.map((p) => ({ window: `${w.windowDays}d`, date: new Date(p.date), volPct: p.volPct })),
+);
+const lineEnds = payload.flatMap((w) => {
+  const last = w.series[w.series.length - 1];
+  return last ? [{ window: `${w.windowDays}d`, date: new Date(last.date), volPct: last.volPct }] : [];
+});
+const domain = payload.map((w) => `${w.windowDays}d`);
+
+const svg = renderResponsiveChart((w) => volSpec(points, lineEnds, domain, w));
 ---
 
 <figure class="chart-frame">
   <script is:inline type="application/json" id="vol-chart-data" set:html={toJsonScript(payload)} />
-  <div id="vol-chart-legend" class="chart-legend" aria-hidden="true"></div>
+  <div id="vol-chart-legend" class="chart-legend" aria-hidden="true">
+    {
+      domain.map((w) => (
+        <span class="legend-item">
+          <span class="legend-swatch" style={`background:${volColor(w)}`} />
+          {w}
+        </span>
+      ))
+    }
+  </div>
   <div
     id="vol-chart"
     role="img"
     aria-label="Line chart of annualized BTC realized volatility over rolling 30, 90, and 365 day windows"
-  >
-  </div>
+    set:html={svg}
+  />
 </figure>
 
 <script>
-  import * as Plot from '@observablehq/plot';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
-  import { crosshairAnchors, isoDay } from '../lib/crosshair';
-  import { crosshairMarksFrom } from '../lib/crosshair-marks';
+  import { chartData, upgradeChart } from '../lib/charts';
 
-  const windows = chartData<{ windowDays: number; series: { date: string; volPct: number }[] }[]>(
-    'vol-chart-data',
-  );
   const container = document.getElementById('vol-chart');
-  const legend = document.getElementById('vol-chart-legend');
 
-  // Ordinal ramp: shorter window -> lighter accent step (shares the validated
-  // cycle ramp); only populated windows render.
-  const RAMP: Record<string, string> = { '30d': '--cycle-2', '90d': '--cycle-3', '365d': '--cycle-4' };
-  const points = windows.flatMap((w) =>
-    w.series.map((p) => ({ window: `${w.windowDays}d`, date: new Date(p.date), volPct: p.volPct })),
-  );
-  const lineEnds = windows.flatMap((w) => {
-    const last = w.series[w.series.length - 1];
-    return last
-      ? [{ window: `${w.windowDays}d`, date: new Date(last.date), volPct: last.volPct }]
-      : [];
-  });
-  const domain = windows.map((w) => `${w.windowDays}d`);
+  if (container) {
+    upgradeChart(container, async () => {
+      const [{ drawChart }, { volSpec }, { crosshairAnchors, isoDay }] =
+        await Promise.all([
+          import('../lib/plot-client'),
+          import('../lib/specs/vol'),
+          import('../lib/crosshair'),
+        ]);
 
-  const crosshair = crosshairAnchors(
-    points.map((d) => ({ x: d.date, y: d.volPct, label: `${d.window} ${d.volPct.toFixed(1)}%` })),
-    isoDay,
-  );
-
-  function render(): void {
-    if (!container) return;
-    const range = domain.map((w) => cssVar(RAMP[w] ?? '--ink'));
-    if (legend) {
-      legend.replaceChildren(
-        ...domain.map((w, i) => {
-          const item = document.createElement('span');
-          item.className = 'legend-item';
-          const swatch = document.createElement('span');
-          swatch.className = 'legend-swatch';
-          swatch.style.background = range[i] ?? '';
-          item.append(swatch, w);
-          return item;
-        }),
+      const windows = chartData<
+        { windowDays: number; series: { date: string; volPct: number }[] }[]
+      >('vol-chart-data');
+      const points = windows.flatMap((w) =>
+        w.series.map((p) => ({
+          window: `${w.windowDays}d`,
+          date: new Date(p.date),
+          volPct: p.volPct,
+        })),
       );
-    }
-    const width = container.clientWidth || 720;
-    container.replaceChildren(
-      Plot.plot({
-        width,
-        height: 300,
-        marginLeft: 48,
-        marginRight: 44,
-        x: { label: null },
-        y: { label: null, grid: true, tickFormat: (value: number) => `${value}%` },
-        color: { domain, range },
-        marks: [
-          Plot.lineY(points, { x: 'date', y: 'volPct', stroke: 'window', strokeWidth: 1.75 }),
-          Plot.text(lineEnds, {
-            x: 'date',
-            y: 'volPct',
-            text: 'window',
-            dx: 20,
-            fill: cssVar('--ink'),
-            fontSize: 11,
-          }),
-          // All three windows at the hovered date. Comparing them is the whole
-          // reason they share an axis, and the per-point tip could only ever
-          // report whichever line the cursor was nearest.
-          ...crosshairMarksFrom(crosshair, width),
-        ],
-        style: {
-          background: 'transparent',
-          color: cssVar('--ink-muted'),
-          fontFamily: cssVar('--font-mono'),
-          fontSize: '11px',
-        },
-      }),
-    );
-  }
+      const lineEnds = windows.flatMap((w) => {
+        const last = w.series[w.series.length - 1];
+        return last
+          ? [{ window: `${w.windowDays}d`, date: new Date(last.date), volPct: last.volPct }]
+          : [];
+      });
+      const domain = windows.map((w) => `${w.windowDays}d`);
+      const anchors = crosshairAnchors(
+        points.map((d) => ({
+          x: d.date,
+          y: d.volPct,
+          label: `${d.window} ${d.volPct.toFixed(1)}%`,
+        })),
+        isoDay,
+      );
 
-  responsiveChart(render);
+      const width = container.clientWidth || 720;
+      drawChart(container, volSpec(points, lineEnds, domain, width, anchors));
+    });
+  }
 </script>

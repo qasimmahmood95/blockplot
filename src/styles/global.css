@@ -228,6 +228,52 @@ code {
   padding: 1rem 1rem 0.5rem;
 }
 
+/*
+ * Plot sets `--plot-background: white` in a stylesheet it injects into its own
+ * SVG, and the tooltip fills from it. On a dark theme that is a white box with
+ * --ink-muted text: 3.30:1, under the 4.5:1 floor, on the one element whose
+ * whole job is reporting an exact figure. Pointing it at the surface token puts
+ * it at 5.24:1 and makes the tip match the panel it sits in. Plot's own rule is
+ * `:where(.plot-xxxx)`, so it carries no specificity — but it sets the variable
+ * directly on the SVG, which beats inheritance from :root no matter what :root
+ * says. The override has to land on the element itself.
+ */
+.chart-frame svg {
+  --plot-background: var(--surface);
+}
+
+/*
+ * The build draws every chart twice — see `renderResponsiveChart`. Exactly one
+ * variant is in flow; the other is display:none, so it costs bytes but no
+ * layout. The breakpoint sits where the wide layout starts fitting without
+ * being shrunk.
+ */
+.chart-at-narrow {
+  display: none;
+}
+
+.chart-at-wide {
+  display: block;
+}
+
+/* `width` rather than Plot's own `max-width`, so the SVG fills a container
+   wider than the width it was drawn at instead of leaving a gap beside it. */
+.chart-at-narrow > svg,
+.chart-at-wide > svg {
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 40rem) {
+  .chart-at-narrow {
+    display: block;
+  }
+
+  .chart-at-wide {
+    display: none;
+  }
+}
+
 .chart-controls {
   display: flex;
   align-items: center;

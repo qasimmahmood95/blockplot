@@ -1,60 +1,58 @@
 ---
 import { stablecoins } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
+import { renderResponsiveChart } from '../lib/plot-ssr';
+import { stablecoinSpec } from '../lib/specs/flows';
+
+const svg = renderResponsiveChart((w) =>
+  stablecoinSpec(
+    stablecoins.series.map((p) => ({ date: new Date(p.date), totalUsd: p.totalUsd })),
+    w,
+  ),
+);
 ---
 
 <figure class="chart-frame">
-  <script is:inline type="application/json" id="stablecoin-chart-data" set:html={toJsonScript(stablecoins.series)} />
+  <script
+    is:inline
+    type="application/json"
+    id="stablecoin-chart-data"
+    set:html={toJsonScript(stablecoins.series)}
+  />
   <div
     id="stablecoin-chart"
     role="img"
     aria-label="Area chart of total USD-pegged stablecoin circulating value over time"
-  >
-  </div>
+    set:html={svg}
+  />
 </figure>
 
 <script>
-  import * as Plot from '@observablehq/plot';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
-  import { crosshairAnchors, isoDay } from '../lib/crosshair';
-  import { crosshairMarksFrom } from '../lib/crosshair-marks';
+  import { chartData, upgradeChart } from '../lib/charts';
 
-  const series = chartData<{ date: string; totalUsd: number }[]>('stablecoin-chart-data');
   const container = document.getElementById('stablecoin-chart');
-  const points = series.map((p) => ({ date: new Date(p.date), totalUsd: p.totalUsd }));
-  const billions = (v: number): string =>
-    v >= 1e12 ? `$${(v / 1e12).toFixed(2)}T` : `$${(v / 1e9).toFixed(0)}B`;
 
-  const crosshair = crosshairAnchors(
-    points.map((d) => ({ x: d.date, y: d.totalUsd, label: billions(d.totalUsd) })),
-    isoDay,
-  );
+  if (container) {
+    upgradeChart(container, async () => {
+      const [
+        { drawChart },
+        { stablecoinSpec, billions },
+        { crosshairAnchors, isoDay },
+      ] = await Promise.all([
+        import('../lib/plot-client'),
+        import('../lib/specs/flows'),
+        import('../lib/crosshair'),
+      ]);
 
-  function render(): void {
-    if (!container) return;
-    const accent = cssVar('--accent');
-    const width = container.clientWidth || 720;
-    container.replaceChildren(
-      Plot.plot({
-        width,
-        height: 300,
-        marginLeft: 56,
-        x: { label: null },
-        y: { label: null, grid: true, zero: true, tickFormat: billions },
-        marks: [
-          Plot.areaY(points, { x: 'date', y: 'totalUsd', fill: accent, fillOpacity: 0.1 }),
-          Plot.lineY(points, { x: 'date', y: 'totalUsd', stroke: accent, strokeWidth: 1.5 }),
-          ...crosshairMarksFrom(crosshair, width),
-        ],
-        style: {
-          background: 'transparent',
-          color: cssVar('--ink-muted'),
-          fontFamily: cssVar('--font-mono'),
-          fontSize: '11px',
-        },
-      }),
-    );
+      const series = chartData<{ date: string; totalUsd: number }[]>('stablecoin-chart-data');
+      const points = series.map((p) => ({ date: new Date(p.date), totalUsd: p.totalUsd }));
+      const anchors = crosshairAnchors(
+        points.map((d) => ({ x: d.date, y: d.totalUsd, label: billions(d.totalUsd) })),
+        isoDay,
+      );
+
+      const width = container.clientWidth || 720;
+      drawChart(container, stablecoinSpec(points, width, anchors));
+    });
   }
-
-  responsiveChart(render);
 </script>

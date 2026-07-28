@@ -2,6 +2,16 @@
 import type { Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
+import { renderResponsiveChart } from '../lib/plot-ssr';
+import {
+  bandFill,
+  correlationSpec,
+  pairLabel,
+  REGIME_LABELS,
+  REGIME_ORDER,
+  regimeFrom,
+  type Pair,
+} from '../lib/specs/correlation';
 
 interface Props {
   currency: Currency;
@@ -9,274 +19,154 @@ interface Props {
 
 const { currency } = Astro.props;
 const { correlations } = dataFor(currency);
-const pairs = correlations.pairs.filter((p) => p.series.length > 0);
+const pairs = correlations.pairs.filter((p) => p.series.length > 0) as Pair[];
 const payload = { threshold: correlations.regimeThreshold, pairs };
+const active = pairs[0];
+
+// Only the pressed pair's chart is drawn: six SVGs would be six times the
+// markup for five charts nobody has asked to see. The tables are another
+// matter — all six are a few dozen rows, and rendering them here means the
+// pair switch is a visibility change rather than a DOM build.
+const svg = active
+  ? renderResponsiveChart((w) => correlationSpec(active, correlations.regimeThreshold, w, false))
+  : '';
 ---
 
 <figure class="chart-frame">
   <div class="chart-controls">
-    <div class="chart-toggle" id="pair-toggle" role="group" aria-label="Asset pair"></div>
-    <div class="chart-legend" id="regime-legend" aria-hidden="true"></div>
+    <div class="chart-toggle" id="pair-toggle" role="group" aria-label="Asset pair">
+      {
+        pairs.map((p, i) => (
+          <button type="button" data-pair={p.pair} aria-pressed={i === 0 ? 'true' : 'false'}>
+            {pairLabel(p)}
+          </button>
+        ))
+      }
+    </div>
+    <div class="chart-legend" id="regime-legend" aria-hidden="true">
+      {
+        REGIME_ORDER.map((regime) => {
+          const fill = bandFill(regime);
+          const style = fill
+            ? `background:color-mix(in srgb, ${fill} 35%, transparent)`
+            : 'background:transparent;border:1px solid var(--line)';
+          return (
+            <span class="legend-item">
+              <span class="legend-swatch regime-swatch" style={style} />
+              {REGIME_LABELS[regime]}
+            </span>
+          );
+        })
+      }
+    </div>
   </div>
-  <script is:inline type="application/json" id="correlation-chart-data" set:html={toJsonScript(payload)} />
+  <script
+    is:inline
+    type="application/json"
+    id="correlation-chart-data"
+    set:html={toJsonScript(payload)}
+  />
   <div
     id="correlation-chart"
     role="img"
     aria-label="Line chart of the rolling 90-day correlation of daily log returns for the selected asset pair, with shaded correlation-regime bands"
-  >
-  </div>
+    set:html={svg}
+  />
 </figure>
 
 <div class="table-scroll regime-table-wrap">
-  <table class="risk-table" id="regime-table">
-    <caption class="visually-hidden">Correlation regimes for the selected asset pair, newest first</caption>
-  </table>
+  {
+    pairs.map((p, i) => (
+      <table class="risk-table regime-table" data-pair={p.pair} hidden={i !== 0}>
+        <caption class="visually-hidden">
+          Correlation regimes for {pairLabel(p)}, newest first
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Regime</th>
+            <th scope="col">From</th>
+            <th scope="col">To</th>
+            <th scope="col" class="num">
+              Days
+            </th>
+            <th scope="col" class="num">
+              Obs
+            </th>
+            <th scope="col" class="num">
+              Mean corr
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {/* Newest first: the regime a reader cares about is the current one. */}
+          {[...p.regimes].reverse().map((segment) => (
+            <tr>
+              <th scope="row" class={`regime-${segment.regime}`}>
+                {REGIME_LABELS[segment.regime]}
+              </th>
+              <td>{regimeFrom(segment)}</td>
+              <td>{segment.endDate}</td>
+              <td class="num">{segment.days}</td>
+              <td class="num">{segment.observations}</td>
+              <td class="num">{segment.meanCorr.toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ))
+  }
 </div>
 
 <script>
-  import * as Plot from '@observablehq/plot';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
-  import { isoDay } from '../lib/crosshair';
-  import { crosshairMarks } from '../lib/crosshair-marks';
+  import { chartData, upgradeChart } from '../lib/charts';
+  import type { Pair } from '../lib/specs/correlation';
 
-  type Regime = 'positive' | 'neutral' | 'negative';
-  type Segment = {
-    regime: Regime;
-    startDate: string;
-    confirmedFrom: string;
-    endDate: string;
-    observations: number;
-    days: number;
-    meanCorr: number;
-  };
-  type Pair = {
-    pair: string;
-    a: string;
-    b: string;
-    series: { date: string; corr: number }[];
-    regimes: Segment[];
-  };
-
-  const { threshold, pairs } = chartData<{ threshold: number; pairs: Pair[] }>(
-    'correlation-chart-data',
-  );
   const container = document.getElementById('correlation-chart');
   const toggle = document.getElementById('pair-toggle');
-  const legend = document.getElementById('regime-legend');
-  const table = document.getElementById('regime-table');
+  const tables = document.querySelectorAll<HTMLTableElement>('.regime-table');
 
-  const LABELS: Record<string, string> = {
-    btc: 'BTC',
-    sp500: 'S&P 500',
-    gold: 'gold',
-    dxy: 'DXY',
-  };
-  const REGIME_LABELS: Record<Regime, string> = {
-    positive: 'co-moving',
-    neutral: 'decoupled',
-    negative: 'inverse',
-  };
-  /**
-   * Bands are drawn on the pos/neg tokens at low opacity so the correlation
-   * line stays the figure and the regime is context behind it. Decoupled is
-   * deliberately unpainted: "no regime" should not look like a third state
-   * competing for attention.
-   */
-  const bandFill = (regime: Regime): string | null =>
-    regime === 'positive' ? cssVar('--pos') : regime === 'negative' ? cssVar('--neg') : null;
-
-  let active = pairs[0]?.pair ?? '';
-
-  const pairLabel = (p: Pair): string => `${LABELS[p.a] ?? p.a} – ${LABELS[p.b] ?? p.b}`;
-  // Plot.rect treats x2 as exclusive, so a segment of one observation would be
-  // a zero-width rect. Extending the end by a day gives it the width of the
-  // day it covers; correlation dates strictly increase, so the extended edge
-  // never reaches the next segment's start.
-  const dayAfter = (date: string): Date => new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000);
-
-  function renderChart(pair: Pair): void {
-    if (!container) return;
-    const points = pair.series.map((p) => ({ date: new Date(p.date), corr: p.corr }));
-    // Pairs without BTC ship a window of a series classified over full
-    // history, so their first regime can legitimately have begun before the
-    // window opens. The table keeps that true start date — it is information,
-    // not an error — but the band is clamped, or Plot widens the x domain to
-    // a date the chart has no data for.
-    const first = pair.series[0]?.date ?? '';
-    const bands = pair.regimes
-      .map((r) => ({ ...r, fill: bandFill(r.regime) }))
-      .filter((r) => r.fill !== null)
-      .map((r) => ({ ...r, bandStart: r.startDate < first ? first : r.startDate }));
-    const width = container.clientWidth || 720;
-    container.replaceChildren(
-      Plot.plot({
-        width,
-        height: 300,
-        marginLeft: 44,
-        x: { label: null },
-        y: { label: null, grid: true, domain: [-1, 1] },
-        marks: [
-          Plot.rect(bands, {
-            x1: (d: Segment & { bandStart: string }) => new Date(d.bandStart),
-            x2: (d: Segment) => dayAfter(d.endDate),
-            y1: -1,
-            y2: 1,
-            fill: (d: Segment & { fill: string }) => d.fill,
-            fillOpacity: 0.09,
-          }),
-          Plot.ruleY([0], { stroke: cssVar('--ink-muted'), strokeDasharray: '2,3' }),
-          Plot.ruleY([threshold, -threshold], {
-            stroke: cssVar('--ink-muted'),
-            strokeDasharray: '1,4',
-            strokeOpacity: 0.7,
-          }),
-          Plot.lineY(points, { x: 'date', y: 'corr', stroke: cssVar('--accent'), strokeWidth: 1.5 }),
-          ...crosshairMarks(
-            points.map((d) => ({
-              x: d.date,
-              y: d.corr,
-              // The correlation alone, as on every other single-series chart
-              // here. The pressed pair button directly above the chart names
-              // the pair, so repeating it in the tooltip buys nothing and
-              // costs the one thing the tooltip is for: an earlier version
-              // kept the pair and "S&P 500 – gol…" was all that fitted at
-              // 320px, cutting off the only figure on offer.
-              //
-              // Not justified by the heading or the aria-label — neither
-              // mentions the assets. It is the button, and only the button.
-              label: d.corr.toFixed(2),
-            })),
-            isoDay,
-            width,
-          ),
-        ],
-        style: {
-          background: 'transparent',
-          color: cssVar('--ink-muted'),
-          fontFamily: cssVar('--font-mono'),
-          fontSize: '11px',
-        },
-      }),
+  if (container) {
+    const { threshold, pairs } = chartData<{ threshold: number; pairs: Pair[] }>(
+      'correlation-chart-data',
     );
-  }
+    let active = pairs[0]?.pair ?? '';
 
-  function renderLegend(): void {
-    if (!legend) return;
-    legend.replaceChildren(
-      ...(['positive', 'neutral', 'negative'] as Regime[]).map((regime) => {
-        const item = document.createElement('span');
-        item.className = 'legend-item';
-        const swatch = document.createElement('span');
-        swatch.className = 'legend-swatch regime-swatch';
-        const fill = bandFill(regime);
-        swatch.style.background = fill
-          ? `color-mix(in srgb, ${fill} 35%, transparent)`
-          : 'transparent';
-        if (!fill) swatch.style.border = `1px solid ${cssVar('--line')}`;
-        item.append(swatch, REGIME_LABELS[regime]);
-        return item;
-      }),
-    );
-  }
+    const upgrade = upgradeChart(container, async () => {
+      const [{ drawChart }, { correlationSpec }] = await Promise.all([
+        import('../lib/plot-client'),
+        import('../lib/specs/correlation'),
+      ]);
 
-  function renderTable(pair: Pair): void {
-    if (!table) return;
-    const head = document.createElement('thead');
-    const headRow = document.createElement('tr');
-    for (const [label, numeric] of [
-      ['Regime', false],
-      ['From', false],
-      ['To', false],
-      ['Days', true],
-      ['Obs', true],
-      ['Mean corr', true],
-    ] as [string, boolean][]) {
-      const th = document.createElement('th');
-      th.scope = 'col';
-      th.textContent = label;
-      if (numeric) th.className = 'num';
-      headRow.append(th);
-    }
-    head.append(headRow);
+      const pair = pairs.find((p) => p.pair === active) ?? pairs[0];
+      if (!pair) return;
+      const width = container.clientWidth || 720;
+      drawChart(container, correlationSpec(pair, threshold, width, true));
+    });
 
-    const body = document.createElement('tbody');
-    // Newest first: the regime a reader cares about is the current one.
-    for (const segment of [...pair.regimes].reverse()) {
-      const row = document.createElement('tr');
-      const name = document.createElement('th');
-      name.scope = 'row';
-      name.textContent = REGIME_LABELS[segment.regime];
-      name.className = `regime-${segment.regime}`;
-      row.append(name);
-      // Where a segment absorbed an unconfirmed opening, `startDate` reaches
-      // back further than the readings the mean is taken over. Say so, or the
-      // observation count and the mean cannot be reconciled.
-      const from =
-        segment.confirmedFrom === segment.startDate
-          ? segment.startDate
-          : `${segment.startDate} (confirmed ${segment.confirmedFrom})`;
-      for (const [value, numeric] of [
-        [from, false],
-        [segment.endDate, false],
-        [String(segment.days), true],
-        [String(segment.observations), true],
-        [segment.meanCorr.toFixed(2), true],
-      ] as [string, boolean][]) {
-        const cell = document.createElement('td');
-        cell.textContent = value;
-        if (numeric) cell.className = 'num';
-        row.append(cell);
-      }
-      body.append(row);
-    }
-    // Keep the server-rendered caption: it is the table's accessible name,
-    // and replaceChildren would drop it on the first render.
-    const caption = table.querySelector('caption');
-    table.replaceChildren(...(caption ? [caption, head, body] : [head, body]));
-  }
+    const show = (pair: string): void => {
+      toggle
+        ?.querySelectorAll('button')
+        .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pair === pair)));
+      // The tables are all already here; switching pair only changes which one
+      // is shown.
+      tables.forEach((t) => {
+        t.hidden = t.dataset.pair !== pair;
+      });
+    };
 
-  const currentPair = (): Pair | undefined => pairs.find((p) => p.pair === active) ?? pairs[0];
-
-  /** Width-dependent only: this is what a resize needs to redo. */
-  function render(): void {
-    const pair = currentPair();
-    if (pair) renderChart(pair);
-  }
-
-  /** Everything a pair change needs. The table and legend ignore width. */
-  function renderAll(): void {
-    const pair = currentPair();
-    if (!pair) return;
-    renderChart(pair);
-    renderLegend();
-    renderTable(pair);
-  }
-
-  if (toggle) {
-    toggle.replaceChildren(
-      ...pairs.map((p) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = pairLabel(p);
-        button.setAttribute('aria-pressed', String(p.pair === active));
-        button.addEventListener('click', () => {
-          active = p.pair;
-          toggle
-            .querySelectorAll('button')
-            .forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-          renderAll();
+    toggle?.querySelectorAll('button').forEach((button) => {
+      button.addEventListener('click', () => {
+        const previous = active;
+        active = button.dataset.pair ?? active;
+        show(active);
+        // If Plot never arrives the chart is still the old pair's, so put the
+        // pressed button and the table back rather than captioning the wrong
+        // chart with the right label.
+        upgrade().catch(() => {
+          active = previous;
+          show(active);
         });
-        return button;
-      }),
-    );
+      });
+    });
   }
-
-  // responsiveChart plots immediately, so only the width-independent parts
-  // are drawn here; calling renderAll would plot the chart twice on load.
-  const initial = currentPair();
-  if (initial) {
-    renderLegend();
-    renderTable(initial);
-  }
-  responsiveChart(render);
 </script>

@@ -81,7 +81,6 @@ const payload = {
 </section>
 
 <script>
-  import * as Plot from '@observablehq/plot';
   import {
     convertCost,
     holdingsSeries,
@@ -91,10 +90,8 @@ const payload = {
     type Holdings,
   } from '../../pipeline/holdings';
   import type { Currency } from '../../pipeline/currencies';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, responsiveChart } from '../lib/charts';
   import { compactMoney } from '../lib/chart-format';
-  import { isoDay } from '../lib/crosshair';
-  import { crosshairMarks } from '../lib/crosshair-marks';
   import {
     clearHoldings,
     HOLDINGS_EXTERNAL_EVENT,
@@ -281,7 +278,14 @@ const payload = {
     return wrap;
   }
 
-  function renderChart(btc: number): void {
+  /**
+   * Async because Plot is fetched here rather than at load.
+   *
+   * The chart exists only when the reader has entered an amount, so that is
+   * when the 88 KB is worth spending. Someone arriving at the page — which is
+   * everyone, the first time — gets the form and no charting library at all.
+   */
+  async function renderChart(btc: number): Promise<void> {
     if (!container || !chartSection || !chartNote) return;
     if (btc <= 0) {
       chartSection.hidden = true;
@@ -302,35 +306,13 @@ const payload = {
       `${btcAmount(btc)} BTC valued at every daily close since ${points[0]?.date.toISOString().slice(0, 10)}. This holds the amount ` +
       'constant — the site does not know when any of it was bought, so this is what this much BTC ' +
       'was worth, not a reconstruction of a position. Prices are blockchain.com daily closes.';
+    const [{ drawChart }, { holdingsSpec }] = await Promise.all([
+      import('../lib/plot-client'),
+      import('../lib/specs/holdings'),
+    ]);
+
     const width = container.clientWidth || 720;
-    container.replaceChildren(
-      Plot.plot({
-        width,
-        height: 300,
-        marginLeft: 70,
-        x: { label: null },
-        y: { label: null, grid: true, type: 'log', tickFormat: axisMoney },
-        marks: [
-          Plot.lineY(points, {
-            x: 'date',
-            y: 'value',
-            stroke: cssVar('--accent'),
-            strokeWidth: 1.5,
-          }),
-          ...crosshairMarks(
-            points.map((d) => ({ x: d.date, y: d.value, label: tipMoney(d.value) })),
-            isoDay,
-            width,
-          ),
-        ],
-        style: {
-          background: 'transparent',
-          color: cssVar('--ink-muted'),
-          fontFamily: cssVar('--font-mono'),
-          fontSize: '11px',
-        },
-      }),
-    );
+    drawChart(container, holdingsSpec(points, width, axisMoney, tipMoney));
   }
 
   /**
@@ -466,7 +448,7 @@ const payload = {
     suppressedCost = null;
     form.reset();
     render();
-    renderChart(0);
+    void renderChart(0);
     setStatus('amount cleared — nothing is stored for this browser');
   }
 
@@ -478,7 +460,7 @@ const payload = {
     // before the write let one describe a state that no longer existed.
     render();
     const { display } = formState();
-    renderChart(display && display.btc > 0 ? display.btc : 0);
+    void renderChart(display && display.btc > 0 ? display.btc : 0);
     // Announced here rather than off the tiles, which are rebuilt per keystroke.
     if (announce) announce.textContent = display ? summarise(display) : '';
   }
@@ -576,7 +558,7 @@ const payload = {
     storedCost = null;
     suppressedCost = null;
     render();
-    renderChart(0);
+    void renderChart(0);
     setStatus('cleared — nothing is stored for this browser');
     if (announce) announce.textContent = 'Holdings cleared.';
   });
@@ -600,7 +582,7 @@ const payload = {
     const message = load();
     render();
     const { display } = formState();
-    renderChart(display && display.btc > 0 ? display.btc : 0);
+    void renderChart(display && display.btc > 0 ? display.btc : 0);
     // Only when there is something to say. `load()` returns an empty string for
     // an empty store precisely because it cannot tell a first-time visitor from
     // a deletion — and on the deletion path the caller has already put the
@@ -656,6 +638,6 @@ const payload = {
   responsiveChart(() => {
     render();
     const { display } = formState();
-    renderChart(display && display.btc > 0 ? display.btc : 0);
+    void renderChart(display && display.btc > 0 ? display.btc : 0);
   });
 </script>

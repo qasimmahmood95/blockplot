@@ -1,63 +1,55 @@
 ---
 import { dominance } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
+import { renderResponsiveChart } from '../lib/plot-ssr';
+import { dominanceSpec } from '../lib/specs/flows';
+
+const svg = renderResponsiveChart((w) =>
+  dominanceSpec(
+    dominance.series.map((p) => ({ date: new Date(p.date), pct: p.btcDominancePct })),
+    w,
+  ),
+);
 ---
 
 <figure class="chart-frame">
-  <script is:inline type="application/json" id="dominance-chart-data" set:html={toJsonScript(dominance.series)} />
+  <script
+    is:inline
+    type="application/json"
+    id="dominance-chart-data"
+    set:html={toJsonScript(dominance.series)}
+  />
   <div
     id="dominance-chart"
     role="img"
     aria-label="Line chart of BTC dominance, accreting one point per day since the series began"
-  >
-  </div>
+    set:html={svg}
+  />
 </figure>
 
 <script>
-  import * as Plot from '@observablehq/plot';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
-  import { crosshairAnchors, isoDay } from '../lib/crosshair';
-  import { crosshairMarksFrom } from '../lib/crosshair-marks';
+  import { chartData, upgradeChart } from '../lib/charts';
 
-  const series = chartData<{ date: string; btcDominancePct: number }[]>('dominance-chart-data');
   const container = document.getElementById('dominance-chart');
-  const points = series.map((p) => ({ date: new Date(p.date), pct: p.btcDominancePct }));
 
-  const crosshair = crosshairAnchors(
-    points.map((d) => ({ x: d.date, y: d.pct, label: `${d.pct.toFixed(2)}%` })),
-    isoDay,
-  );
+  if (container) {
+    upgradeChart(container, async () => {
+      const [{ drawChart }, { dominanceSpec }, { crosshairAnchors, isoDay }] =
+        await Promise.all([
+          import('../lib/plot-client'),
+          import('../lib/specs/flows'),
+          import('../lib/crosshair'),
+        ]);
 
-  function render(): void {
-    if (!container) return;
-    const accent = cssVar('--accent');
-    const width = container.clientWidth || 720;
-    container.replaceChildren(
-      Plot.plot({
-        width,
-        height: 240,
-        marginLeft: 48,
-        x: { label: null },
-        y: {
-          label: null,
-          grid: true,
-          tickFormat: (value: number) => `${value}%`,
-        },
-        marks: [
-          // Dots keep a young accreted series visible before the line forms.
-          Plot.dot(points, { x: 'date', y: 'pct', fill: accent, r: 2 }),
-          Plot.lineY(points, { x: 'date', y: 'pct', stroke: accent, strokeWidth: 1.5 }),
-          ...crosshairMarksFrom(crosshair, width),
-        ],
-        style: {
-          background: 'transparent',
-          color: cssVar('--ink-muted'),
-          fontFamily: cssVar('--font-mono'),
-          fontSize: '11px',
-        },
-      }),
-    );
+      const series = chartData<{ date: string; btcDominancePct: number }[]>('dominance-chart-data');
+      const points = series.map((p) => ({ date: new Date(p.date), pct: p.btcDominancePct }));
+      const anchors = crosshairAnchors(
+        points.map((d) => ({ x: d.date, y: d.pct, label: `${d.pct.toFixed(2)}%` })),
+        isoDay,
+      );
+
+      const width = container.clientWidth || 720;
+      drawChart(container, dominanceSpec(points, width, anchors));
+    });
   }
-
-  responsiveChart(render);
 </script>
