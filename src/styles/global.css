@@ -55,13 +55,18 @@ code {
   align-items: baseline;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.4rem 1.5rem;
+  gap: 0.75rem 1.5rem;
   padding: 1.1rem 0 0.9rem;
   border-bottom: 1px solid var(--line);
   margin-bottom: 2rem;
 }
 
 .wordmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  min-width: 24px;
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 1.25rem;
@@ -72,7 +77,7 @@ code {
 .site-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.1rem;
+  gap: 0.5rem 1.1rem;
   margin-right: auto;
   font-size: 0.85rem;
 }
@@ -80,6 +85,20 @@ code {
 .site-nav a {
   color: var(--ink-muted);
   text-decoration: none;
+  /*
+   * A 24px minimum touch target. The links are 0.85rem text, which on a phone
+   * is a target smaller than a fingertip and sits inside the WCAG 2.2 target
+   * size floor — Lighthouse flags every one of them. Padding rather than a
+   * larger font, so the header keeps its density.
+   */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  /* Short labels like "dca" are only ~22px wide at 0.85rem, which is under the
+     floor on width even when the height passes. */
+  min-width: 24px;
+  padding: 0.15rem 0.3rem;
 }
 
 .site-nav a:hover {
@@ -96,8 +115,8 @@ code {
 .header-side {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.4rem 0.9rem;
+  align-items: center;
+  gap: 0.75rem 0.9rem;
 }
 
 .header-tick {
@@ -119,6 +138,11 @@ code {
 }
 
 .currency-switch a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  min-width: 24px;
   font-size: 0.72rem;
   color: var(--ink-muted);
   text-decoration: none;
@@ -219,7 +243,7 @@ code {
 .chart-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.1rem;
+  gap: 0.5rem 1.1rem;
   margin-bottom: 0.35rem;
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -556,6 +580,15 @@ code {
   margin: 0 0 1.5rem;
 }
 
+.theme-toggle,
+.chart-toggle button,
+.header-holdings a {
+  /* All three measured under the 24px floor at 375px: 23.4, 23.0 and 18. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
 .holdings-status {
   font-size: 0.72rem;
   color: var(--ink-muted);
@@ -565,4 +598,109 @@ code {
   border-left: 2px solid var(--accent);
   padding-left: 0.9rem;
   margin-bottom: 1.5rem;
+}
+
+/*
+ * Reduced motion.
+ *
+ * There is little to suppress today — no CSS animation, and the charts redraw
+ * rather than tween — but `responsiveChart` rebuilds a plot on every animation
+ * frame during a resize, and Plot's tooltip follows the cursor. The rule is
+ * here so the *next* piece of motion inherits the right default instead of
+ * shipping unguarded, and so smooth scrolling never gets added silently.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Print.
+ *
+ * A methodology page and a stat grid are things a reader may genuinely want on
+ * paper, and the default would waste most of it: dark background, navigation,
+ * theme toggle, and link URLs invisible. Charts are canvas-free SVG so they
+ * print, but the interactive furniture around them does not.
+ */
+@media print {
+  /*
+   * Every selector here is (0,2,0) or better, because tokens.css sets the dark
+   * palette at `:root:not([data-theme='light'])` inside a colour-scheme query.
+   * A bare `:root` is (0,1,0) and loses to it — which meant the *default*
+   * theme, the one nobody pins, printed black stat tiles and a solid black
+   * chart frame on white paper. The accent pair and the heatmap's up/down
+   * colours have to come along too, or the monthly grid prints in dark-mode
+   * hues against a light page.
+   */
+  :root,
+  :root:not([data-theme='nothing']) {
+    --bg: #fff;
+    --surface: #fff;
+    --ink: #111;
+    --ink-muted: #444;
+    --line: #bbb;
+    --accent: #a33f07;
+    --pos: #1f6b3a;
+    --neg: #9c2b19;
+  }
+
+  body {
+    background: #fff;
+    color: #111;
+  }
+
+  /* Controls that do nothing on paper. */
+  .site-nav,
+  .currency-switch,
+  .theme-toggle,
+  .header-holdings,
+  .holdings-actions {
+    display: none !important;
+  }
+
+  /*
+   * Deliberately NOT hidden: the chart legends are the colour key, the pair
+   * toggle is the only thing on the correlation page naming which pair is
+   * charted, and the DCA form is the only record of the start date, amount and
+   * fee that produced the figures beside it. Hiding them printed an anonymous
+   * chart and an unreproducible result.
+   */
+  .chart-toggle button[aria-pressed='false'] {
+    display: none;
+  }
+
+  .chart-toggle button[aria-pressed='true'] {
+    border-color: #bbb;
+  }
+
+  .sim-form input,
+  .sim-form select {
+    border-color: #bbb;
+    background: #fff;
+    color: #111;
+  }
+
+  /* A URL the reader cannot click is a URL they cannot follow. */
+  main a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.75em;
+    color: #444;
+    word-break: break-all;
+  }
+
+  .chart-section,
+  .stat,
+  .method-note {
+    break-inside: avoid;
+  }
+
+  .chart-frame {
+    border-color: #bbb;
+  }
 }

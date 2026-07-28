@@ -27,7 +27,9 @@ const { currency } = Astro.props as { currency: Currency };
       network page also asks mempool.space for fee tiers. Neither request carries anything you
       enter here.
       Both still reveal what any web request does: your IP address and the fact that you loaded
-      blockplot. Clearing your browser data, or the button below, removes what you entered. Anyone with access to this browser profile can read it, so treat it as you would a
+      blockplot. A service worker also keeps a copy of the site's own pages and dataset on this
+      device so it works offline; that copy contains the published figures, never anything you
+      enter. Clearing your browser data, or the button below, removes what you entered. Anyone with access to this browser profile can read it, so treat it as you would a
       note kept on the same machine.
     </p>
     <HoldingsPanel currency={currency} />

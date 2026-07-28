@@ -1,11 +1,17 @@
 # blockplot
 
+[![CI](https://github.com/qasimmahmood95/blockplot/actions/workflows/ci.yml/badge.svg)](https://github.com/qasimmahmood95/blockplot/actions/workflows/ci.yml)
+[![Lighthouse](https://github.com/qasimmahmood95/blockplot/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/qasimmahmood95/blockplot/actions/workflows/lighthouse.yml)
+[![Data pipeline](https://github.com/qasimmahmood95/blockplot/actions/workflows/pipeline.yml/badge.svg)](https://github.com/qasimmahmood95/blockplot/actions/workflows/pipeline.yml)
+
 Bitcoin financial analytics as a fully static site. A scheduled GitHub Actions
 pipeline fetches market data, validates it with zod, derives every metric in
 tested pure TypeScript, and commits versioned JSON to `/data`; Astro builds
 the site from that dataset alone, charted with Observable Plot.
 
-**Status:** Phase 1 (M0–M6) shipped; Phase 2 in progress (M7–M12 done, M13–M14 planned).
+![blockplot — overview, volatility, halving cycles, DCA, holdings and methodology](docs/demo.gif)
+
+**Status:** Phase 1 (M0–M6) shipped; Phase 2 complete (M7–M14 shipped).
 [PLAN.md](PLAN.md) holds the milestone plan, [CLAUDE.md](CLAUDE.md) the
 development rules.
 
@@ -148,6 +154,21 @@ converted closes, so sterling's own volatility enters the band test. Entry
 dates, ids and `lastBuildDate` all come from the committed data rather than
 build time, so the six-hourly pipeline does not republish the whole feed as new
 four times a day.
+
+## Install and offline
+
+The site is installable: a generated manifest scopes it to the deploy path, and
+a service worker keeps the last committed dataset readable with no network.
+
+The caching strategy is deliberately conservative, because the failure mode
+matters more than the hit rate. Navigations are **network-first**, so a reader
+who is online always sees the newest committed figures — a stale-while-
+revalidate default would quietly serve figures from four refreshes ago with no
+way to tell. Hashed build assets are cache-first, since their URL changes when
+their content does. The two live fetches — the CoinGecko ticker and the
+mempool.space fee tiers — are excluded outright: a cached "live" price is worse
+than no live price, so offline they fall back to the committed close exactly as
+they do on a failed request.
 
 ## Develop
 

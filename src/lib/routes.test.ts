@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { currencyPath } from './currency';
-import { pageForPath } from './routes';
+import { PAGES, pageForPath } from './routes';
+
+describe('PAGES', () => {
+  it('has a slug for every section the header links', () => {
+    // The overview is the empty slug and must stay first; every other entry
+    // is a real route segment.
+    expect(PAGES[0]?.page).toBe('');
+    expect(PAGES.map((p) => p.page)).toContain('methodology');
+    expect(PAGES.filter((p) => p.page === '')).toHaveLength(1);
+  });
+});
 
 describe('pageForPath', () => {
   it('identifies the section a path is on, in either currency', () => {
