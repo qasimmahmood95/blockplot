@@ -36,11 +36,25 @@ and never gitignored.
 ## Architecture invariants
 
 - Astro + TypeScript strict; static output only. Client islands only for
-  interactive charts, the DCA simulator, the live header ticker, and the
+  interactive charts, the DCA simulator, the live header ticker, the
   network page's fee tiers (added in M8: fees move on a ~10-minute
   timescale, so a 6-hourly committed value would be stale on arrival; the
   committed snapshot renders and the island upgrades it, falling back on
-  failure — the same pattern as the ticker).
+  failure — the same pattern as the ticker), and the holdings panel and its
+  header tile (added in M12: the input is the reader's own and is held in
+  `localStorage`, so it cannot be baked at build time — this is the one
+  island class whose state is personal rather than derived from `/data`).
+- Reader-entered data stays in the browser. It must never appear in a URL,
+  query string, page title, form action, or any request — a "share this"
+  feature is a violation, not an exception — and is never committed. It is
+  written to `localStorage` and read back by the page, nothing more. Any
+  feature that would move it requires amending this rule in the same PR.
+- Adding or removing a runtime fetch requires re-checking the holdings page's
+  privacy note against the built output — by driving `dist/` and recording the
+  requests, not by reading the diff. That note enumerates the site's requests
+  and which pages make them, so a change here silently makes it false, which is
+  worse than having no note because a reader can check it. Errors that
+  understate exposure are the ones that matter.
 - The site builds purely from `/data` (pipeline-committed, zod-validated,
   versioned JSON). Exactly two runtime fetches are sanctioned, both of which
   render a committed value first and upgrade it on success: the header ticker

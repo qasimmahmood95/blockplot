@@ -53,7 +53,9 @@ const payload = { code: meta.code, series: btcHistory.series };
 <script>
   import * as Plot from '@observablehq/plot';
   import { compareDcaVsLumpSum, type DcaFrequency } from '../../pipeline/dca';
+  import { holdingsSeries } from '../../pipeline/holdings';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { HOLDINGS_EVENT, readHoldings } from '../lib/holdings-store';
 
   const { code, series } = chartData<{ code: string; series: { date: string; price: number }[] }>(
     'dca-data',
@@ -150,18 +152,52 @@ const payload = { code: meta.code, series: btcHistory.series };
 
     const accent = cssVar('--accent');
     const muted = cssVar('--ink-muted');
+    const dcaPoints = dca.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
+    const lumpPoints = lumpSum.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
+    // Reduce rather than spread: these arrays run to thousands of points, and
+    // Math.max(...arr) has an argument-count ceiling. The domain is the
+    // simulated lines' own extent — pinning it to zero would silently rescale
+    // a chart that is not part of this feature.
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const point of [...dcaPoints, ...lumpPoints]) {
+      if (point.wealth < lo) lo = point.wealth;
+      if (point.wealth > hi) hi = point.wealth;
+    }
+    const wealthDomain: [number, number] = [lo, hi];
+
+    // The reader's own stack, if they entered one on /holdings, valued at a
+    // constant BTC amount across the same window. It answers the question the
+    // simulator raises — how did what I actually did compare — without
+    // pretending to know when any of it was bought.
+    const stored = readHoldings();
+    const held = stored && stored.btc > 0 ? stored.btc : null;
+    const heldPoints =
+      held === null
+        ? []
+        : holdingsSeries(series, held, dca.series[0]?.date)
+            .map((p) => ({ date: new Date(p.date), wealth: p.value }))
+            .filter((p) => Number.isFinite(p.wealth));
+    const heldClipped = heldPoints.some((p) => p.wealth > wealthDomain[1]);
+    const btcAmount = (v: number): string =>
+      new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 }).format(v);
+    const heldLabel =
+      held === null ? '' : `your ${btcAmount(held)} BTC${heldClipped ? ' (runs off this scale)' : ''}`;
     if (legend) {
       legend.replaceChildren(
         ...[
           ['DCA', accent, ''],
           ['lump sum', muted, 'dashed'],
+          ...(held === null
+            ? []
+            : [[heldLabel, cssVar('--pos'), 'dotted']]),
         ].map(([label, color, dash]) => {
           const item = document.createElement('span');
           item.className = 'legend-item';
           const swatch = document.createElement('span');
           swatch.className = 'legend-swatch';
           if (dash) {
-            swatch.style.background = `repeating-linear-gradient(90deg, ${color} 0 3px, transparent 3px 6px)`;
+            swatch.style.background = `repeating-linear-gradient(90deg, ${color} 0 ${dash === 'dotted' ? 1 : 3}px, transparent ${dash === 'dotted' ? 1 : 3}px ${dash === 'dotted' ? 3 : 6}px)`;
           } else {
             swatch.style.background = color ?? '';
           }
@@ -171,8 +207,6 @@ const payload = { code: meta.code, series: btcHistory.series };
       );
     }
 
-    const dcaPoints = dca.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
-    const lumpPoints = lumpSum.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
     container.replaceChildren(
       Plot.plot({
         width: container.clientWidth || 720,
@@ -182,6 +216,12 @@ const payload = { code: meta.code, series: btcHistory.series };
         y: {
           label: null,
           grid: true,
+          // Domain comes from the two simulated lines only. The held stack is
+          // an absolute figure with no relation to the chosen budget, and
+          // letting it set the scale collapsed the comparison this chart
+          // exists for — a 500 BTC stack pushed DCA and lump sum onto the
+          // baseline. It is clipped instead, and the legend says when.
+          domain: wealthDomain,
           tickFormat: (value: number) => money.format(value),
         },
         marks: [
@@ -193,6 +233,18 @@ const payload = { code: meta.code, series: btcHistory.series };
             strokeDasharray: '3,3',
           }),
           Plot.lineY(dcaPoints, { x: 'date', y: 'wealth', stroke: accent, strokeWidth: 1.75 }),
+          ...(heldPoints.length === 0
+            ? []
+            : [
+                Plot.lineY(heldPoints, {
+                  x: 'date',
+                  y: 'wealth',
+                  stroke: cssVar('--pos'),
+                  strokeWidth: 1.25,
+                  strokeDasharray: '1,3',
+                  clip: true,
+                }),
+              ]),
           Plot.tip(
             dcaPoints,
             Plot.pointerX({
@@ -214,5 +266,6 @@ const payload = { code: meta.code, series: btcHistory.series };
   }
 
   form?.addEventListener('input', render);
+  window.addEventListener(HOLDINGS_EVENT, render);
   responsiveChart(render);
 </script>

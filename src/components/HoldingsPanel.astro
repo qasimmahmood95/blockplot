@@ -1,0 +1,648 @@
+---
+import { CURRENCY_META, type Currency } from '../lib/currency';
+import { dataFor } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
+
+interface Props {
+  currency: Currency;
+}
+
+const { currency } = Astro.props;
+const { btcDaily, btcHistory } = dataFor(currency);
+const meta = CURRENCY_META[currency];
+
+/**
+ * The other currency's latest close travels with the payload so a cost basis
+ * entered in one currency can be shown in the other: the ratio of the two is
+ * the implied rate, and no other source is needed for it.
+ */
+const other = currency === 'usd' ? 'gbp' : 'usd';
+const otherDaily = dataFor(other).btcDaily;
+/**
+ * ...but only while the two trees are the same day old. `pipeline/run.ts`
+ * builds them from one USD series, so normally they share a date and the ratio
+ * is exactly the committed FX close. When the FX fetch fails the run skips the
+ * GBP tree entirely and leaves it behind, and the ratio silently stops being an
+ * exchange rate: it becomes two different days of BTC price divided by each
+ * other, which would mis-convert every cross-currency cost basis with nothing
+ * on screen to say so. Checked here, at build time, where the dates are known.
+ */
+const ratesAligned = btcDaily.stats.latestDate === otherDaily.stats.latestDate;
+const payload = {
+  currency,
+  code: meta.code,
+  latest: {
+    [currency]: btcDaily.stats.latestPrice,
+    [other]: otherDaily.stats.latestPrice,
+  },
+  ratesAligned,
+  latestDate: btcDaily.stats.latestDate,
+  series: btcHistory.series,
+};
+---
+
+<script is:inline type="application/json" id="holdings-data" set:html={toJsonScript(payload)} />
+
+<form class="sim-form" id="holdings-form" onsubmit="return false">
+  <label>
+    <span>BTC held</span>
+    <input type="number" name="btc" min="0" step="0.00000001" placeholder="0.25" />
+  </label>
+  <label>
+    <span>Total paid ({meta.symbol}, optional)</span>
+    <input type="number" name="cost" min="0" step="0.01" placeholder="—" />
+  </label>
+</form>
+
+<p class="holdings-actions">
+  <button type="button" class="theme-toggle num" id="holdings-clear">forget my holdings</button>
+  <span class="holdings-status num" id="holdings-status" aria-live="polite"></span>
+</p>
+
+<!--
+  Not a live region: the tiles are rebuilt on every keystroke, so announcing
+  them announced four figures per character typed. The summary below is a live
+  region instead, updated once the typing settles.
+-->
+<dl class="stat-grid" id="holdings-stats"></dl>
+<p class="visually-hidden" id="holdings-announce" aria-live="polite"></p>
+
+<section class="chart-section" id="holdings-chart-section" hidden>
+  <h2>What that stack has been worth</h2>
+  <figure class="chart-frame">
+    <div
+      id="holdings-chart"
+      role="img"
+      aria-label="Line chart of the value of the entered BTC amount at each historical daily close"
+    >
+    </div>
+  </figure>
+  <p class="method-note" id="holdings-chart-note"></p>
+</section>
+
+<script>
+  import * as Plot from '@observablehq/plot';
+  import {
+    convertCost,
+    holdingsSeries,
+    MAX_BTC,
+    MAX_COST,
+    valueHoldings,
+    type Holdings,
+  } from '../../pipeline/holdings';
+  import type { Currency } from '../../pipeline/currencies';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import {
+    clearHoldings,
+    HOLDINGS_EXTERNAL_EVENT,
+    readHoldings,
+    writeHoldings,
+  } from '../lib/holdings-store';
+
+  const data = chartData<{
+    currency: Currency;
+    code: string;
+    latest: Record<Currency, number>;
+    ratesAligned: boolean;
+    latestDate: string;
+    series: { date: string; price: number }[];
+  }>('holdings-data');
+
+  const form = document.getElementById('holdings-form') as HTMLFormElement | null;
+  const stats = document.getElementById('holdings-stats');
+  const status = document.getElementById('holdings-status');
+  const announce = document.getElementById('holdings-announce');
+  const clearButton = document.getElementById('holdings-clear');
+  const chartSection = document.getElementById('holdings-chart-section');
+  const container = document.getElementById('holdings-chart');
+  const chartNote = document.getElementById('holdings-chart-note');
+
+  const money = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: data.code,
+    maximumFractionDigits: 0,
+  });
+  const exact = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: data.code,
+    maximumFractionDigits: 2,
+  });
+  const signedPct = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+  /** Sub-dollar ticks need decimals; above a dollar they are noise. */
+  const axisMoney = (v: number): string =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: data.code,
+      maximumFractionDigits: v < 1 ? 4 : 0,
+    }).format(v);
+  /** BTC amounts in prose: 8 dp is the smallest unit, and never e-notation. */
+  const btcAmount = (v: number): string =>
+    new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 }).format(v);
+  /**
+   * The same, for a `type="number"` field, which rejects a grouped value and
+   * so cannot use the formatter above. `String(0.00000001)` is "1e-8", which
+   * the field shows verbatim and then refuses to parse.
+   */
+  const fieldNumber = (v: number, dp: number): string =>
+    new Intl.NumberFormat('en-US', { maximumFractionDigits: dp, useGrouping: false }).format(v);
+
+  /**
+   * Whether the reader has touched the cost field this visit. Until they do,
+   * the field is showing a stored figure — possibly converted from the other
+   * currency — and editing the BTC amount must not re-denominate it. Once they
+   * type in it, the number is theirs and is in this page's currency.
+   */
+  let costEdited = false;
+
+  /**
+   * A foreign cost basis whose field *the site* blanked, because the two trees
+   * are different days old and the implied rate is not a rate today.
+   *
+   * Held apart from `storedCost` because it has to outlive a keystroke. The
+   * reader is looking at an empty box they did not empty; one stray character
+   * commits a cost in this currency, and without this the GBP figure behind
+   * the box is gone before the Backspace lands — destroyed by a gesture that
+   * corrects itself everywhere else on the form. It survives until a cost is
+   * actually committed over it, or the record is deleted outright.
+   */
+  let suppressedCost: { cost: number; costCurrency: Currency } | null = null;
+
+  /**
+   * The cost as loaded, held here rather than re-read from storage.
+   *
+   * Emptying the BTC field clears storage, so reading the un-edited cost back
+   * out of it destroyed the cost basis the moment the reader cleared and
+   * retyped an amount — the ordinary way anyone changes a number — while the
+   * field went on displaying a figure that no longer existed. Snapshotting
+   * makes the field and the model agree by construction rather than by timing.
+   */
+  let storedCost: { cost: number; costCurrency: Currency } | null = null;
+
+  interface FormState {
+    /**
+     * What to persist: everything the reader has actually told the site.
+     */
+    holdings: Holdings | null;
+    /**
+     * What to put on screen. The same record, except where a figure is known
+     * but cannot honestly be shown in this currency today.
+     *
+     * These are two different questions and collapsing them lost data: when
+     * `display` dropped an unconvertible cost, `save()` wrote the dropped
+     * version, so one keystroke on a stale-FX day deleted a cost basis that
+     * would have been perfectly convertible again the next morning.
+     */
+    display: Holdings | null;
+    /** Which field is unusable, so the message can name the right one. */
+    invalid: 'amount' | 'total paid' | null;
+    /** A stored cost is held back because the two trees are different days old. */
+    costUnavailable: boolean;
+  }
+
+  const state = (holdings: Holdings | null, display = holdings): FormState => ({
+    holdings,
+    display,
+    invalid: null,
+    costUnavailable: false,
+  });
+
+  /** What the form currently says, and why it cannot be valued if it cannot. */
+  function formState(): FormState {
+    if (!form) return state(null);
+    const raw = new FormData(form);
+    const btcRaw = String(raw.get('btc') ?? '').trim();
+    if (btcRaw === '') return state(null);
+    const btc = Number(btcRaw);
+    if (!Number.isFinite(btc) || btc < 0 || btc > MAX_BTC) {
+      return { holdings: null, display: null, invalid: 'amount', costUnavailable: false };
+    }
+    const bare: Holdings = { btc, cost: null, costCurrency: data.currency };
+    const costRaw = String(raw.get('cost') ?? '').trim();
+    /**
+     * A cost held in the other currency cannot be restated while the two trees
+     * disagree on the date; showing the stack's value without it beats printing
+     * a P&L against a rate that is not one. It is still stored, and shown again
+     * the moment the rate is a rate.
+     */
+    const suppressed = (): FormState | null =>
+      suppressedCost
+        ? {
+            holdings: { btc, ...suppressedCost },
+            display: bare,
+            invalid: null,
+            costUnavailable: true,
+          }
+        : null;
+    if (!costEdited) {
+      const held = suppressed();
+      if (held) return held;
+      return storedCost ? state({ btc, ...storedCost }) : state(bare);
+    }
+    // An empty cost field always means "nothing entered in *this* currency",
+    // never "delete what is held in the other one" — the same reading the
+    // untouched branch above gives it.
+    if (costRaw === '') return suppressed() ?? state(bare);
+    const cost = Number(costRaw);
+    if (!Number.isFinite(cost) || cost < 0 || cost > MAX_COST) {
+      return { holdings: null, display: null, invalid: 'total paid', costUnavailable: false };
+    }
+    return state({ btc, cost, costCurrency: data.currency });
+  }
+
+
+  function tile(label: string, value: string, sub: string, tone = ''): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'stat';
+    const dt = document.createElement('dt');
+    dt.textContent = label;
+    const dd = document.createElement('dd');
+    dd.className = `num ${tone}`.trim();
+    dd.textContent = value;
+    const ddSub = document.createElement('dd');
+    ddSub.className = 'sub num';
+    ddSub.textContent = sub;
+    wrap.append(dt, dd, ddSub);
+    return wrap;
+  }
+
+  function renderChart(btc: number): void {
+    if (!container || !chartSection || !chartNote) return;
+    if (btc <= 0) {
+      chartSection.hidden = true;
+      return;
+    }
+    const points = holdingsSeries(data.series, btc)
+      // A log axis cannot plot a non-positive value; at very small stacks the
+      // early days underflow to zero. Dropping them here lets the note say how
+      // many survived instead of rendering an empty frame.
+      .filter((p) => p.value > 0)
+      .map((p) => ({ date: new Date(p.date), value: p.value }));
+    if (points.length === 0) {
+      chartSection.hidden = true;
+      return;
+    }
+    chartSection.hidden = false;
+    chartNote.textContent =
+      `${btcAmount(btc)} BTC valued at every daily close since ${points[0]?.date.toISOString().slice(0, 10)}. This holds the amount ` +
+      'constant — the site does not know when any of it was bought, so this is what this much BTC ' +
+      'was worth, not a reconstruction of a position. Prices are blockchain.com daily closes.';
+    container.replaceChildren(
+      Plot.plot({
+        width: container.clientWidth || 720,
+        height: 300,
+        marginLeft: 70,
+        x: { label: null },
+        y: { label: null, grid: true, type: 'log', tickFormat: axisMoney },
+        marks: [
+          Plot.lineY(points, {
+            x: 'date',
+            y: 'value',
+            stroke: cssVar('--accent'),
+            strokeWidth: 1.5,
+          }),
+          Plot.tip(
+            points,
+            Plot.pointerX({
+              x: 'date',
+              y: 'value',
+              title: (d: { date: Date; value: number }) =>
+                `${d.date.toISOString().slice(0, 10)}\n${axisMoney(d.value)}`,
+            }),
+          ),
+        ],
+        style: {
+          background: 'transparent',
+          color: cssVar('--ink-muted'),
+          fontFamily: cssVar('--font-mono'),
+          fontSize: '11px',
+        },
+      }),
+    );
+  }
+
+  /**
+   * Draw the tiles. Deliberately does not touch the status line: it runs on
+   * every keystroke, on a theme toggle and on every resize, and blanking the
+   * status there wiped the clear button's own confirmation the moment the
+   * reader changed theme or resized the window. Status is set by the actions
+   * that have something to say.
+   */
+  function render(): void {
+    if (!stats) return;
+    const { display: holdings, costUnavailable } = formState();
+    if (!holdings) {
+      stats.replaceChildren();
+      if (chartSection) chartSection.hidden = true;
+      return;
+    }
+    const result = valueHoldings(
+      holdings,
+      data.latest[data.currency] as number,
+      data.currency,
+      data.latest,
+    );
+    const tiles = [
+      tile(
+        'Value',
+        money.format(result.value),
+        // Names the source, because the chart below plots blockchain.com's
+        // close for the same date and the two differ by a fraction of a
+        // percent. Hovering the last point and reading a number the headline
+        // contradicts is confusing; saying which is which is not.
+        `${btcAmount(holdings.btc)} BTC · CoinGecko close ${data.latestDate}`,
+      ),
+    ];
+    if (costUnavailable) {
+      tiles.push(
+        tile(
+          'Cost',
+          '—',
+          `entered in ${(storedCost?.costCurrency ?? '').toUpperCase()}; not converted while the two datasets are different days old`,
+        ),
+      );
+    }
+    if (result.pnl !== null && result.cost !== null) {
+      const tone = result.pnl < 0 ? 'down' : 'up';
+      tiles.push(
+        tile(
+          'Profit / loss',
+          money.format(result.pnl),
+          result.pnlPct === null ? 'no return against a zero cost' : signedPct(result.pnlPct),
+          tone,
+        ),
+        tile(
+          'Cost',
+          money.format(result.cost),
+          result.costConverted ? 'converted at today’s rate' : 'as entered',
+        ),
+      );
+      if (result.avgEntry !== null) {
+        tiles.push(tile('Average entry', exact.format(result.avgEntry), 'per BTC'));
+      }
+    }
+    stats.replaceChildren(...tiles);
+  }
+
+  function setStatus(message: string): void {
+    if (status) status.textContent = message;
+  }
+
+  /**
+   * Trailing debounce for the two expensive, order-sensitive effects: plotting
+   * ~5,800 points, and persisting. The tiles stay synchronous — they are three
+   * multiplications and cost nothing — so typing still feels immediate.
+   */
+  const DEBOUNCE_MS = 200;
+  let pending: ReturnType<typeof setTimeout> | undefined;
+  function afterTyping(run: () => void): void {
+    if (pending !== undefined) clearTimeout(pending);
+    pending = setTimeout(() => {
+      pending = undefined;
+      run();
+    }, DEBOUNCE_MS);
+  }
+  /** Persist immediately if a debounced write is still owed. */
+  function flushPending(): void {
+    if (pending === undefined) return;
+    clearTimeout(pending);
+    pending = undefined;
+    commit();
+  }
+
+  /**
+   * Persist, then re-render every holdings-aware island on the page.
+   *
+   * A non-empty but invalid entry leaves storage alone and says so, rather than
+   * destroying good data on the way to a typo. An *empty* amount field does the
+   * same, and that is the important part: mid-retype is the single most common
+   * state this field is ever in, and treating it as a deletion meant a
+   * select-all-and-Backspace wrote an empty store — which a second tab then
+   * read as "forgotten in another tab", blanked its own cost field over, and
+   * announced. Nothing had been forgotten, and the cost basis did not survive.
+   * Deletion is deferred to `commitEmptyAmount`, below, where the reader has
+   * actually finished with the field.
+   */
+  function save(): string {
+    const btcRaw = String(new FormData(form as HTMLFormElement).get('btc') ?? '').trim();
+    if (btcRaw === '') return '';
+    const { holdings, invalid } = formState();
+    if (!holdings) return `not a valid ${invalid ?? 'entry'} — nothing saved`;
+    writeHoldings(holdings);
+    if (holdings.cost !== null) {
+      storedCost = { cost: holdings.cost, costCurrency: holdings.costCurrency };
+    } else {
+      storedCost = null;
+    }
+    return 'saved in this browser';
+  }
+
+  /**
+   * An amount field the reader has *finished* with while empty is a deletion:
+   * `change` fires on commit — blur or Enter — not on every keystroke, so by
+   * the time this runs the field is empty because they meant it, not because
+   * they are halfway through typing. Without this the stored figure would
+   * outlive the emptied form and come back on reload.
+   */
+  function commitEmptyAmount(): void {
+    if (!form) return;
+    const btcRaw = String(new FormData(form).get('btc') ?? '').trim();
+    if (btcRaw !== '' || readHoldings() === null) return;
+    clearHoldings();
+    costEdited = false;
+    storedCost = null;
+    suppressedCost = null;
+    form.reset();
+    render();
+    renderChart(0);
+    setStatus('amount cleared — nothing is stored for this browser');
+  }
+
+  /** The debounced half of an edit: persist, then redraw the chart. */
+  function commit(): void {
+    setStatus(save());
+    // After save(), which can change what the tiles should say — a written
+    // cost becomes the snapshot the next render reads. Leaving the tiles from
+    // before the write let one describe a state that no longer existed.
+    render();
+    const { display } = formState();
+    renderChart(display && display.btc > 0 ? display.btc : 0);
+    // Announced here rather than off the tiles, which are rebuilt per keystroke.
+    if (announce) announce.textContent = display ? summarise(display) : '';
+  }
+
+  /** One sentence of the figures on screen, for a screen reader. */
+  function summarise(holdings: Holdings): string {
+    const result = valueHoldings(
+      holdings,
+      data.latest[data.currency] as number,
+      data.currency,
+      data.latest,
+    );
+    const pnl =
+      result.pnl === null
+        ? ''
+        : `, profit and loss ${money.format(result.pnl)}${
+            result.pnlPct === null ? '' : ` (${signedPct(result.pnlPct)})`
+          }`;
+    return `${btcAmount(holdings.btc)} BTC worth ${money.format(result.value)}${pnl}.`;
+  }
+
+  /** Populate the fields from storage; returns the status to show afterwards. */
+  function load(): string {
+    if (!form) return '';
+    const stored = readHoldings();
+    if (!stored) {
+      // Another tab forgot the holdings. This one must too, or it keeps the
+      // reader's figures on screen after they asked the site to drop them —
+      // and writes them back on the next keystroke.
+      form.reset();
+      costEdited = false;
+      storedCost = null;
+      suppressedCost = null;
+      // No message: an empty store is also what a first-time visitor has, and
+      // load() cannot tell that from a deletion. The external handler knows,
+      // and passes the reason in.
+      return '';
+    }
+    const btcInput = form.elements.namedItem('btc') as HTMLInputElement | null;
+    const costInput = form.elements.namedItem('cost') as HTMLInputElement | null;
+    if (btcInput) btcInput.value = fieldNumber(stored.btc, 8);
+    // The fields now mirror storage, not anything the reader typed.
+    costEdited = false;
+    storedCost =
+      stored.cost === null ? null : { cost: stored.cost, costCurrency: stored.costCurrency };
+    const foreign = stored.cost !== null && stored.costCurrency !== data.currency;
+    suppressedCost = foreign && !data.ratesAligned ? storedCost : null;
+    if (costInput) {
+      if (stored.cost === null || (foreign && !data.ratesAligned)) {
+        // Blank rather than wrong: with the trees a different age the rate is
+        // not a rate, and formState() has dropped the cost for the same reason.
+        costInput.value = '';
+      } else {
+        // Converted when it was entered on the other route, so the field is
+        // always in the currency its label claims — and always clearable. The
+        // conversion is the pipeline's, so the box and the maths cannot drift.
+        costInput.value = fieldNumber(
+          convertCost(stored.cost, stored.costCurrency, data.currency, data.latest),
+          2,
+        );
+      }
+    }
+    return 'loaded from this browser';
+  }
+
+  form?.addEventListener('input', (event) => {
+    if ((event.target as HTMLElement | null)?.getAttribute('name') === 'cost') costEdited = true;
+    render();
+    afterTyping(commit);
+  });
+  // A debounced write must not be lost to a navigation or a closed tab.
+  form?.addEventListener('change', (event) => {
+    // A cost the reader has finished entering replaces a suppressed one for
+    // good — otherwise clearing the box later would resurrect a figure they
+    // had already written over. `change`, not `input`, for the same reason
+    // the amount field uses it: a keystroke is not a decision.
+    const target = event.target as HTMLInputElement | null;
+    if (target?.getAttribute('name') === 'cost' && target.value.trim() !== '') {
+      suppressedCost = null;
+    }
+    flushPending();
+    commitEmptyAmount();
+  });
+  window.addEventListener('pagehide', flushPending);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) flushPending();
+  });
+
+  clearButton?.addEventListener('click', () => {
+    if (pending !== undefined) clearTimeout(pending);
+    pending = undefined;
+    clearHoldings();
+    form?.reset();
+    costEdited = false;
+    storedCost = null;
+    suppressedCost = null;
+    render();
+    renderChart(0);
+    setStatus('cleared — nothing is stored for this browser');
+    if (announce) announce.textContent = 'Holdings cleared.';
+  });
+
+  /**
+   * Resync once focus leaves the form. `focusout` also fires when tabbing
+   * between this form's own two fields, and syncing then would rewrite the
+   * field the reader is moving into — hence the relatedTarget check. Defined
+   * once at module scope so add and remove refer to the same function; a fresh
+   * closure per event made every removal a no-op and every keystroke add
+   * another full resync to the eventual blur.
+   */
+  function onLeave(event: FocusEvent): void {
+    const to = event.relatedTarget;
+    if (to instanceof Node && form?.contains(to)) return;
+    form?.removeEventListener('focusout', onLeave);
+    syncFromStorage();
+  }
+
+  function syncFromStorage(reason?: string): void {
+    const message = load();
+    render();
+    const { display } = formState();
+    renderChart(display && display.btc > 0 ? display.btc : 0);
+    // Only when there is something to say. `load()` returns an empty string for
+    // an empty store precisely because it cannot tell a first-time visitor from
+    // a deletion — and on the deletion path the caller has already put the
+    // right words on screen. Blanking here wiped its own confirmation: on blur
+    // the order is `change` (which sets "amount cleared…") then `focusout`.
+    const next = reason ?? message;
+    if (next) setStatus(next);
+  }
+
+  /**
+   * Another tab, or another island on this page, changed the stored value.
+   *
+   * Repopulating the fields under a cursor would be hostile, so while the
+   * reader is typing the fields are left alone — but the snapshot behind them
+   * is refreshed regardless, because the alternative is that the next keystroke
+   * writes a stale cost over the one the other tab just set. The fields catch
+   * up when focus leaves.
+   */
+  window.addEventListener(HOLDINGS_EXTERNAL_EVENT, () => {
+    const stored = readHoldings();
+    // A clear overrides the cursor. Every other cross-tab change is an edit
+    // race the reader entered by opening two tabs, and leaving their typing
+    // alone is the courteous resolution — but a deletion is an explicit
+    // instruction whose whole meaning is that the figures are gone. Leaving
+    // them on screen here would let one keystroke write them back, and the
+    // other tab's confirmation says they are gone. Refreshing the snapshot
+    // alone is not enough: the fields still hold the values, so they have to
+    // be reset too.
+    //
+    // This is only sound because an empty store now has exactly two causes,
+    // both deliberate: the forget button, and an amount field committed empty.
+    // While a transient mid-retype blank also wrote one, this branch fired on
+    // an ordinary edit in the other tab and destroyed the cost basis here.
+    if (!stored) {
+      syncFromStorage('forgotten in another tab');
+      return;
+    }
+    if (!document.activeElement?.closest('#holdings-form')) {
+      syncFromStorage();
+      return;
+    }
+    storedCost =
+      stored.cost == null ? null : { cost: stored.cost, costCurrency: stored.costCurrency };
+    setStatus('changed in another tab');
+    form?.addEventListener('focusout', onLeave);
+  });
+
+  const loaded = load();
+  render();
+  setStatus(loaded);
+  // watchOtherTabs is registered by the layout, which is on every page; adding
+  // it here too would double every cross-tab dispatch.
+  responsiveChart(() => {
+    render();
+    const { display } = formState();
+    renderChart(display && display.btc > 0 ? display.btc : 0);
+  });
+</script>

@@ -1,4 +1,4 @@
-import { CURRENCIES, type Currency } from '../../pipeline/schema';
+import { CURRENCIES, type Currency } from '../../pipeline/currencies';
 
 export { CURRENCIES, type Currency };
 

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-07-27T19:45:22.632Z",
-  "asOf": "2026-07-27",
+  "fetchedAt": "2026-07-28T00:38:04.948Z",
+  "asOf": "2026-07-28",
   "windowDays": 90,
   "minObs": 40,
   "regimeThreshold": 0.25,
@@ -13,18 +13,6 @@
       "a": "btc",
       "b": "sp500",
       "series": [
-        {
-          "date": "2016-09-20",
-          "corr": 0.08
-        },
-        {
-          "date": "2016-09-21",
-          "corr": 0.05
-        },
-        {
-          "date": "2016-09-22",
-          "corr": 0.05
-        },
         {
           "date": "2016-09-23",
           "corr": 0.04
@@ -9913,11 +9901,11 @@
       "regimes": [
         {
           "regime": "neutral",
-          "startDate": "2016-09-20",
-          "confirmedFrom": "2016-09-20",
+          "startDate": "2016-09-23",
+          "confirmedFrom": "2016-09-23",
           "endDate": "2018-02-02",
-          "observations": 346,
-          "days": 501,
+          "observations": 343,
+          "days": 498,
           "meanCorr": 0
         },
         {
@@ -32289,10 +32277,6 @@
       "b": "dxy",
       "series": [
         {
-          "date": "2025-07-28",
-          "corr": -0.69
-        },
-        {
           "date": "2025-07-29",
           "corr": -0.68
         },
@@ -33285,7 +33269,7 @@
           "corr": -0.55
         },
         {
-          "date": "2026-07-27",
+          "date": "2026-07-28",
           "corr": -0.55
         }
       ],
@@ -33330,9 +33314,9 @@
           "regime": "negative",
           "startDate": "2026-06-17",
           "confirmedFrom": "2026-06-17",
-          "endDate": "2026-07-27",
+          "endDate": "2026-07-28",
           "observations": 26,
-          "days": 41,
+          "days": 42,
           "meanCorr": -0.56
         }
       ]

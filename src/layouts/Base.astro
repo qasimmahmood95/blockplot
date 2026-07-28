@@ -12,6 +12,7 @@ import {
   type Currency,
 } from '../lib/currency';
 import { dataFor } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
 import { PAGES, pageForPath } from '../lib/routes';
 
 interface Props {
@@ -43,6 +44,22 @@ const currencyLinks = CURRENCIES.map((c) => ({
 }));
 const current = (href: string): boolean =>
   Astro.url.pathname.replace(/\/$/, '') === href.replace(/\/$/, '');
+
+// Both currencies' latest closes: the header tile values a cost basis entered
+// in either, and their ratio is the implied rate that makes that possible.
+//
+// `ratesAligned` travels with them because that ratio is only an exchange rate
+// while the two trees are the same day old — see the note in HoldingsPanel.
+// The tile is on every page, so shipping the prices without the caveat let the
+// header print a P&L from a rate the panel was refusing to use, on the same
+// screen and off the same stored figure.
+const usdDaily = dataFor('usd').btcDaily;
+const gbpDaily = dataFor('gbp').btcDaily;
+const latestJson = toJsonScript({
+  usd: usdDaily.stats.latestPrice,
+  gbp: gbpDaily.stats.latestPrice,
+  ratesAligned: usdDaily.stats.latestDate === gbpDaily.stats.latestDate,
+});
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(`${base}/og.png`, Astro.site);
@@ -102,6 +119,17 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
           BTC <span id="tick-price">{money.format(stats.latestPrice)}</span>{' '}
           <span class="tick-date" id="tick-label">close {stats.latestDate}</span>
         </p>
+        <p class="header-tick header-holdings num" id="header-holdings" hidden>
+          <a href={currencyPath(base, currency, 'holdings')}>
+            {/* Without this the link's accessible name is a bare figure —
+                "$48,566 +304.7%" — which says nothing about where it goes. The
+                visible text already carries "holdings" only when there is no
+                cost basis to print beside it. */}
+            <span class="visually-hidden">Your holdings:</span>
+            <span id="header-holdings-value"></span>{' '}
+            <span class="tick-date" id="header-holdings-pnl"></span>
+          </a>
+        </p>
         <nav class="currency-switch num" aria-label="Currency">
           {
             currencyLinks.map(({ code, href, active }) => (
@@ -127,7 +155,30 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
       <p><a href="https://github.com/qasimmahmood95/blockplot">source &amp; methodology</a></p>
     </footer>
 
+    <script is:inline type="application/json" id="header-latest" set:html={latestJson} />
     <script>
+      import { valueHoldings } from '../../pipeline/holdings';
+      import type { Currency } from '../../pipeline/currencies';
+      import { chartData } from '../lib/charts';
+      import {
+        HOLDINGS_EVENT,
+        HOLDINGS_EXTERNAL_EVENT,
+        readHoldings,
+        watchOtherTabs,
+      } from '../lib/holdings-store';
+
+      const { ratesAligned, ...headerLatest } = chartData<
+        Record<Currency, number> & { ratesAligned: boolean }
+      >('header-latest');
+      const pageCurrency = (document.documentElement.dataset.currency ?? 'usd') as Currency;
+      // Declared here because both the holdings tile and the live ticker format
+      // with it, and the tile renders first.
+      const money = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: pageCurrency.toUpperCase(),
+        maximumFractionDigits: 0,
+      });
+
       // Theme toggle: auto (OS preference) -> dark -> light, persisted.
       const root = document.documentElement;
       const button = document.getElementById('theme-toggle');
@@ -160,18 +211,62 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
         });
       }
 
+      // Holdings tile: reads what the reader entered on /holdings and values it
+      // at the committed close. Hidden entirely when nothing is stored, so this
+      // is invisible to anyone who never uses the feature.
+      const holdingsEl = document.getElementById('header-holdings');
+      const holdingsValueEl = document.getElementById('header-holdings-value');
+      const holdingsPnlEl = document.getElementById('header-holdings-pnl');
+
+      function renderHoldings(): void {
+        if (!holdingsEl || !holdingsValueEl || !holdingsPnlEl) return;
+        const stored = readHoldings();
+        // `!stored`, not `btc <= 0`: a zero stack with a cost basis is a
+        // real position (fully sold), and the panel shows it — the two views
+        // must not disagree about whether it exists.
+        if (!stored) {
+          holdingsEl.hidden = true;
+          // Blank it too: a hidden element still carrying the last figure is a
+          // copy of the reader's data left in the DOM after they cleared it.
+          holdingsValueEl.textContent = '';
+          holdingsPnlEl.textContent = '';
+          return;
+        }
+        // A cost held in the other currency is dropped, not converted, while
+        // the two trees disagree on the date — the same call the panel makes,
+        // so the two views cannot contradict each other. The value itself is
+        // unaffected: it is priced in this currency from this currency's tree.
+        const convertible = stored.costCurrency === pageCurrency || ratesAligned;
+        const result = valueHoldings(
+          convertible ? stored : { ...stored, cost: null },
+          headerLatest[pageCurrency],
+          pageCurrency,
+          headerLatest,
+        );
+        holdingsEl.hidden = false;
+        holdingsValueEl.textContent = money.format(result.value);
+        // "no cost basis" rather than "holdings": the visually-hidden label on
+        // the link already says whose figure this is, so repeating the word
+        // read as "your holdings … holdings", and this says something the
+        // reader cannot otherwise tell — why there is no percentage beside it.
+        holdingsPnlEl.textContent =
+          result.pnlPct === null
+            ? 'no cost basis'
+            : `${result.pnlPct >= 0 ? '+' : ''}${result.pnlPct.toFixed(1)}%`;
+        holdingsPnlEl.className = `tick-date ${result.pnlPct === null ? '' : result.pnlPct < 0 ? 'down' : 'up'}`.trim();
+      }
+      renderHoldings();
+      window.addEventListener(HOLDINGS_EVENT, renderHoldings);
+      window.addEventListener(HOLDINGS_EXTERNAL_EVENT, renderHoldings);
+      watchOtherTabs();
+
       // Live spot ticker: one of the site's two sanctioned runtime fetches.
       // CoinGecko's simple-price endpoint is queried in the page's currency,
       // so the live upgrade works on both; the committed close stays as the
       // fallback when it fails.
-      const tickCurrency = document.documentElement.dataset.currency ?? 'usd';
+      const tickCurrency = pageCurrency;
       const priceEl = document.getElementById('tick-price');
       const labelEl = document.getElementById('tick-label');
-      const money = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: tickCurrency.toUpperCase(),
-        maximumFractionDigits: 0,
-      });
       async function refreshTicker(): Promise<void> {
         if (document.hidden || !priceEl || !labelEl) return;
         try {
