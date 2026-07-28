@@ -23,8 +23,9 @@ const { currency } = Astro.props as { currency: Currency };
       <code>localStorage</code> and read back by this page. It is never transmitted: blockplot is a
       static site with no server, no account, and no analytics, so there is nowhere for it to go
       even in principle. Every page — this one included — asks CoinGecko for the live BTC price
-      about once a minute while the tab is open, to keep the header ticker current, and the network
-      page also asks mempool.space for fee tiers. Neither request carries anything you enter here.
+      about once a minute while the tab is visible, to keep the header ticker current, and the
+      network page also asks mempool.space for fee tiers. Neither request carries anything you
+      enter here.
       Both still reveal what any web request does: your IP address and the fact that you loaded
       blockplot. Clearing your browser data, or the button below, removes what you entered. Anyone with access to this browser profile can read it, so treat it as you would a
       note kept on the same machine.
@@ -32,7 +33,10 @@ const { currency } = Astro.props as { currency: Currency };
     <HoldingsPanel currency={currency} />
     <p class="method-note">
       Value is your BTC at the latest committed daily close, not a live price — the header ticker
-      is the live figure. Profit and loss compare that value against the total you entered, so it
+      is the live figure. That close is CoinGecko's; the history chart is blockchain.com's, and the
+      two disagree by a fraction of a percent on any given day, so the last point on the chart is
+      not quite the figure above it. Each is labelled with its source rather than quietly
+      reconciled. Profit and loss compare that value against the total you entered, so it
       is a simple return on money in, ignoring fees you have already paid, taxes, and anything you
       have since sold. A cost entered in the other currency is converted at the rate implied by
       today's two closes, which is today's rate rather than the one you actually paid.{

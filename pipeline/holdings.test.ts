@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { holdingsSeries, impliedRate, MAX_BTC, MAX_COST, valueHoldings } from './holdings';
+import {
+  convertCost,
+  holdingsSeries,
+  impliedRate,
+  MAX_BTC,
+  MAX_COST,
+  valueHoldings,
+} from './holdings';
 
 // Latest BTC close in each currency, from the committed datasets. Their ratio
 // is the implied GBP/USD rate.
@@ -26,6 +33,44 @@ describe('impliedRate', () => {
   it('rejects a non-positive price rather than returning nonsense', () => {
     expect(() => impliedRate({ usd: 0, gbp: 1 }, 'gbp', 'usd')).toThrow('must be positive');
     expect(() => impliedRate({ usd: 1, gbp: -1 }, 'gbp', 'usd')).toThrow('must be positive');
+  });
+});
+
+/**
+ * The panel puts this figure in the cost field, and the figure in the field is
+ * what gets written back to storage if the reader then edits on that route. So
+ * the box and `valueHoldings` have to agree exactly, which is why this is
+ * exported rather than re-derived in the component.
+ */
+describe('convertCost', () => {
+  it('restates a cost in the other currency, to the cent', () => {
+    // 12000 × (65042.86 / 48816.32) = 15988.7988..., which is 15988.80.
+    expect(convertCost(12000, 'gbp', 'usd', latest)).toBe(15988.8);
+    expect(convertCost(12000, 'usd', 'gbp', latest)).toBe(9006.31);
+  });
+
+  it('leaves a same-currency cost alone', () => {
+    expect(convertCost(12000, 'usd', 'usd', latest)).toBe(12000);
+    expect(convertCost(0, 'gbp', 'gbp', latest)).toBe(0);
+  });
+
+  it('agrees to the cent with what valueHoldings charges against the value', () => {
+    const valued = valueHoldings(
+      { btc: 0.35, cost: 12000, costCurrency: 'gbp' },
+      65042.86,
+      'usd',
+      latest,
+    );
+    expect(valued.cost).toBe(convertCost(12000, 'gbp', 'usd', latest));
+  });
+
+  it('rounds a sub-cent cost to zero rather than to -0', () => {
+    // Reachable only from a hand-edited store, but -0 formats as "-$0.00".
+    expect(Object.is(convertCost(1e-9, 'gbp', 'usd', latest), 0)).toBe(true);
+  });
+
+  it('throws on a non-positive price rather than converting by NaN', () => {
+    expect(() => convertCost(12000, 'gbp', 'usd', { usd: 0, gbp: 1 })).toThrow('must be positive');
   });
 });
 

@@ -112,6 +112,11 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
         </p>
         <p class="header-tick header-holdings num" id="header-holdings" hidden>
           <a href={currencyPath(base, currency, 'holdings')}>
+            {/* Without this the link's accessible name is a bare figure —
+                "$48,566 +304.7%" — which says nothing about where it goes. The
+                visible text already carries "holdings" only when there is no
+                cost basis to print beside it. */}
+            <span class="visually-hidden">Your holdings:</span>
             <span id="header-holdings-value"></span>{' '}
             <span class="tick-date" id="header-holdings-pnl"></span>
           </a>
@@ -219,8 +224,14 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
         const result = valueHoldings(stored, headerLatest[pageCurrency], pageCurrency, headerLatest);
         holdingsEl.hidden = false;
         holdingsValueEl.textContent = money.format(result.value);
+        // "no cost basis" rather than "holdings": the visually-hidden label on
+        // the link already says whose figure this is, so repeating the word
+        // read as "your holdings … holdings", and this says something the
+        // reader cannot otherwise tell — why there is no percentage beside it.
         holdingsPnlEl.textContent =
-          result.pnlPct === null ? 'holdings' : `${result.pnlPct >= 0 ? '+' : ''}${result.pnlPct.toFixed(1)}%`;
+          result.pnlPct === null
+            ? 'no cost basis'
+            : `${result.pnlPct >= 0 ? '+' : ''}${result.pnlPct.toFixed(1)}%`;
         holdingsPnlEl.className = `tick-date ${result.pnlPct === null ? '' : result.pnlPct < 0 ? 'down' : 'up'}`.trim();
       }
       renderHoldings();

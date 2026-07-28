@@ -17,13 +17,25 @@ const meta = CURRENCY_META[currency];
  * the implied rate, and no other source is needed for it.
  */
 const other = currency === 'usd' ? 'gbp' : 'usd';
+const otherDaily = dataFor(other).btcDaily;
+/**
+ * ...but only while the two trees are the same day old. `pipeline/run.ts`
+ * builds them from one USD series, so normally they share a date and the ratio
+ * is exactly the committed FX close. When the FX fetch fails the run skips the
+ * GBP tree entirely and leaves it behind, and the ratio silently stops being an
+ * exchange rate: it becomes two different days of BTC price divided by each
+ * other, which would mis-convert every cross-currency cost basis with nothing
+ * on screen to say so. Checked here, at build time, where the dates are known.
+ */
+const ratesAligned = btcDaily.stats.latestDate === otherDaily.stats.latestDate;
 const payload = {
   currency,
   code: meta.code,
   latest: {
     [currency]: btcDaily.stats.latestPrice,
-    [other]: dataFor(other).btcDaily.stats.latestPrice,
+    [other]: otherDaily.stats.latestPrice,
   },
+  ratesAligned,
   latestDate: btcDaily.stats.latestDate,
   series: btcHistory.series,
 };
@@ -47,7 +59,13 @@ const payload = {
   <span class="holdings-status num" id="holdings-status" aria-live="polite"></span>
 </p>
 
-<dl class="stat-grid" id="holdings-stats" aria-live="polite"></dl>
+<!--
+  Not a live region: the tiles are rebuilt on every keystroke, so announcing
+  them announced four figures per character typed. The summary below is a live
+  region instead, updated once the typing settles.
+-->
+<dl class="stat-grid" id="holdings-stats"></dl>
+<p class="visually-hidden" id="holdings-announce" aria-live="polite"></p>
 
 <section class="chart-section" id="holdings-chart-section" hidden>
   <h2>What that stack has been worth</h2>
@@ -65,8 +83,8 @@ const payload = {
 <script>
   import * as Plot from '@observablehq/plot';
   import {
+    convertCost,
     holdingsSeries,
-    impliedRate,
     MAX_BTC,
     MAX_COST,
     valueHoldings,
@@ -85,6 +103,7 @@ const payload = {
     currency: Currency;
     code: string;
     latest: Record<Currency, number>;
+    ratesAligned: boolean;
     latestDate: string;
     series: { date: string; price: number }[];
   }>('holdings-data');
@@ -92,6 +111,7 @@ const payload = {
   const form = document.getElementById('holdings-form') as HTMLFormElement | null;
   const stats = document.getElementById('holdings-stats');
   const status = document.getElementById('holdings-status');
+  const announce = document.getElementById('holdings-announce');
   const clearButton = document.getElementById('holdings-clear');
   const chartSection = document.getElementById('holdings-chart-section');
   const container = document.getElementById('holdings-chart');
@@ -118,6 +138,13 @@ const payload = {
   /** BTC amounts in prose: 8 dp is the smallest unit, and never e-notation. */
   const btcAmount = (v: number): string =>
     new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 }).format(v);
+  /**
+   * The same, for a `type="number"` field, which rejects a grouped value and
+   * so cannot use the formatter above. `String(0.00000001)` is "1e-8", which
+   * the field shows verbatim and then refuses to parse.
+   */
+  const fieldNumber = (v: number, dp: number): string =>
+    new Intl.NumberFormat('en-US', { maximumFractionDigits: dp, useGrouping: false }).format(v);
 
   /**
    * Whether the reader has touched the cost field this visit. Until they do,
@@ -138,22 +165,47 @@ const payload = {
    */
   let storedCost: { cost: number; costCurrency: Currency } | null = null;
 
-  /** What the form currently says, or null when there is nothing to value. */
-  function formHoldings(): Holdings | null {
-    if (!form) return null;
+  interface FormState {
+    holdings: Holdings | null;
+    /** Which field is unusable, so the message can name the right one. */
+    invalid: 'amount' | 'total paid' | null;
+    /** A stored cost was dropped because the two trees are different days old. */
+    costUnavailable: boolean;
+  }
+
+  /** What the form currently says, and why it cannot be valued if it cannot. */
+  function formState(): FormState {
+    const none: FormState = { holdings: null, invalid: null, costUnavailable: false };
+    if (!form) return none;
     const raw = new FormData(form);
     const btcRaw = String(raw.get('btc') ?? '').trim();
+    if (btcRaw === '') return none;
     const btc = Number(btcRaw);
-    if (btcRaw === '' || !Number.isFinite(btc) || btc < 0 || btc > MAX_BTC) return null;
+    if (!Number.isFinite(btc) || btc < 0 || btc > MAX_BTC) {
+      return { holdings: null, invalid: 'amount', costUnavailable: false };
+    }
+    const bare: Holdings = { btc, cost: null, costCurrency: data.currency };
     const costRaw = String(raw.get('cost') ?? '').trim();
     if (!costEdited) {
-      return storedCost ? { btc, ...storedCost } : { btc, cost: null, costCurrency: data.currency };
+      if (!storedCost) return { holdings: bare, invalid: null, costUnavailable: false };
+      // A cost held in the other currency cannot be restated while the two
+      // trees disagree on the date; showing the stack's value without it beats
+      // printing a P&L against a rate that is not one.
+      if (!data.ratesAligned && storedCost.costCurrency !== data.currency) {
+        return { holdings: bare, invalid: null, costUnavailable: true };
+      }
+      return { holdings: { btc, ...storedCost }, invalid: null, costUnavailable: false };
     }
-    if (costRaw === '') return { btc, cost: null, costCurrency: data.currency };
+    if (costRaw === '') return { holdings: bare, invalid: null, costUnavailable: false };
     const cost = Number(costRaw);
-    if (!Number.isFinite(cost) || cost < 0 || cost > MAX_COST) return null;
-    return { btc, cost, costCurrency: data.currency };
+    if (!Number.isFinite(cost) || cost < 0 || cost > MAX_COST) {
+      return { holdings: null, invalid: 'total paid', costUnavailable: false };
+    }
+    return { holdings: { btc, cost, costCurrency: data.currency }, invalid: null, costUnavailable: false };
   }
+
+  /** What the form currently says, or null when there is nothing to value. */
+  const formHoldings = (): Holdings | null => formState().holdings;
 
   function tile(label: string, value: string, sub: string, tone = ''): HTMLElement {
     const wrap = document.createElement('div');
@@ -225,13 +277,19 @@ const payload = {
     );
   }
 
+  /**
+   * Draw the tiles. Deliberately does not touch the status line: it runs on
+   * every keystroke, on a theme toggle and on every resize, and blanking the
+   * status there wiped the clear button's own confirmation the moment the
+   * reader changed theme or resized the window. Status is set by the actions
+   * that have something to say.
+   */
   function render(): void {
     if (!stats) return;
-    const holdings = formHoldings();
+    const { holdings, costUnavailable } = formState();
     if (!holdings) {
       stats.replaceChildren();
       if (chartSection) chartSection.hidden = true;
-      setStatus('');
       return;
     }
     const result = valueHoldings(
@@ -244,9 +302,22 @@ const payload = {
       tile(
         'Value',
         money.format(result.value),
-        `${btcAmount(holdings.btc)} BTC · close ${data.latestDate}`,
+        // Names the source, because the chart below plots blockchain.com's
+        // close for the same date and the two differ by a fraction of a
+        // percent. Hovering the last point and reading a number the headline
+        // contradicts is confusing; saying which is which is not.
+        `${btcAmount(holdings.btc)} BTC · CoinGecko close ${data.latestDate}`,
       ),
     ];
+    if (costUnavailable) {
+      tiles.push(
+        tile(
+          'Cost',
+          '—',
+          `entered in ${(storedCost?.costCurrency ?? '').toUpperCase()}; not converted while the two datasets are different days old`,
+        ),
+      );
+    }
     if (result.pnl !== null && result.cost !== null) {
       const tone = result.pnl < 0 ? 'down' : 'up';
       tiles.push(
@@ -298,23 +369,21 @@ const payload = {
   /**
    * Persist, then re-render every holdings-aware island on the page.
    *
-   * An emptied BTC field means the reader deleted their holdings, so it clears
-   * storage: leaving the stored value behind made the header tile keep showing
-   * a figure the panel no longer displayed, and a reload brought it all back.
    * A non-empty but invalid entry leaves storage alone and says so, rather than
-   * destroying good data on the way to a typo.
+   * destroying good data on the way to a typo. An *empty* amount field does the
+   * same, and that is the important part: mid-retype is the single most common
+   * state this field is ever in, and treating it as a deletion meant a
+   * select-all-and-Backspace wrote an empty store — which a second tab then
+   * read as "forgotten in another tab", blanked its own cost field over, and
+   * announced. Nothing had been forgotten, and the cost basis did not survive.
+   * Deletion is deferred to `commitEmptyAmount`, below, where the reader has
+   * actually finished with the field.
    */
   function save(): string {
     const btcRaw = String(new FormData(form as HTMLFormElement).get('btc') ?? '').trim();
-    if (btcRaw === '') {
-      // Storage goes, but the snapshot stays: an empty amount field means the
-      // reader is retyping the amount, not deleting the cost basis. Only the
-      // clear button and blanking the cost field itself discard that.
-      clearHoldings();
-      return '';
-    }
-    const holdings = formHoldings();
-    if (!holdings) return 'not a valid amount — nothing saved';
+    if (btcRaw === '') return '';
+    const { holdings, invalid } = formState();
+    if (!holdings) return `not a valid ${invalid ?? 'entry'} — nothing saved`;
     writeHoldings(holdings);
     if (holdings.cost !== null) {
       storedCost = { cost: holdings.cost, costCurrency: holdings.costCurrency };
@@ -324,11 +393,50 @@ const payload = {
     return 'saved in this browser';
   }
 
+  /**
+   * An amount field the reader has *finished* with while empty is a deletion:
+   * `change` fires on commit — blur or Enter — not on every keystroke, so by
+   * the time this runs the field is empty because they meant it, not because
+   * they are halfway through typing. Without this the stored figure would
+   * outlive the emptied form and come back on reload.
+   */
+  function commitEmptyAmount(): void {
+    if (!form) return;
+    const btcRaw = String(new FormData(form).get('btc') ?? '').trim();
+    if (btcRaw !== '' || readHoldings() === null) return;
+    clearHoldings();
+    costEdited = false;
+    storedCost = null;
+    form.reset();
+    render();
+    renderChart(0);
+    setStatus('amount cleared — nothing is stored for this browser');
+  }
+
   /** The debounced half of an edit: persist, then redraw the chart. */
   function commit(): void {
     setStatus(save());
-    const holdings = formHoldings();
+    const { holdings } = formState();
     renderChart(holdings && holdings.btc > 0 ? holdings.btc : 0);
+    // Announced here rather than off the tiles, which are rebuilt per keystroke.
+    if (announce) announce.textContent = holdings ? summarise(holdings) : '';
+  }
+
+  /** One sentence of the figures on screen, for a screen reader. */
+  function summarise(holdings: Holdings): string {
+    const result = valueHoldings(
+      holdings,
+      data.latest[data.currency] as number,
+      data.currency,
+      data.latest,
+    );
+    const pnl =
+      result.pnl === null
+        ? ''
+        : `, profit and loss ${money.format(result.pnl)}${
+            result.pnlPct === null ? '' : ` (${signedPct(result.pnlPct)})`
+          }`;
+    return `${btcAmount(holdings.btc)} BTC worth ${money.format(result.value)}${pnl}.`;
   }
 
   /** Populate the fields from storage; returns the status to show afterwards. */
@@ -349,20 +457,26 @@ const payload = {
     }
     const btcInput = form.elements.namedItem('btc') as HTMLInputElement | null;
     const costInput = form.elements.namedItem('cost') as HTMLInputElement | null;
-    if (btcInput) btcInput.value = String(stored.btc);
+    if (btcInput) btcInput.value = fieldNumber(stored.btc, 8);
     // The fields now mirror storage, not anything the reader typed.
     costEdited = false;
     storedCost =
       stored.cost === null ? null : { cost: stored.cost, costCurrency: stored.costCurrency };
-    if (costInput && stored.cost === null) costInput.value = '';
-    if (costInput && stored.cost !== null) {
-      // Converted when it was entered on the other route, so the field is
-      // always in the currency its label claims — and always clearable.
-      const shown =
-        stored.costCurrency === data.currency
-          ? stored.cost
-          : stored.cost * impliedRate(data.latest, stored.costCurrency, data.currency);
-      costInput.value = String(Math.round(shown * 100) / 100);
+    const foreign = stored.cost !== null && stored.costCurrency !== data.currency;
+    if (costInput) {
+      if (stored.cost === null || (foreign && !data.ratesAligned)) {
+        // Blank rather than wrong: with the trees a different age the rate is
+        // not a rate, and formState() has dropped the cost for the same reason.
+        costInput.value = '';
+      } else {
+        // Converted when it was entered on the other route, so the field is
+        // always in the currency its label claims — and always clearable. The
+        // conversion is the pipeline's, so the box and the maths cannot drift.
+        costInput.value = fieldNumber(
+          convertCost(stored.cost, stored.costCurrency, data.currency, data.latest),
+          2,
+        );
+      }
     }
     return 'loaded from this browser';
   }
@@ -373,7 +487,10 @@ const payload = {
     afterTyping(commit);
   });
   // A debounced write must not be lost to a navigation or a closed tab.
-  form?.addEventListener('change', flushPending);
+  form?.addEventListener('change', () => {
+    flushPending();
+    commitEmptyAmount();
+  });
   window.addEventListener('pagehide', flushPending);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) flushPending();
@@ -388,8 +505,8 @@ const payload = {
     storedCost = null;
     render();
     renderChart(0);
-    // After render(): it blanks the status, which swallowed this confirmation.
     setStatus('cleared — nothing is stored for this browser');
+    if (announce) announce.textContent = 'Holdings cleared.';
   });
 
   /**
@@ -412,7 +529,6 @@ const payload = {
     render();
     const holdings = formHoldings();
     renderChart(holdings && holdings.btc > 0 ? holdings.btc : 0);
-    // After render(), which blanks the status when there is nothing to show.
     setStatus(reason ?? message);
   }
 
@@ -429,12 +545,17 @@ const payload = {
     const stored = readHoldings();
     // A clear overrides the cursor. Every other cross-tab change is an edit
     // race the reader entered by opening two tabs, and leaving their typing
-    // alone is the courteous resolution — but "forget my holdings" is an
-    // explicit instruction whose whole meaning is that the figures are gone.
-    // Leaving them on screen here would let one keystroke write them back,
-    // and the button's own confirmation says they are gone. Refreshing the
-    // snapshot alone is not enough: the fields still hold the values, so they
-    // have to be reset too.
+    // alone is the courteous resolution — but a deletion is an explicit
+    // instruction whose whole meaning is that the figures are gone. Leaving
+    // them on screen here would let one keystroke write them back, and the
+    // other tab's confirmation says they are gone. Refreshing the snapshot
+    // alone is not enough: the fields still hold the values, so they have to
+    // be reset too.
+    //
+    // This is only sound because an empty store now has exactly two causes,
+    // both deliberate: the forget button, and an amount field committed empty.
+    // While a transient mid-retype blank also wrote one, this branch fired on
+    // an ordinary edit in the other tab and destroyed the cost basis here.
     if (!stored) {
       syncFromStorage('forgotten in another tab');
       return;

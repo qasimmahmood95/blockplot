@@ -42,10 +42,16 @@ export interface HoldingsValue {
 /**
  * Bounds on what a reader can enter. 21 million is the supply cap, so no
  * honest holding exceeds it. The cost bound sits under 2^53/100 ≈ 9.0e13, the
- * largest figure at which a double still represents whole cents exactly —
- * above it the rounding in this file stops being reliable. Both matter because
- * `Number.isFinite` on the inputs does not stop their product overflowing:
- * 1e308 BTC is finite and typeable, and printed "$∞" on every page before this.
+ * largest figure at which a double still represents whole cents exactly, so
+ * `round2` of a cost is exact below it. Both matter because `Number.isFinite`
+ * on the inputs does not stop their product overflowing: 1e308 BTC is finite
+ * and typeable, and printed "$∞" on every page before this.
+ *
+ * The guarantee stops at the inputs. `avgEntry` is cost/btc and is bounded by
+ * neither, so a hand-edited store of 1e13 against 1e-8 BTC still prints float
+ * noise in its low digits. That is unreachable from the form, and a ludicrous
+ * figure for a ludicrous input is the right outcome — but the bound should not
+ * be read as making every derived figure cent-exact.
  */
 export const MAX_BTC = 21_000_000;
 export const MAX_COST = 1e13;
@@ -60,6 +66,11 @@ const round2 = (value: number): number => {
  * each. Both datasets are built from one USD source, so the ratio of their
  * latest closes *is* the latest GBP/USD rate — which means converting a cost
  * basis needs no extra source and no extra committed file.
+ *
+ * That identity holds only while the two trees are the same day old. When the
+ * FX fetch fails the run skips the GBP tree, and the ratio quietly becomes two
+ * different days of BTC price divided by each other. Callers check the dates;
+ * this function cannot, because it is only given prices.
  */
 export function impliedRate(latest: Record<Currency, number>, from: Currency, to: Currency): number {
   if (from === to) return 1;
@@ -69,6 +80,25 @@ export function impliedRate(latest: Record<Currency, number>, from: Currency, to
     throw new Error('impliedRate: latest prices must be positive');
   }
   return toPrice / fromPrice;
+}
+
+/**
+ * A cost basis restated in another currency, rounded to the cent.
+ *
+ * The same arithmetic `valueHoldings` does internally, exported because the
+ * panel needs it too: when a cost entered on the other route is shown in this
+ * one's field, the figure in the box has to be the figure the maths used. The
+ * panel had its own copy of the multiply-and-round — metric maths in a UI
+ * component, and the copy decided what got written back to storage when the
+ * reader edited on the other route.
+ */
+export function convertCost(
+  cost: number,
+  from: Currency,
+  to: Currency,
+  latest: Record<Currency, number>,
+): number {
+  return round2(cost * impliedRate(latest, from, to));
 }
 
 /**
