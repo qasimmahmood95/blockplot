@@ -1,0 +1,177 @@
+---
+import Base from '../../layouts/Base.astro';
+import { CURRENCY_META, fxNote, type Currency } from '../../lib/currency';
+import { dataFor } from '../../lib/data';
+import { currencyPaths } from '../../lib/routes';
+
+export const getStaticPaths = currencyPaths;
+
+const { currency } = Astro.props as { currency: Currency };
+const { riskMetrics, correlations, signals, btcHistory, btcDaily } = dataFor(currency);
+const meta = CURRENCY_META[currency];
+
+/**
+ * Figures quoted below come from the committed data, not from prose. Every
+ * number on this page that could drift is read from the file that produced it
+ * — the alternative is a methodology page that describes a version of the
+ * pipeline that no longer runs, which is worse than having none.
+ */
+const volWindows = riskMetrics.rollingVol.map((w) => w.windowDays).join('/');
+const corrWindow = correlations.windowDays;
+const t = signals.thresholds;
+---
+
+<Base
+  currency={currency}
+  title="blockplot · methodology"
+  description="Every formula the site computes, the source each reads, and what each one deliberately does not claim."
+>
+  <h1 class="visually-hidden">Methodology</h1>
+
+  <section class="chart-section">
+    <h2>How to read this</h2>
+    <p class="method-note">
+      Every figure on this site is computed by a pure function in <code>pipeline/</code>, unit-tested
+      against fixed fixtures with exact expected outputs, and committed to <code>/data</code> as
+      versioned JSON by a scheduled job. Pages render that file and do no arithmetic of their own.
+      This page is the whole set of formulas in one place; each section also carries its own note.
+      Figures quoted here are read from the committed data, so they cannot describe a pipeline that
+      no longer runs.
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>Sources</h2>
+    <dl class="stat-grid">
+      <div class="stat">
+        <dt>Daily close</dt>
+        <dd class="num">CoinGecko</dd>
+        <dd class="sub num">{btcDaily.series.length} days · to {btcDaily.stats.latestDate}</dd>
+      </div>
+      <div class="stat">
+        <dt>Deep history</dt>
+        <dd class="num">blockchain.com</dd>
+        <dd class="sub num">{btcHistory.series.length} days · from {btcHistory.series[0]?.date}</dd>
+      </div>
+      <div class="stat">
+        <dt>Benchmarks</dt>
+        <dd class="num">Yahoo / FRED</dd>
+        <dd class="sub num">S&amp;P 500, gold, DXY</dd>
+      </div>
+      <div class="stat">
+        <dt>Rolling vol reads</dt>
+        <dd class="num">{riskMetrics.rollingVolSource}</dd>
+        <dd class="sub num">full history, not the 365d window</dd>
+      </div>
+    </dl>
+    <p class="method-note">
+      Two BTC price sources, deliberately. CoinGecko's keyless tier caps history at 365 days, which
+      is enough for the risk window but not for halving cycles or an all-time high, so a second
+      series carries the full history. They disagree by a fraction of a percent on any given day —
+      different exchange sets, different snapshot times — so each figure is labelled with the source
+      it read rather than the two being quietly reconciled. Where both could serve, the deeper
+      series wins.{fxNote(currency)}
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>Returns and volatility</h2>
+    <p class="method-note">
+      <strong>Daily return</strong> is the log return <code>ln(Pt / Pt−1)</code>. Log rather than
+      simple because they sum over time, which is what makes an annualisation meaningful.
+    </p>
+    <p class="method-note">
+      <strong>Realised volatility</strong> over a window is the sample standard deviation of those
+      log returns, annualised by <code>√365</code> — 365 and not 252, because BTC trades every day.
+      Benchmarks annualise by <code>√252</code> for the same reason in reverse. Windows: {volWindows} days.
+    </p>
+    <p class="method-note">
+      <strong>Sharpe</strong> is mean return over standard deviation, annualised, at a zero risk-free
+      rate — stated rather than assumed, since a non-zero rate would change the ranking between
+      assets. <strong>Sortino</strong> replaces the denominator with downside deviation, counting
+      only negative returns. Both are null rather than zero when undefined: fewer than two
+      observations, or no negative returns at all.
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>Drawdown</h2>
+    <p class="method-note">
+      <code>Pt / max(P0..Pt) − 1</code>, per day, against the <em>running</em> peak rather than a
+      fixed one — so a drawdown is always measured from the highest close seen up to that day, and
+      is zero on any day that sets a new high. The headline maximum keeps the first date it was
+      reached, not the last.
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>Halving cycles</h2>
+    <p class="method-note">
+      Each cycle is indexed by days since its halving and normalised to a multiple of that day's
+      close, which is what makes four cycles comparable on one axis. Cycles have different lengths
+      and the current one is incomplete, so a chart position late in the x-axis legitimately shows
+      fewer than four lines — an absent cycle is omitted rather than drawn at zero.
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>Correlation</h2>
+    <p class="method-note">
+      Pearson correlation of daily log returns over a rolling {corrWindow}-day window. Two
+      corrections matter more than the formula:
+    </p>
+    <p class="method-note">
+      BTC closes at 00:00 UTC while equities and metals close at 21:00 UTC the previous session, so
+      BTC is re-dated to the session it actually shares before pairing. Without that, March 2020
+      reads as −0.30 — inverse — where the aligned figure is +0.48. And the re-dating happens
+      <em>before</em> currency conversion, not after: converting first joins two series on a date
+      that has not been fixed yet, which leaks FX movement into a correlation that is supposed to be
+      between two assets.
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>Signals</h2>
+    <p class="method-note">
+      Band states are hysteretic. A band is entered only once {t.confirmDays} consecutive
+      observations agree, and is then dated to the first of them — the day the change began, not the
+      day it became certain. On this {meta.label} series a bare threshold test would give
+      {signals.rawSpans.vol} volatility spans and {signals.rawSpans.drawdown} drawdown spans over the
+      same window; confirmation is what turns that into a state worth reporting. A candidate that
+      has not yet earned the switch is published as pending rather than hidden.
+    </p>
+    <p class="method-note">
+      Volatility bands: below {t.volLowPct}% and above {t.volHighPct}% annualised, on the
+      {t.volWindowDays}-day window. Drawdown bands: {t.drawdownBandsPct.join('%, ')}% from the
+      running peak, deepest reached. The same confirmation machine drives the correlation regimes.
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>DCA and holdings</h2>
+    <p class="method-note">
+      The simulator buys at the close on each scheduled date, less a per-buy fee; a date missing
+      from the data buys on the next available day, month-end schedules clamp, and two schedules
+      landing together collapse into one buy. Undeployed cash counts toward wealth so both
+      strategies start from the same budget and the comparison is like-for-like. Taxes, slippage and
+      yield on idle cash are ignored.
+    </p>
+    <p class="method-note">
+      A holdings line holds the BTC amount <em>constant</em> across history. The site does not know
+      when any of it was bought, so this is what that much BTC was worth — not a reconstruction of a
+      position. A line implying a purchase history the data cannot support would be worse than no
+      line. What you enter stays in your browser; see the note on the holdings page.
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>Rounding, and what is deliberately not rounded</h2>
+    <p class="method-note">
+      Rounding is applied at the serialization edge — 2 dp for percentages and money, 8 dp for BTC,
+      4 dp for cycle multiples — never mid-calculation. Two series are kept unrounded on purpose:
+      converted closes, because a 2 dp round on a sub-pound 2010 price is an error of up to 11% that
+      would propagate into the monthly heatmap; and the holdings value series, because rounding
+      zeroes every early day for a small stack and a log axis then drops them off the chart.
+    </p>
+  </section>
+</Base>

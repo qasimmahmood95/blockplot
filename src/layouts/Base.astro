@@ -68,7 +68,7 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
 ---
 
 <!doctype html>
-<html lang="en" data-currency={currency}>
+<html lang="en" data-currency={currency} data-base={base}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -91,6 +91,9 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
       title={`blockplot · signals · ${CURRENCY_META[currency].label}`}
       href={`${feedBase}/feed.json`}
     />
+    <link rel="manifest" href={`${base}/manifest.webmanifest`} />
+    <meta name="theme-color" content="#bf4a08" />
+    <link rel="apple-touch-icon" href={`${base}/icon-192.png`} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="blockplot" />
     <meta property="og:title" content={title} />
@@ -277,6 +280,20 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
       window.addEventListener(HOLDINGS_EVENT, renderHoldings);
       window.addEventListener(HOLDINGS_EXTERNAL_EVENT, renderHoldings);
       watchOtherTabs();
+
+      // Offline: register the worker for the last committed dataset. After
+      // load, so it never competes with first paint, and silent on failure —
+      // the site is fully usable without it, and an install error is not the
+      // reader's problem. Same-origin only; the two live fetches are excluded
+      // inside the worker itself.
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          const swBase = document.documentElement.dataset.base ?? '';
+          navigator.serviceWorker.register(`${swBase}/sw.js`, { scope: `${swBase}/` }).catch(() => {
+            /* offline support is a bonus, not a dependency */
+          });
+        });
+      }
 
       // Live spot ticker: one of the site's two sanctioned runtime fetches.
       // CoinGecko's simple-price endpoint is queried in the page's currency,

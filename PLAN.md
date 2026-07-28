@@ -45,6 +45,13 @@ what its tests pin down. All Phase 1 milestones (M0–M6) are shipped; Phase 2
 | M5 | Flows & dominance: BTC dominance vs stablecoin total supply; exchange netflow only if a free source exists, otherwise drop |
 | M6 | Polish & ship: dark/light mode, live ticker island, OpenGraph cards, production deploy, and a README covering architecture, metric methodology, and a matter-of-fact "How this was built" section: Claude Code against a milestone plan, one PR per feature, fixture-tested metrics, human review at PR boundaries |
 
+## Status
+
+M0–M14 are shipped, one PR each, in order. The two Phase-2 rows that changed
+in flight are recorded rather than quietly rewritten: M9–M10 (multi-currency)
+were pulled ahead on request, and a chart-tooltip fix was taken between M12 and
+M13 after the overview turned out to be the only chart without one.
+
 ## Phase 2 milestones
 
 Phase 1 built the showcase; Phase 2 makes blockplot a daily-use tool while

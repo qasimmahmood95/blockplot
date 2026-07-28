@@ -1,0 +1,29 @@
+name: Lighthouse
+
+# Kept out of ci.yml on purpose. Lighthouse needs a build, a server and a
+# browser, so it is slower and flakier than lint/typecheck/test, and a
+# performance regression should not look like a broken test. It runs on the
+# same events but reports separately.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Audit the built site
+        run: npx --yes @lhci/cli@0.14.x autorun
+        env:
+          # Assertions live in lighthouserc.json so they are reviewable in the
+          # diff rather than buried in a workflow argument.
+          LHCI_BUILD_CONTEXT__CURRENT_BRANCH: ${{ github.head_ref || github.ref_name }}
