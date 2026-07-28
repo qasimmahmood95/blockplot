@@ -73,6 +73,19 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
     <meta name="description" content={description} />
     <title>{title}</title>
     <link rel="canonical" href={canonical} />
+    {/* Discovery for the signal feed: readers look in the head, not the page. */}
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="blockplot · signals"
+      href={`${base}/rss.xml`}
+    />
+    <link
+      rel="alternate"
+      type="application/feed+json"
+      title="blockplot · signals"
+      href={`${base}/feed.json`}
+    />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="blockplot" />
     <meta property="og:title" content={title} />

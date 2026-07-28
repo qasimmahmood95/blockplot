@@ -1,0 +1,130 @@
+---
+import { CURRENCY_META, type Currency } from '../lib/currency';
+import { dataFor } from '../lib/data';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+interface Props {
+  currency: Currency;
+}
+
+const { currency } = Astro.props;
+const { signals } = dataFor(currency);
+const meta = CURRENCY_META[currency];
+const money = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: meta.code,
+  maximumFractionDigits: 0,
+});
+
+const { thresholds: t } = signals;
+const pct = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+const days = (n: number): string => `${n} ${n === 1 ? 'day' : 'days'}`;
+
+/**
+ * A signal is a state plus what it would take to change it. `sub` carries the
+ * second half — how long the state has held, or how far a candidate has got —
+ * because a band label on its own invites exactly the reading hysteresis
+ * exists to prevent: that today's number decided it.
+ */
+interface Row {
+  label: string;
+  value: string;
+  sub: string;
+  tone?: 'up' | 'down';
+}
+
+const rows: Row[] = [];
+
+if (signals.vol) {
+  const v = signals.vol;
+  const held = `since ${v.since} · ${v.observations} readings`;
+  rows.push({
+    label: `Volatility · ${t.volWindowDays}d`,
+    value: v.state,
+    sub: v.pending
+      ? `${held} · ${v.pending.state} pending ${v.pending.observations}/${t.confirmDays}`
+      : held,
+    tone: v.state === 'high' ? 'down' : v.state === 'low' ? 'up' : undefined,
+  });
+}
+
+if (signals.drawdown) {
+  const d = signals.drawdown;
+  const band = d.state === '0' ? 'at the peak' : `past ${d.state}%`;
+  rows.push({
+    label: 'Drawdown band',
+    value: band,
+    sub: d.pending
+      ? `since ${d.since} · ${d.pending.state}% pending ${d.pending.observations}/${t.confirmDays}`
+      : `since ${d.since} · ${d.observations} readings`,
+    tone: d.state === '0' ? 'up' : 'down',
+  });
+}
+
+if (signals.ath) {
+  const a = signals.ath;
+  rows.push({
+    label: 'All-time high',
+    value: a.isNew ? 'today' : pct(a.fromAthPct),
+    sub: a.isNew
+      ? `${money.format(a.latestPrice)} on ${a.latestDate}`
+      : `${money.format(a.price)} on ${a.date} · ${days(a.daysSince)} ago`,
+    tone: a.isNew ? 'up' : 'down',
+  });
+}
+
+if (signals.cycle) {
+  const c = signals.cycle;
+  rows.push({
+    label: 'Cycle high',
+    value: c.isNew ? 'today' : `×${c.latestMultiple.toFixed(2)}`,
+    sub: c.isNew
+      ? `day ${c.latestDay} since the ${c.halvingDate} halving`
+      : `peak ×${c.peakMultiple.toFixed(2)} on day ${c.peakDay} · now day ${c.latestDay}`,
+    tone: c.isNew ? 'up' : undefined,
+  });
+}
+
+if (signals.dominance) {
+  const d = signals.dominance;
+  rows.push({
+    label: 'BTC dominance',
+    value: `${d.latestPct.toFixed(2)}%`,
+    sub: `${d.changePp >= 0 ? '+' : ''}${d.changePp.toFixed(2)}pp over ${d.overDays} readings`,
+    tone: d.changePp >= 0 ? 'up' : 'down',
+  });
+}
+---
+
+<section class="chart-section">
+  <h2>Signals · as of {signals.asOf}</h2>
+  <dl class="stat-grid">
+    {
+      rows.map((row) => (
+        <div class="stat">
+          <dt>{row.label}</dt>
+          <dd class={`num ${row.tone ?? ''}`.trim()}>{row.value}</dd>
+          <dd class="sub num">{row.sub}</dd>
+        </div>
+      ))
+    }
+  </dl>
+  <p class="method-note">
+    States, not readings. A band is only entered once {t.confirmDays} consecutive observations agree,
+    and is then dated to the first of them — the day the change began, not the day it became
+    certain. Without that the {t.volWindowDays}d volatility band changes 9 times a year on this data
+    and the drawdown band 42, which is noise with a label on it. A candidate that has not yet earned
+    the switch is shown as pending rather than hidden, so a state sitting on its threshold says so.
+    Volatility bands are below {t.volLowPct}% and above {t.volHighPct}% annualised; drawdown bands
+    are {t.drawdownBandsPct.join('%, ')}% from the running peak.{
+      signals.dominance ? '' : ' Dominance is omitted: its source publishes no history, so the series accretes one point per run and is not yet deep enough to carry a signal.'
+    }
+  </p>
+  <p class="method-note">
+    Every confirmed turn is also published as a feed —{' '}
+    <a href={`${base}/rss.xml`}>RSS</a> and <a href={`${base}/feed.json`}>JSON</a> — one entry per
+    transition rather than one per day, dated from the committed data so a rebuild never resurfaces
+    an old entry as new.
+  </p>
+</section>

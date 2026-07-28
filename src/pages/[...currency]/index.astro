@@ -1,6 +1,7 @@
 ---
 import MonthlyHeatmap from '../../components/MonthlyHeatmap.astro';
 import PriceChart from '../../components/PriceChart.astro';
+import SignalsPanel from '../../components/SignalsPanel.astro';
 import Base from '../../layouts/Base.astro';
 import { CURRENCY_META, currencyFormatters, fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
@@ -46,6 +47,8 @@ const changes = [
       <dd class="sub num">{stats.rangeHighDate}</dd>
     </div>
   </dl>
+
+  <SignalsPanel currency={currency} />
 
   <section class="chart-section">
     <h2>BTC / {code} · daily close · past {rangeDays} days</h2>
