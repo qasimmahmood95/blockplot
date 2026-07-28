@@ -32,8 +32,8 @@ needed; the Known constraints section below records each decision.)*
 ## Phase 1 milestones
 
 One PR each, in order; every PR description documents scope, approach, and
-what its tests pin down. All Phase 1 milestones (M0–M6) are shipped; Phase 2
-(M7–M14, below) is planned.
+what its tests pin down. Phase 1 (M0–M6) and Phase 2 (M7–M14, below) are both
+shipped; the plan is complete.
 
 | #  | Scope |
 | -- | ----- |
@@ -47,7 +47,8 @@ what its tests pin down. All Phase 1 milestones (M0–M6) are shipped; Phase 2
 
 ## Status
 
-M0–M14 are shipped, one PR each, in order. The two Phase-2 rows that changed
+M0–M14 are shipped, one PR each, in order. That is the whole plan; anything
+further is new scope, not a remaining row. The two Phase-2 rows that changed
 in flight are recorded rather than quietly rewritten: M9–M10 (multi-currency)
 were pulled ahead on request, and a chart-tooltip fix was taken between M12 and
 M13 after the overview turned out to be the only chart without one.
