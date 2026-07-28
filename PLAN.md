@@ -47,8 +47,9 @@ shipped; the plan is complete.
 
 ## Status
 
-M0–M14 are shipped, one PR each, in order. That is the whole plan; anything
-further is new scope, not a remaining row. The two Phase-2 rows that changed
+M0–M15 are shipped, one PR each, in order. M0–M14 were the plan as written;
+M15 is the first row added after it, from a measurement rather than a roadmap
+— see below. The two Phase-2 rows that changed
 in flight are recorded rather than quietly rewritten: M9–M10 (multi-currency)
 were pulled ahead on request, and a chart-tooltip fix was taken between M12 and
 M13 after the overview turned out to be the only chart without one.
@@ -80,6 +81,17 @@ best done before the personal features so holdings and signals are not
 retrofitted for currency; M11 is the depth piece worth writing about;
 M12–M13 turn the site into a personal dashboard; M14 packages it. The cut
 line sits after M11: M12–M14 are the plan's flex if priorities change.
+
+## After the plan
+
+| #   | Scope | Why |
+| --- | ----- | --- |
+| M15 | **Charts rendered at build time**: every chart's Plot options extracted into one pure `spec` shared by build and browser, drawn to SVG with linkedom, colours moved to `var(--token)` so both themes work with no JS, and Plot loaded by dynamic `import()` only on the interaction that needs it. Plus the two accessibility defects the same investigation turned up. | Not planned — measured. M14's own Lighthouse job put the chart pages at a median 0.89 against 0.99 for the one page with no chart on it, and the gap was entirely the 88 KB of Plot each page loaded to draw data the build already had |
+
+The plan proper ended at M14. This row is recorded here rather than folded
+into M14 because it was found by the gate M14 shipped, which is the outcome
+that gate was for: the milestone that adds the measurement is not the
+milestone that gets to act on it.
 
 ## Testing
 

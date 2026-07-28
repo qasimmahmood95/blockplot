@@ -2,6 +2,9 @@
 import type { Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
+import { renderChartSvg } from '../lib/plot-ssr';
+import { SSR_WIDTH } from '../lib/plot-theme';
+import { cycleColor, cyclesSpec } from '../lib/specs/cycles';
 
 interface Props {
   currency: Currency;
@@ -13,122 +16,104 @@ const payload = halvingCycles.cycles.map((c) => ({
   label: c.halvingDate.slice(0, 4),
   series: c.series,
 }));
+
+const points = payload.flatMap((c) =>
+  c.series.map((p) => ({ cycle: c.label, day: p.day, multiple: p.multiple })),
+);
+const lineEnds = payload.flatMap((c) => {
+  const last = c.series[c.series.length - 1];
+  return last ? [{ cycle: c.label, day: last.day, multiple: last.multiple }] : [];
+});
+const domain = payload.map((c) => c.label);
+
+// Log is the pressed default, so that is the state the build draws.
+const svg = renderChartSvg(cyclesSpec(points, lineEnds, domain, 'log', SSR_WIDTH));
 ---
 
 <figure class="chart-frame">
   <div class="chart-controls">
-    <div id="cycles-legend" class="chart-legend" aria-hidden="true"></div>
+    <div id="cycles-legend" class="chart-legend" aria-hidden="true">
+      {
+        domain.map((label, i) => (
+          <span class="legend-item">
+            <span class="legend-swatch" style={`background:${cycleColor(i)}`} />
+            {label}
+          </span>
+        ))
+      }
+    </div>
     <div class="chart-toggle" role="group" aria-label="Y-axis scale">
       <button type="button" data-scale="log" aria-pressed="true">log</button>
       <button type="button" data-scale="linear" aria-pressed="false">linear</button>
     </div>
   </div>
-  <script is:inline type="application/json" id="cycles-chart-data" set:html={toJsonScript(payload)} />
+  <script
+    is:inline
+    type="application/json"
+    id="cycles-chart-data"
+    set:html={toJsonScript(payload)}
+  />
   <div
     id="cycles-chart"
     role="img"
     aria-label="Overlay of BTC price as a multiple of each halving-day close, by days since halving, for the four halving cycles"
-  >
-  </div>
+    set:html={svg}
+  />
 </figure>
 
 <script>
-  import * as Plot from '@observablehq/plot';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
-  import { crosshairAnchors } from '../lib/crosshair';
-  import { crosshairMarksFrom } from '../lib/crosshair-marks';
+  import { chartData, upgradeChart } from '../lib/charts';
+  import type { CycleScale } from '../lib/specs/cycles';
 
-  const cyclesData = chartData<{ label: string; series: { day: number; multiple: number }[] }[]>(
-    'cycles-chart-data',
-  );
   const container = document.getElementById('cycles-chart');
-  const legend = document.getElementById('cycles-legend');
   const toggle = document.querySelectorAll<HTMLButtonElement>('.chart-toggle button');
 
-  // Ordinal ramp: oldest cycle lightest, current cycle the strongest step.
-  const RAMP = ['--cycle-1', '--cycle-2', '--cycle-3', '--cycle-4'];
-  const points = cyclesData.flatMap((c) =>
-    c.series.map((p) => ({ cycle: c.label, day: p.day, multiple: p.multiple })),
-  );
-  const lineEnds = cyclesData.flatMap((c) => {
-    const last = c.series[c.series.length - 1];
-    return last ? [{ cycle: c.label, day: last.day, multiple: last.multiple }] : [];
-  });
-  const domain = cyclesData.map((c) => c.label);
+  if (container) {
+    let scale: CycleScale = 'log';
 
-  let scale: 'log' | 'linear' = 'log';
+    const upgrade = upgradeChart(container, async () => {
+      const [{ drawChart }, { cyclesSpec }, { crosshairAnchors }] =
+        await Promise.all([
+          import('../lib/plot-client'),
+          import('../lib/specs/cycles'),
+          import('../lib/crosshair'),
+        ]);
 
-  const crosshair = crosshairAnchors(
-    points.map((d) => ({ x: d.day, y: d.multiple, label: `${d.cycle} ×${d.multiple.toFixed(2)}` })),
-    // Just "day N": the x-axis is already labelled "days since halving", and
-    // spelling it out again made this the widest line in the tooltip, which on
-    // a 320px screen is what pushed the whole tip off the edge.
-    (day: number) => `day ${day}`,
-  );
-
-  function render(): void {
-    if (!container) return;
-    const range = domain.map((_, i) => cssVar(RAMP[i] ?? '--accent'));
-    if (legend) {
-      legend.replaceChildren(
-        ...domain.map((label, i) => {
-          const item = document.createElement('span');
-          item.className = 'legend-item';
-          const swatch = document.createElement('span');
-          swatch.className = 'legend-swatch';
-          swatch.style.background = range[i] ?? '';
-          item.append(swatch, label);
-          return item;
-        }),
+      const cyclesData = chartData<{ label: string; series: { day: number; multiple: number }[] }[]>(
+        'cycles-chart-data',
       );
-    }
-    const width = container.clientWidth || 720;
-    container.replaceChildren(
-      Plot.plot({
-        width,
-        height: 380,
-        marginLeft: 48,
-        marginRight: 44,
-        x: { label: 'days since halving' },
-        y: {
-          label: null,
-          grid: true,
-          type: scale,
-          tickFormat: (value: number) => `×${value >= 10 ? value.toFixed(0) : value}`,
-        },
-        color: { domain, range },
-        marks: [
-          Plot.lineY(points, { x: 'day', y: 'multiple', stroke: 'cycle', strokeWidth: 1.5 }),
-          Plot.text(lineEnds, {
-            x: 'day',
-            y: 'multiple',
-            text: 'cycle',
-            dx: 20,
-            fill: cssVar('--ink'),
-            fontSize: 11,
-          }),
-          // Every cycle still running at this day, in ramp order. Cycles have
-          // different lengths and the newest is incomplete, so the later days
-          // legitimately list fewer than four.
-          ...crosshairMarksFrom(crosshair, width),
-        ],
-        style: {
-          background: 'transparent',
-          color: cssVar('--ink-muted'),
-          fontFamily: cssVar('--font-mono'),
-          fontSize: '11px',
-        },
-      }),
-    );
-  }
+      const points = cyclesData.flatMap((c) =>
+        c.series.map((p) => ({ cycle: c.label, day: p.day, multiple: p.multiple })),
+      );
+      const lineEnds = cyclesData.flatMap((c) => {
+        const last = c.series[c.series.length - 1];
+        return last ? [{ cycle: c.label, day: last.day, multiple: last.multiple }] : [];
+      });
+      const domain = cyclesData.map((c) => c.label);
+      const anchors = crosshairAnchors(
+        points.map((d) => ({
+          x: d.day,
+          y: d.multiple,
+          label: `${d.cycle} ×${d.multiple.toFixed(2)}`,
+        })),
+        // Just "day N": the x-axis is already labelled "days since halving", and
+        // spelling it out again made this the widest line in the tooltip, which
+        // on a 320px screen is what pushed the whole tip off the edge.
+        (day: number) => `day ${day}`,
+      );
 
-  toggle.forEach((button) => {
-    button.addEventListener('click', () => {
-      scale = button.dataset.scale === 'linear' ? 'linear' : 'log';
-      toggle.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-      render();
+      const width = container.clientWidth || 720;
+      drawChart(container, cyclesSpec(points, lineEnds, domain, scale, width, anchors));
     });
-  });
 
-  responsiveChart(render);
+    toggle.forEach((button) => {
+      button.addEventListener('click', () => {
+        scale = button.dataset.scale === 'linear' ? 'linear' : 'log';
+        toggle.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+        // Pressing the toggle is what asks for a chart the build did not draw,
+        // so this is where the scale switch pays for Plot.
+        upgrade();
+      });
+    });
+  }
 </script>

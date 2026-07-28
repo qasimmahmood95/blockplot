@@ -228,6 +228,20 @@ code {
   padding: 1rem 1rem 0.5rem;
 }
 
+/*
+ * Plot sets `--plot-background: white` in a stylesheet it injects into its own
+ * SVG, and the tooltip fills from it. On a dark theme that is a white box with
+ * --ink-muted text: 3.30:1, under the 4.5:1 floor, on the one element whose
+ * whole job is reporting an exact figure. Pointing it at the surface token puts
+ * it at 5.19:1 and makes the tip match the panel it sits in. Plot's own rule is
+ * `:where(.plot-xxxx)`, so it carries no specificity — but it sets the variable
+ * directly on the SVG, which beats inheritance from :root no matter what :root
+ * says. The override has to land on the element itself.
+ */
+.chart-frame svg {
+  --plot-background: var(--surface);
+}
+
 .chart-controls {
   display: flex;
   align-items: center;

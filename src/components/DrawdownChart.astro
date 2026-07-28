@@ -2,6 +2,9 @@
 import type { Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
+import { renderChartSvg } from '../lib/plot-ssr';
+import { SSR_WIDTH } from '../lib/plot-theme';
+import { drawdownSpec } from '../lib/specs/drawdown';
 
 interface Props {
   currency: Currency;
@@ -9,6 +12,13 @@ interface Props {
 
 const { currency } = Astro.props;
 const { riskMetrics } = dataFor(currency);
+
+const svg = renderChartSvg(
+  drawdownSpec(
+    riskMetrics.drawdown.series.map((p) => ({ date: new Date(p.date), drawdownPct: p.drawdownPct })),
+    SSR_WIDTH,
+  ),
+);
 ---
 
 <figure class="chart-frame">
@@ -22,51 +32,33 @@ const { riskMetrics } = dataFor(currency);
     id="drawdown-chart"
     role="img"
     aria-label="Area chart of BTC decline from its running peak, per day"
-  >
-  </div>
+    set:html={svg}
+  />
 </figure>
 
 <script>
-  import * as Plot from '@observablehq/plot';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
-  import { crosshairAnchors, isoDay } from '../lib/crosshair';
-  import { crosshairMarksFrom } from '../lib/crosshair-marks';
+  import { chartData, upgradeChart } from '../lib/charts';
 
-  const series = chartData<{ date: string; drawdownPct: number }[]>('drawdown-chart-data');
   const container = document.getElementById('drawdown-chart');
-  const points = series.map((p) => ({ date: new Date(p.date), drawdownPct: p.drawdownPct }));
 
-  const crosshair = crosshairAnchors(
-    points.map((d) => ({ x: d.date, y: d.drawdownPct, label: `${d.drawdownPct.toFixed(1)}%` })),
-    isoDay,
-  );
+  if (container) {
+    upgradeChart(container, async () => {
+      const [{ drawChart }, { drawdownSpec }, { crosshairAnchors, isoDay }] =
+        await Promise.all([
+          import('../lib/plot-client'),
+          import('../lib/specs/drawdown'),
+          import('../lib/crosshair'),
+        ]);
 
-  function render(): void {
-    if (!container) return;
-    const neg = cssVar('--neg');
-    const width = container.clientWidth || 720;
-    container.replaceChildren(
-      Plot.plot({
-        width,
-        height: 260,
-        marginLeft: 48,
-        x: { label: null },
-        y: { label: null, grid: true, tickFormat: (value: number) => `${value}%` },
-        marks: [
-          Plot.areaY(points, { x: 'date', y: 'drawdownPct', fill: neg, fillOpacity: 0.12 }),
-          Plot.lineY(points, { x: 'date', y: 'drawdownPct', stroke: neg, strokeWidth: 1.5 }),
-          Plot.ruleY([0], { stroke: cssVar('--line') }),
-          ...crosshairMarksFrom(crosshair, width),
-        ],
-        style: {
-          background: 'transparent',
-          color: cssVar('--ink-muted'),
-          fontFamily: cssVar('--font-mono'),
-          fontSize: '11px',
-        },
-      }),
-    );
+      const series = chartData<{ date: string; drawdownPct: number }[]>('drawdown-chart-data');
+      const points = series.map((p) => ({ date: new Date(p.date), drawdownPct: p.drawdownPct }));
+      const anchors = crosshairAnchors(
+        points.map((d) => ({ x: d.date, y: d.drawdownPct, label: `${d.drawdownPct.toFixed(1)}%` })),
+        isoDay,
+      );
+
+      const width = container.clientWidth || 720;
+      drawChart(container, drawdownSpec(points, width, anchors));
+    });
   }
-
-  responsiveChart(render);
 </script>

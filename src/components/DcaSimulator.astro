@@ -8,10 +8,48 @@ interface Props {
   currency: Currency;
 }
 
+import { compareDcaVsLumpSum } from '../../pipeline/dca';
+import { renderChartSvg } from '../lib/plot-ssr';
+import { SSR_WIDTH } from '../lib/plot-theme';
+import { dcaSpec, defaultStartDate, wealthExtent } from '../lib/specs/dca';
+
 const { currency } = Astro.props;
 const { btcHistory } = dataFor(currency);
 const meta = CURRENCY_META[currency];
 const payload = { code: meta.code, series: btcHistory.series };
+
+const firstDate = btcHistory.series[0]?.date ?? '';
+const lastDate = btcHistory.series.at(-1)?.date ?? '';
+const startDate = defaultStartDate(firstDate, lastDate);
+
+// The form's own defaults, simulated here so the page arrives complete. The
+// held-stack line is absent by construction: it comes from localStorage, which
+// the build has no access to and, per CLAUDE.md, must never be given.
+const initial = compareDcaVsLumpSum(payload.series, {
+  startDate,
+  amount: 100,
+  feePct: 0.5,
+  frequency: 'weekly',
+});
+const dcaPoints = initial.dca.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
+const lumpPoints = initial.lumpSum.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
+const axisMoney = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: meta.code,
+  maximumFractionDigits: 0,
+});
+const svg = renderChartSvg(
+  dcaSpec({
+    dcaPoints,
+    lumpPoints,
+    heldPoints: [],
+    wealthDomain: wealthExtent(dcaPoints, lumpPoints),
+    width: SSR_WIDTH,
+    axisMoney: (v) => axisMoney.format(v),
+    tipMoney: (v) => axisMoney.format(v),
+    interactive: false,
+  }),
+);
 ---
 
 <script is:inline type="application/json" id="dca-data" set:html={toJsonScript(payload)} />
@@ -19,7 +57,7 @@ const payload = { code: meta.code, series: btcHistory.series };
 <form class="sim-form" id="dca-form">
   <label>
     <span>Start date</span>
-    <input type="date" name="startDate" required />
+    <input type="date" name="startDate" value={startDate} min={firstDate} max={lastDate} required />
   </label>
   <label>
     <span>Frequency</span>
@@ -46,24 +84,20 @@ const payload = { code: meta.code, series: btcHistory.series };
     id="dca-chart"
     role="img"
     aria-label="Line chart comparing DCA and lump-sum portfolio wealth over time"
-  >
-  </div>
+    set:html={svg}
+  />
 </figure>
 
 <script>
-  import * as Plot from '@observablehq/plot';
   import { compareDcaVsLumpSum, type DcaFrequency } from '../../pipeline/dca';
   import { holdingsSeries } from '../../pipeline/holdings';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, upgradeChart } from '../lib/charts';
   import { clipNote, compactMoney } from '../lib/chart-format';
-  import { isoDay } from '../lib/crosshair';
-  import { crosshairMarks } from '../lib/crosshair-marks';
   import { HOLDINGS_EVENT, readHoldings } from '../lib/holdings-store';
 
   const { code, series } = chartData<{ code: string; series: { date: string; price: number }[] }>(
     'dca-data',
   );
-  const firstDate = series[0]?.date ?? '';
   const lastDate = series.at(-1)?.date ?? '';
 
   const form = document.getElementById('dca-form') as HTMLFormElement | null;
@@ -71,20 +105,10 @@ const payload = { code: meta.code, series: btcHistory.series };
   const legend = document.getElementById('dca-legend');
   const container = document.getElementById('dca-chart');
 
-  const dateInput = form?.elements.namedItem('startDate') as HTMLInputElement | null;
-  if (dateInput) {
-    dateInput.min = firstDate;
-    dateInput.max = lastDate;
-    // Default: three years back via UTC arithmetic (a Feb 29 asOf rolls to
-    // Mar 1 instead of producing an invalid date), clamped to history.
-    const last = new Date(`${lastDate}T00:00:00Z`);
-    const threeYearsBack = new Date(
-      Date.UTC(last.getUTCFullYear() - 3, last.getUTCMonth(), last.getUTCDate()),
-    )
-      .toISOString()
-      .slice(0, 10);
-    dateInput.value = threeYearsBack >= firstDate ? threeYearsBack : firstDate;
-  }
+  // The date field's value, min and max are rendered into the markup now, from
+  // the same `defaultStartDate` this used to duplicate. A reader with JS off
+  // gets a usable form, and the chart beside it is the one those defaults
+  // produce.
 
   const money = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -140,7 +164,7 @@ const payload = { code: meta.code, series: btcHistory.series };
     return wrap;
   }
 
-  function render(): void {
+  async function render(): Promise<void> {
     if (!container || !stats) return;
     const opts = readOptions();
     if (!opts) return;
@@ -172,8 +196,8 @@ const payload = { code: meta.code, series: btcHistory.series };
       ),
     );
 
-    const accent = cssVar('--accent');
-    const muted = cssVar('--ink-muted');
+    const accent = 'var(--accent)';
+    const muted = 'var(--ink-muted)';
     const dcaPoints = dca.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
     const lumpPoints = lumpSum.series.map((p) => ({ date: new Date(p.date), wealth: p.wealth }));
     // Reduce rather than spread: these arrays run to thousands of points, and
@@ -217,7 +241,7 @@ const payload = { code: meta.code, series: btcHistory.series };
           ['lump sum', muted, 'dashed'],
           ...(held === null
             ? []
-            : [[heldLabel, cssVar('--pos'), 'dotted']]),
+            : [[heldLabel, 'var(--pos)', 'dotted']]),
         ].map(([label, color, dash]) => {
           const item = document.createElement('span');
           item.className = 'legend-item';
@@ -234,86 +258,34 @@ const payload = { code: meta.code, series: btcHistory.series };
       );
     }
 
+    const [{ drawChart }, { dcaSpec }] = await Promise.all([
+      import('../lib/plot-client'),
+      import('../lib/specs/dca'),
+    ]);
+
     const width = container.clientWidth || 720;
-    container.replaceChildren(
-      Plot.plot({
+    drawChart(
+      container,
+      dcaSpec({
+        dcaPoints,
+        lumpPoints,
+        heldPoints,
+        wealthDomain,
         width,
-        height: 320,
-        marginLeft: 70,
-        x: { label: null },
-        y: {
-          label: null,
-          grid: true,
-          // Domain comes from the two simulated lines only. The held stack is
-          // an absolute figure with no relation to the chosen budget, and
-          // letting it set the scale collapsed the comparison this chart
-          // exists for — a 500 BTC stack pushed DCA and lump sum onto the
-          // baseline. It is clipped instead, and the legend says when.
-          domain: wealthDomain,
-          tickFormat: (value: number) => money.format(value),
-        },
-        marks: [
-          Plot.lineY(lumpPoints, {
-            x: 'date',
-            y: 'wealth',
-            stroke: muted,
-            strokeWidth: 1.25,
-            strokeDasharray: '3,3',
-          }),
-          Plot.lineY(dcaPoints, { x: 'date', y: 'wealth', stroke: accent, strokeWidth: 1.75 }),
-          ...(heldPoints.length === 0
-            ? []
-            : [
-                Plot.lineY(heldPoints, {
-                  x: 'date',
-                  y: 'wealth',
-                  stroke: cssVar('--pos'),
-                  strokeWidth: 1.25,
-                  strokeDasharray: '1,3',
-                  clip: true,
-                }),
-              ]),
-          // All three lines at the hovered date. The comparison is the point
-          // of the page, and the tip used to report only the DCA line — so
-          // the one number a reader actually wants, the gap between the
-          // strategies, had to be eyeballed off the axis.
-          ...crosshairMarks(
-            [
-              ...dcaPoints.map((d) => ({ x: d.date, y: d.wealth, label: `DCA ${tipMoney(d.wealth)}` })),
-              ...lumpPoints.map((d) => ({
-                x: d.date,
-                y: d.wealth,
-                label: `lump ${tipMoney(d.wealth)}`,
-              })),
-              ...heldPoints.map((d) => ({
-                x: d.date,
-                y: d.wealth,
-                label: `held ${tipMoney(d.wealth)}`,
-                // "held", matching the brevity of "DCA" and "lump": at 360px
-                // "your BTC $11.79M" was one pixel over the budget and lost
-                // its last digits. The legend spells out whose line it is.
-                //
-                // Clipped to the simulated lines' domain, so it may be far
-                // outside the frame in either direction; it reports, it does
-                // not anchor.
-                anchor: false,
-              })),
-            ],
-            isoDay,
-            width,
-          ),
-        ],
-        style: {
-          background: 'transparent',
-          color: cssVar('--ink-muted'),
-          fontFamily: cssVar('--font-mono'),
-          fontSize: '11px',
-        },
+        axisMoney: (value: number) => money.format(value),
+        tipMoney,
+        interactive: true,
       }),
     );
   }
 
-  form?.addEventListener('input', render);
-  window.addEventListener(HOLDINGS_EVENT, render);
-  responsiveChart(render);
+  if (container) {
+    const upgrade = upgradeChart(container, render);
+    form?.addEventListener('input', upgrade);
+    window.addEventListener(HOLDINGS_EVENT, upgrade);
+    // A reader who has entered holdings gets a third line the build could not
+    // draw, so for them — and only them — the chart is rebuilt on arrival.
+    const stored = readHoldings();
+    if (stored && stored.btc > 0) upgrade();
+  }
 </script>

@@ -35,9 +35,17 @@ src/        Astro site; builds exclusively from /data
   pushes that change pipeline code, so new datasets get seeded by the bot on
   the branch that introduces them), validates every source response and every
   on-disk dataset with zod, and commits as `github-actions[bot]`.
-- **Client islands only where interactivity demands them**: the charts, the
-  DCA simulator (which runs the pipeline's own fixture-tested functions in
-  the browser), the live ticker, the fee tiers, and the holdings panel.
+- **Charts are drawn at build time, not in the browser.** Each one's Plot
+  options live in a single pure `spec` that the build and the browser share,
+  rendered to SVG during the build and served in the HTML. Colours are
+  `var(--token)`, so both themes and the theme toggle are CSS with no redraw,
+  and the SVG carries a viewBox, so it scales without JavaScript. Plot itself
+  — 88 KB gzipped — is fetched only on the interaction that needs it: a hover
+  for the crosshair, a press for a scale or pair switch, an entered amount for
+  the holdings line. Scroll past a chart and you never download it.
+- **Client islands only where interactivity demands them**: the DCA simulator
+  (which runs the pipeline's own fixture-tested functions in the browser), the
+  live ticker, the fee tiers, and the holdings panel.
 - **Reader-entered holdings stay in the browser.** The one piece of personal
   data the site accepts is written to `localStorage` and read back by the
   page. It is never transmitted — there is no server, account, or analytics

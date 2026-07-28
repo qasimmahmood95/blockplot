@@ -12,7 +12,7 @@ import {
   type CrosshairAnchor,
   type CrosshairRow,
 } from './crosshair';
-import { cssVar } from './charts';
+import { INK_MUTED } from './plot-theme';
 
 /**
  * A crosshair rule and a tooltip reporting every series at the hovered x.
@@ -34,7 +34,7 @@ export function crosshairMarksFrom<X extends Date | number>(
 ): Plot.Markish[] {
   const lineWidth = tipLineWidth(width);
   return [
-    Plot.ruleX(anchors, Plot.pointerX({ x: 'x', stroke: cssVar('--ink-muted'), strokeOpacity: 0.4 })),
+    Plot.ruleX(anchors, Plot.pointerX({ x: 'x', stroke: INK_MUTED, strokeOpacity: 0.4 })),
     Plot.tip(
       anchors,
       Plot.pointerX({
