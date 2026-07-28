@@ -25,8 +25,21 @@ import {
   MAX_FX_LAG_DAYS,
 } from './fx';
 import { buildHalvingDataset } from './halvings';
+import type { DominancePoint, HalvingDataset } from './schema';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
+import {
+  athSignal,
+  cycleHighSignal,
+  dominanceSignal,
+  drawdownSignal,
+  volSignal,
+  DRAWDOWN_BANDS_PCT,
+  SIGNAL_CONFIRM_DAYS,
+  VOL_HIGH_PCT,
+  VOL_LOW_PCT,
+  VOL_WINDOW_DAYS,
+} from './signals';
 import { buildMonthlyDataset } from './monthly';
 import {
   fetchFeeTiers,
@@ -51,6 +64,7 @@ import {
   networkDatasetSchema,
   priceDatasetSchema,
   riskDatasetSchema,
+  signalsDatasetSchema,
   stablecoinDatasetSchema,
 } from './schema';
 
@@ -101,6 +115,13 @@ const [
 
 const series = raw ? toDailySeries(raw.prices) : null;
 
+/**
+ * The accreted dominance series, carried out for the signals below. Falls back
+ * to what is already committed when today's snapshot fetch failed, so a
+ * dominance signal does not disappear from the site because one request did.
+ */
+let dominanceSeries: DominancePoint[] = await readExistingDominance('data/dominance.json');
+
 // State-bearing and independent datasets write FIRST: a bug or parse
 // throw in a later derived block must never cost the accreted dominance
 // series its day.
@@ -111,6 +132,7 @@ if (dominanceSnapshot) {
     fetchedAt,
     series: accreteDominance(await readExistingDominance('data/dominance.json'), dominanceSnapshot),
   });
+  dominanceSeries = dominance.series;
   await writeJson('data/dominance.json', dominance);
   console.log(
     `data/dominance.json: ${dominance.series.length} accreted days, latest ${dominanceSnapshot.btcDominancePct}%`,
@@ -170,6 +192,7 @@ for (const currency of CURRENCIES) {
   }
   const rates = fxFetch?.series ?? [];
   const dir = currency === 'usd' ? 'data' : `data/${currency}`;
+  let runningCycle: HalvingDataset['cycles'][number] | null = null;
   const spot = series ? convertSeries(series, rates, currency) : null;
   const deep = history ? convertSeries(history, rates, currency) : null;
   // Correlation gets its own BTC series: re-dated onto the session it closes
@@ -271,6 +294,9 @@ for (const currency of CURRENCIES) {
       ...buildHalvingDataset(deep, { fetchedAt }),
       currency,
     });
+    // Carried out of this block for the signals below, which are written from
+    // the risk block once every input it needs exists.
+    runningCycle = halvings.cycles.at(-1) ?? null;
     await writeJson(`${dir}/halving-cycles.json`, halvings);
     console.log(
       `${dir}/halving-cycles.json: ${halvings.cycles.map((c) => `c${c.cycle}=${c.series.length}`).join(' ')}`,
@@ -317,6 +343,40 @@ for (const currency of CURRENCIES) {
         `${dir}/correlations.json: ${correlations.pairs.map((p) => `${p.pair}=${p.series.length}/${p.regimes.length}r`).join(' ')}`,
       );
     }
+
+    // Signals last in this block: they read what the others just computed, so
+    // a failure here costs today's signals and nothing else.
+    const volSeries = risk.rollingVol.find((w) => w.windowDays === VOL_WINDOW_DAYS)?.series ?? [];
+    const signals = signalsDatasetSchema.parse({
+      schemaVersion: 1,
+      currency,
+      fetchedAt,
+      asOf: risk.asOf,
+      thresholds: {
+        volWindowDays: VOL_WINDOW_DAYS,
+        volLowPct: VOL_LOW_PCT,
+        volHighPct: VOL_HIGH_PCT,
+        drawdownBandsPct: [...DRAWDOWN_BANDS_PCT],
+        confirmDays: SIGNAL_CONFIRM_DAYS,
+      },
+      vol: volSignal(volSeries),
+      drawdown: drawdownSignal(risk.drawdown.series),
+      ath: athSignal(deep),
+      cycle: runningCycle
+        ? { halvingDate: runningCycle.halvingDate, ...cycleHighSignal(runningCycle.series) }
+        : null,
+      // Global, not per-currency — dominance is a share of market cap — but
+      // written into both trees so a page never has to reach across them.
+      dominance: dominanceSignal(dominanceSeries),
+    });
+    await writeJson(`${dir}/signals.json`, signals);
+    console.log(
+      `${dir}/signals.json: vol ${signals.vol?.state ?? 'n/a'} since ${signals.vol?.since ?? '-'}` +
+        `${signals.vol?.pending ? ` (${signals.vol.pending.state} pending ${signals.vol.pending.observations})` : ''}` +
+        `, drawdown ${signals.drawdown?.state ?? 'n/a'}%` +
+        `, ${signals.ath?.daysSince ?? '?'}d since ATH` +
+        `, dominance ${signals.dominance ? `${signals.dominance.changePp}pp/30d` : 'insufficient history'}`,
+    );
   }
 }
 

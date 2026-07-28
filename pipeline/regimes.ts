@@ -1,3 +1,4 @@
+import { confirmSpans, leadConfirmed } from './hysteresis';
 import type { CorrPoint, Regime, RegimeSegment } from './schema';
 
 /**
@@ -47,29 +48,6 @@ export function regimeOf(corr: number, threshold = REGIME_THRESHOLD): Regime {
   return 'neutral';
 }
 
-/**
- * Whether the opening span was ever actually confirmed.
- *
- * Length alone is not enough. The first span is seeded from a single reading,
- * so a series like [0.9, -0.9, 0, -0.9] yields one long "co-moving" span on
- * the strength of its first value. A leading span counts as confirmed only if
- * its first confirmDays readings all agree with its regime — the same standard
- * every later switch has to meet.
- */
-function leadConfirmed(
-  series: CorrPoint[],
-  span: { regime: Regime; startIdx: number; endIdx: number },
-  threshold: number,
-  confirmDays: number,
-): boolean {
-  if (span.endIdx - span.startIdx + 1 < confirmDays) return false;
-  for (let i = span.startIdx; i < span.startIdx + confirmDays; i++) {
-    const point = series[i];
-    if (!point || regimeOf(point.corr, threshold) !== span.regime) return false;
-  }
-  return true;
-}
-
 /** Inclusive calendar-day span, so a segment of one observation is 1 day. */
 function daysBetween(from: string, to: string): number {
   return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS) + 1;
@@ -99,45 +77,17 @@ export function classifyRegimes(
   // unseats it, not a restatement of its own average. A confirmed regime whose
   // later readings drift is still that regime — that is the whole point of
   // confirming it.
-  const spans: { regime: Regime; startIdx: number; confirmedIdx: number; endIdx: number }[] = [];
-  const emit = (regime: Regime, startIdx: number, endIdx: number): void => {
-    if (endIdx >= startIdx) spans.push({ regime, startIdx, confirmedIdx: startIdx, endIdx });
-  };
-
-  let current = regimeOf(first.corr, threshold);
-  let segmentStart = 0;
-  // The candidate trying to unseat `current`, and where its run began.
-  let pending: Regime | null = null;
-  let pendingStart = 0;
-  let pendingCount = 0;
-
-  for (let i = 1; i < series.length; i++) {
-    const point = series[i];
-    if (!point) continue;
-    const instant = regimeOf(point.corr, threshold);
-    if (instant === current) {
-      // A single reading back inside the incumbent regime breaks the run:
-      // confirmation must be consecutive or it is not confirmation.
-      pending = null;
-      pendingCount = 0;
-      continue;
-    }
-    if (instant === pending) {
-      pendingCount += 1;
-    } else {
-      pending = instant;
-      pendingStart = i;
-      pendingCount = 1;
-    }
-    if (pendingCount >= confirmDays) {
-      emit(current, segmentStart, pendingStart - 1);
-      current = instant;
-      segmentStart = pendingStart;
-      pending = null;
-      pendingCount = 0;
-    }
-  }
-  emit(current, segmentStart, series.length - 1);
+  //
+  // The run-length machine itself is `pipeline/hysteresis.ts`, shared with the
+  // volatility and drawdown bands, which flap just as badly on a bare
+  // threshold. Everything below is what is specific to correlations.
+  const stateOf = (point: CorrPoint): Regime => regimeOf(point.corr, threshold);
+  const spans = confirmSpans(series, stateOf, confirmDays).map((span) => ({
+    regime: span.state,
+    startIdx: span.startIdx,
+    confirmedIdx: span.confirmedIdx,
+    endIdx: span.endIdx,
+  }));
 
   /*
    * The opening regime is the one case confirmation cannot reach: at the first
@@ -155,7 +105,7 @@ export function classifyRegimes(
    */
   const lead = spans[0];
   const next = spans[1];
-  if (lead && !leadConfirmed(series, lead, threshold, confirmDays)) {
+  if (lead && !leadConfirmed(series, { ...lead, state: lead.regime }, stateOf, confirmDays)) {
     if (next) {
       next.startIdx = lead.startIdx;
       spans.shift();
