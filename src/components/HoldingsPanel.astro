@@ -166,46 +166,65 @@ const payload = {
   let storedCost: { cost: number; costCurrency: Currency } | null = null;
 
   interface FormState {
+    /**
+     * What to persist: everything the reader has actually told the site.
+     */
     holdings: Holdings | null;
+    /**
+     * What to put on screen. The same record, except where a figure is known
+     * but cannot honestly be shown in this currency today.
+     *
+     * These are two different questions and collapsing them lost data: when
+     * `display` dropped an unconvertible cost, `save()` wrote the dropped
+     * version, so one keystroke on a stale-FX day deleted a cost basis that
+     * would have been perfectly convertible again the next morning.
+     */
+    display: Holdings | null;
     /** Which field is unusable, so the message can name the right one. */
     invalid: 'amount' | 'total paid' | null;
-    /** A stored cost was dropped because the two trees are different days old. */
+    /** A stored cost is held back because the two trees are different days old. */
     costUnavailable: boolean;
   }
 
+  const state = (holdings: Holdings | null, display = holdings): FormState => ({
+    holdings,
+    display,
+    invalid: null,
+    costUnavailable: false,
+  });
+
   /** What the form currently says, and why it cannot be valued if it cannot. */
   function formState(): FormState {
-    const none: FormState = { holdings: null, invalid: null, costUnavailable: false };
-    if (!form) return none;
+    if (!form) return state(null);
     const raw = new FormData(form);
     const btcRaw = String(raw.get('btc') ?? '').trim();
-    if (btcRaw === '') return none;
+    if (btcRaw === '') return state(null);
     const btc = Number(btcRaw);
     if (!Number.isFinite(btc) || btc < 0 || btc > MAX_BTC) {
-      return { holdings: null, invalid: 'amount', costUnavailable: false };
+      return { holdings: null, display: null, invalid: 'amount', costUnavailable: false };
     }
     const bare: Holdings = { btc, cost: null, costCurrency: data.currency };
     const costRaw = String(raw.get('cost') ?? '').trim();
     if (!costEdited) {
-      if (!storedCost) return { holdings: bare, invalid: null, costUnavailable: false };
+      if (!storedCost) return state(bare);
+      const held: Holdings = { btc, ...storedCost };
       // A cost held in the other currency cannot be restated while the two
       // trees disagree on the date; showing the stack's value without it beats
-      // printing a P&L against a rate that is not one.
+      // printing a P&L against a rate that is not one. It is still stored, and
+      // still shown, the moment the rate is a rate again.
       if (!data.ratesAligned && storedCost.costCurrency !== data.currency) {
-        return { holdings: bare, invalid: null, costUnavailable: true };
+        return { holdings: held, display: bare, invalid: null, costUnavailable: true };
       }
-      return { holdings: { btc, ...storedCost }, invalid: null, costUnavailable: false };
+      return state(held);
     }
-    if (costRaw === '') return { holdings: bare, invalid: null, costUnavailable: false };
+    if (costRaw === '') return state(bare);
     const cost = Number(costRaw);
     if (!Number.isFinite(cost) || cost < 0 || cost > MAX_COST) {
-      return { holdings: null, invalid: 'total paid', costUnavailable: false };
+      return { holdings: null, display: null, invalid: 'total paid', costUnavailable: false };
     }
-    return { holdings: { btc, cost, costCurrency: data.currency }, invalid: null, costUnavailable: false };
+    return state({ btc, cost, costCurrency: data.currency });
   }
 
-  /** What the form currently says, or null when there is nothing to value. */
-  const formHoldings = (): Holdings | null => formState().holdings;
 
   function tile(label: string, value: string, sub: string, tone = ''): HTMLElement {
     const wrap = document.createElement('div');
@@ -286,7 +305,7 @@ const payload = {
    */
   function render(): void {
     if (!stats) return;
-    const { holdings, costUnavailable } = formState();
+    const { display: holdings, costUnavailable } = formState();
     if (!holdings) {
       stats.replaceChildren();
       if (chartSection) chartSection.hidden = true;
@@ -416,10 +435,14 @@ const payload = {
   /** The debounced half of an edit: persist, then redraw the chart. */
   function commit(): void {
     setStatus(save());
-    const { holdings } = formState();
-    renderChart(holdings && holdings.btc > 0 ? holdings.btc : 0);
+    // After save(), which can change what the tiles should say — a written
+    // cost becomes the snapshot the next render reads. Leaving the tiles from
+    // before the write let one describe a state that no longer existed.
+    render();
+    const { display } = formState();
+    renderChart(display && display.btc > 0 ? display.btc : 0);
     // Announced here rather than off the tiles, which are rebuilt per keystroke.
-    if (announce) announce.textContent = holdings ? summarise(holdings) : '';
+    if (announce) announce.textContent = display ? summarise(display) : '';
   }
 
   /** One sentence of the figures on screen, for a screen reader. */
@@ -527,9 +550,15 @@ const payload = {
   function syncFromStorage(reason?: string): void {
     const message = load();
     render();
-    const holdings = formHoldings();
-    renderChart(holdings && holdings.btc > 0 ? holdings.btc : 0);
-    setStatus(reason ?? message);
+    const { display } = formState();
+    renderChart(display && display.btc > 0 ? display.btc : 0);
+    // Only when there is something to say. `load()` returns an empty string for
+    // an empty store precisely because it cannot tell a first-time visitor from
+    // a deletion — and on the deletion path the caller has already put the
+    // right words on screen. Blanking here wiped its own confirmation: on blur
+    // the order is `change` (which sets "amount cleared…") then `focusout`.
+    const next = reason ?? message;
+    if (next) setStatus(next);
   }
 
   /**
@@ -577,7 +606,7 @@ const payload = {
   // it here too would double every cross-tab dispatch.
   responsiveChart(() => {
     render();
-    const holdings = formHoldings();
-    renderChart(holdings && holdings.btc > 0 ? holdings.btc : 0);
+    const { display } = formState();
+    renderChart(display && display.btc > 0 ? display.btc : 0);
   });
 </script>

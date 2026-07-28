@@ -47,9 +47,18 @@ const current = (href: string): boolean =>
 
 // Both currencies' latest closes: the header tile values a cost basis entered
 // in either, and their ratio is the implied rate that makes that possible.
+//
+// `ratesAligned` travels with them because that ratio is only an exchange rate
+// while the two trees are the same day old — see the note in HoldingsPanel.
+// The tile is on every page, so shipping the prices without the caveat let the
+// header print a P&L from a rate the panel was refusing to use, on the same
+// screen and off the same stored figure.
+const usdDaily = dataFor('usd').btcDaily;
+const gbpDaily = dataFor('gbp').btcDaily;
 const latestJson = toJsonScript({
-  usd: dataFor('usd').btcDaily.stats.latestPrice,
-  gbp: dataFor('gbp').btcDaily.stats.latestPrice,
+  usd: usdDaily.stats.latestPrice,
+  gbp: gbpDaily.stats.latestPrice,
+  ratesAligned: usdDaily.stats.latestDate === gbpDaily.stats.latestDate,
 });
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
@@ -158,7 +167,9 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
         watchOtherTabs,
       } from '../lib/holdings-store';
 
-      const headerLatest = chartData<Record<Currency, number>>('header-latest');
+      const { ratesAligned, ...headerLatest } = chartData<
+        Record<Currency, number> & { ratesAligned: boolean }
+      >('header-latest');
       const pageCurrency = (document.documentElement.dataset.currency ?? 'usd') as Currency;
       // Declared here because both the holdings tile and the live ticker format
       // with it, and the tile renders first.
@@ -221,7 +232,17 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
           holdingsPnlEl.textContent = '';
           return;
         }
-        const result = valueHoldings(stored, headerLatest[pageCurrency], pageCurrency, headerLatest);
+        // A cost held in the other currency is dropped, not converted, while
+        // the two trees disagree on the date — the same call the panel makes,
+        // so the two views cannot contradict each other. The value itself is
+        // unaffected: it is priced in this currency from this currency's tree.
+        const convertible = stored.costCurrency === pageCurrency || ratesAligned;
+        const result = valueHoldings(
+          convertible ? stored : { ...stored, cost: null },
+          headerLatest[pageCurrency],
+          pageCurrency,
+          headerLatest,
+        );
         holdingsEl.hidden = false;
         holdingsValueEl.textContent = money.format(result.value);
         // "no cost basis" rather than "holdings": the visually-hidden label on
