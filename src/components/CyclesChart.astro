@@ -35,6 +35,8 @@ const payload = halvingCycles.cycles.map((c) => ({
 <script>
   import * as Plot from '@observablehq/plot';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { crosshairAnchors } from '../lib/crosshair';
+  import { crosshairMarksFrom } from '../lib/crosshair-marks';
 
   const cyclesData = chartData<{ label: string; series: { day: number; multiple: number }[] }[]>(
     'cycles-chart-data',
@@ -56,6 +58,14 @@ const payload = halvingCycles.cycles.map((c) => ({
 
   let scale: 'log' | 'linear' = 'log';
 
+  const crosshair = crosshairAnchors(
+    points.map((d) => ({ x: d.day, y: d.multiple, label: `${d.cycle} ×${d.multiple.toFixed(2)}` })),
+    // Just "day N": the x-axis is already labelled "days since halving", and
+    // spelling it out again made this the widest line in the tooltip, which on
+    // a 320px screen is what pushed the whole tip off the edge.
+    (day: number) => `day ${day}`,
+  );
+
   function render(): void {
     if (!container) return;
     const range = domain.map((_, i) => cssVar(RAMP[i] ?? '--accent'));
@@ -72,9 +82,10 @@ const payload = halvingCycles.cycles.map((c) => ({
         }),
       );
     }
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 380,
         marginLeft: 48,
         marginRight: 44,
@@ -96,15 +107,10 @@ const payload = halvingCycles.cycles.map((c) => ({
             fill: cssVar('--ink'),
             fontSize: 11,
           }),
-          Plot.tip(
-            points,
-            Plot.pointerX({
-              x: 'day',
-              y: 'multiple',
-              title: (d: { cycle: string; day: number; multiple: number }) =>
-                `${d.cycle} cycle · day ${d.day}\n×${d.multiple.toFixed(2)}`,
-            }),
-          ),
+          // Every cycle still running at this day, in ramp order. Cycles have
+          // different lengths and the newest is incomplete, so the later days
+          // legitimately list fewer than four.
+          ...crosshairMarksFrom(crosshair, width),
         ],
         style: {
           background: 'transparent',

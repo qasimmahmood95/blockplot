@@ -30,12 +30,19 @@ const payload = { hashRate: network.hashRate.series, txCount: network.txCount.se
 <script>
   import * as Plot from '@observablehq/plot';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { crosshairAnchors, isoDay } from '../lib/crosshair';
+  import { crosshairMarksFrom } from '../lib/crosshair-marks';
 
   type Point = { date: string; value: number };
   const data = chartData<{ hashRate: Point[]; txCount: Point[] }>('network-chart-data');
   const hashRate = data.hashRate.map((p) => ({ date: new Date(p.date), value: p.value }));
   const txCount = data.txCount.map((p) => ({ date: new Date(p.date), value: p.value }));
   const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+
+  // Both charts' rows are fixed at build time, so the grouping is hoisted out
+  // of the draw and cached per chart id — `plot` runs once per animation frame
+  // during a resize.
+  const anchorCache = new Map<string, ReturnType<typeof crosshairAnchors<Date>>>();
 
   function plot(
     id: string,
@@ -45,10 +52,19 @@ const payload = { hashRate: network.hashRate.series, txCount: network.txCount.se
   ): void {
     const container = document.getElementById(id);
     if (!container) return;
+    let anchors = anchorCache.get(id);
+    if (!anchors) {
+      anchors = crosshairAnchors(
+        points.map((d) => ({ x: d.date, y: d.value, label: tipLabel(d.value) })),
+        isoDay,
+      );
+      anchorCache.set(id, anchors);
+    }
     const accent = cssVar('--accent');
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 260,
         marginLeft: 62,
         x: { label: null },
@@ -56,15 +72,7 @@ const payload = { hashRate: network.hashRate.series, txCount: network.txCount.se
         marks: [
           Plot.areaY(points, { x: 'date', y: 'value', fill: accent, fillOpacity: 0.08 }),
           Plot.lineY(points, { x: 'date', y: 'value', stroke: accent, strokeWidth: 1.5 }),
-          Plot.tip(
-            points,
-            Plot.pointerX({
-              x: 'date',
-              y: 'value',
-              title: (d: { date: Date; value: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\n${tipLabel(d.value)}`,
-            }),
-          ),
+          ...crosshairMarksFrom(anchors, width),
         ],
         style: {
           background: 'transparent',

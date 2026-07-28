@@ -92,6 +92,9 @@ const payload = {
   } from '../../pipeline/holdings';
   import type { Currency } from '../../pipeline/currencies';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { compactMoney } from '../lib/chart-format';
+  import { isoDay } from '../lib/crosshair';
+  import { crosshairMarks } from '../lib/crosshair-marks';
   import {
     clearHoldings,
     HOLDINGS_EXTERNAL_EVENT,
@@ -135,6 +138,19 @@ const payload = {
       currency: data.code,
       maximumFractionDigits: v < 1 ? 4 : 0,
     }).format(v);
+  /**
+   * A 21M-BTC stack against a five-figure price is a 14-digit number, which
+   * does not fit a tooltip on a phone. Compacted above seven figures by
+   * `chart-format`; the exact figure is on the Value tile, which has the room.
+   */
+  const compact = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: data.code,
+    notation: 'compact',
+    maximumFractionDigits: 2,
+  });
+  const tipMoney = (v: number): string => compactMoney(v, axisMoney, (x) => compact.format(x));
+
   /** BTC amounts in prose: 8 dp is the smallest unit, and never e-notation. */
   const btcAmount = (v: number): string =>
     new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 }).format(v);
@@ -286,9 +302,10 @@ const payload = {
       `${btcAmount(btc)} BTC valued at every daily close since ${points[0]?.date.toISOString().slice(0, 10)}. This holds the amount ` +
       'constant — the site does not know when any of it was bought, so this is what this much BTC ' +
       'was worth, not a reconstruction of a position. Prices are blockchain.com daily closes.';
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 300,
         marginLeft: 70,
         x: { label: null },
@@ -300,14 +317,10 @@ const payload = {
             stroke: cssVar('--accent'),
             strokeWidth: 1.5,
           }),
-          Plot.tip(
-            points,
-            Plot.pointerX({
-              x: 'date',
-              y: 'value',
-              title: (d: { date: Date; value: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\n${axisMoney(d.value)}`,
-            }),
+          ...crosshairMarks(
+            points.map((d) => ({ x: d.date, y: d.value, label: tipMoney(d.value) })),
+            isoDay,
+            width,
           ),
         ],
         style: {

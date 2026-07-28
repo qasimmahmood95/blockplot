@@ -36,6 +36,8 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
 <script>
   import * as Plot from '@observablehq/plot';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { isoDay } from '../lib/crosshair';
+  import { crosshairMarks } from '../lib/crosshair-marks';
 
   type Regime = 'positive' | 'neutral' | 'negative';
   type Segment = {
@@ -105,9 +107,10 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
       .map((r) => ({ ...r, fill: bandFill(r.regime) }))
       .filter((r) => r.fill !== null)
       .map((r) => ({ ...r, bandStart: r.startDate < first ? first : r.startDate }));
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 300,
         marginLeft: 44,
         x: { label: null },
@@ -128,14 +131,23 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
             strokeOpacity: 0.7,
           }),
           Plot.lineY(points, { x: 'date', y: 'corr', stroke: cssVar('--accent'), strokeWidth: 1.5 }),
-          Plot.tip(
-            points,
-            Plot.pointerX({
-              x: 'date',
-              y: 'corr',
-              title: (d: { date: Date; corr: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\n${pairLabel(pair)}: ${d.corr.toFixed(2)}`,
-            }),
+          ...crosshairMarks(
+            points.map((d) => ({
+              x: d.date,
+              y: d.corr,
+              // The correlation alone, as on every other single-series chart
+              // here. The pressed pair button directly above the chart names
+              // the pair, so repeating it in the tooltip buys nothing and
+              // costs the one thing the tooltip is for: an earlier version
+              // kept the pair and "S&P 500 – gol…" was all that fitted at
+              // 320px, cutting off the only figure on offer.
+              //
+              // Not justified by the heading or the aria-label — neither
+              // mentions the assets. It is the button, and only the button.
+              label: d.corr.toFixed(2),
+            })),
+            isoDay,
+            width,
           ),
         ],
         style: {

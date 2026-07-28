@@ -16,6 +16,8 @@ import { toJsonScript } from '../lib/embed';
 <script>
   import * as Plot from '@observablehq/plot';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { crosshairAnchors, isoDay } from '../lib/crosshair';
+  import { crosshairMarksFrom } from '../lib/crosshair-marks';
 
   const series = chartData<{ date: string; totalUsd: number }[]>('stablecoin-chart-data');
   const container = document.getElementById('stablecoin-chart');
@@ -23,12 +25,18 @@ import { toJsonScript } from '../lib/embed';
   const billions = (v: number): string =>
     v >= 1e12 ? `$${(v / 1e12).toFixed(2)}T` : `$${(v / 1e9).toFixed(0)}B`;
 
+  const crosshair = crosshairAnchors(
+    points.map((d) => ({ x: d.date, y: d.totalUsd, label: billions(d.totalUsd) })),
+    isoDay,
+  );
+
   function render(): void {
     if (!container) return;
     const accent = cssVar('--accent');
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 300,
         marginLeft: 56,
         x: { label: null },
@@ -36,15 +44,7 @@ import { toJsonScript } from '../lib/embed';
         marks: [
           Plot.areaY(points, { x: 'date', y: 'totalUsd', fill: accent, fillOpacity: 0.1 }),
           Plot.lineY(points, { x: 'date', y: 'totalUsd', stroke: accent, strokeWidth: 1.5 }),
-          Plot.tip(
-            points,
-            Plot.pointerX({
-              x: 'date',
-              y: 'totalUsd',
-              title: (d: { date: Date; totalUsd: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\n${billions(d.totalUsd)} stablecoins`,
-            }),
-          ),
+          ...crosshairMarksFrom(crosshair, width),
         ],
         style: {
           background: 'transparent',

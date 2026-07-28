@@ -1,4 +1,12 @@
-/** Shared client-side helpers for Observable Plot chart islands. */
+/**
+ * Shared client-side helpers for Observable Plot chart islands.
+ *
+ * Deliberately imports no Plot. The header ticker and holdings tile pull
+ * `chartData` from here, and that island is in the layout — on every page,
+ * including the chartless 404. Importing Plot here put it in the chunk those
+ * pages depend on and took `404.html` from 4.6 KB of JS to 249 KB. The marks
+ * that need Plot live in `crosshair-marks.ts`, which only charts import.
+ */
 
 /**
  * Read an island's dataset from the inline JSON the page embedded. Keeps

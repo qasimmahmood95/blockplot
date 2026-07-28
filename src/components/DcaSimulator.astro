@@ -55,6 +55,9 @@ const payload = { code: meta.code, series: btcHistory.series };
   import { compareDcaVsLumpSum, type DcaFrequency } from '../../pipeline/dca';
   import { holdingsSeries } from '../../pipeline/holdings';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { clipNote, compactMoney } from '../lib/chart-format';
+  import { isoDay } from '../lib/crosshair';
+  import { crosshairMarks } from '../lib/crosshair-marks';
   import { HOLDINGS_EVENT, readHoldings } from '../lib/holdings-store';
 
   const { code, series } = chartData<{ code: string; series: { date: string; price: number }[] }>(
@@ -89,6 +92,25 @@ const payload = { code: meta.code, series: btcHistory.series };
     maximumFractionDigits: 0,
   });
   const signedPct = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+  /**
+   * Tooltip figures, shortened above eight digits.
+   *
+   * Applied to every line, not just the reader's own stack. The first attempt
+   * at this reasoned that "the budget bounds the two simulated lines" — which
+   * is false, and the mistake was load-bearing: the budget bounds what is
+   * *invested*, not what it grows to. On the default form, with nothing
+   * entered and the start date dragged to the beginning of the data, $83,200
+   * of weekly buys becomes $4.8bn of lump-sum wealth, and that line was the
+   * one being cut off.
+   */
+  const compact = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: code,
+    notation: 'compact',
+    maximumFractionDigits: 2,
+  });
+  const tipMoney = (v: number): string =>
+    compactMoney(v, (x) => money.format(x), (x) => compact.format(x));
 
   function readOptions() {
     if (!form) return null;
@@ -178,11 +200,16 @@ const payload = { code: meta.code, series: btcHistory.series };
         : holdingsSeries(series, held, dca.series[0]?.date)
             .map((p) => ({ date: new Date(p.date), wealth: p.value }))
             .filter((p) => Number.isFinite(p.wealth));
-    const heldClipped = heldPoints.some((p) => p.wealth > wealthDomain[1]);
+    // Both bounds, and the two cases said differently. Testing only the top
+    // meant a stack small enough to sit entirely *below* the simulated lines'
+    // floor drew no line at all while the legend and the tooltip went on
+    // reporting it — a figure attached to a series that was nowhere on screen.
+    const outside = (w: number): boolean => w > wealthDomain[1] || w < wealthDomain[0];
+    const outsideCount = heldPoints.filter((p) => outside(p.wealth)).length;
+    const heldNote = clipNote(outsideCount, heldPoints.length);
     const btcAmount = (v: number): string =>
       new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 }).format(v);
-    const heldLabel =
-      held === null ? '' : `your ${btcAmount(held)} BTC${heldClipped ? ' (runs off this scale)' : ''}`;
+    const heldLabel = held === null ? '' : `your ${btcAmount(held)} BTC${heldNote}`;
     if (legend) {
       legend.replaceChildren(
         ...[
@@ -207,9 +234,10 @@ const payload = { code: meta.code, series: btcHistory.series };
       );
     }
 
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 320,
         marginLeft: 70,
         x: { label: null },
@@ -245,14 +273,34 @@ const payload = { code: meta.code, series: btcHistory.series };
                   clip: true,
                 }),
               ]),
-          Plot.tip(
-            dcaPoints,
-            Plot.pointerX({
-              x: 'date',
-              y: 'wealth',
-              title: (d: { date: Date; wealth: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\nDCA ${money.format(d.wealth)}`,
-            }),
+          // All three lines at the hovered date. The comparison is the point
+          // of the page, and the tip used to report only the DCA line — so
+          // the one number a reader actually wants, the gap between the
+          // strategies, had to be eyeballed off the axis.
+          ...crosshairMarks(
+            [
+              ...dcaPoints.map((d) => ({ x: d.date, y: d.wealth, label: `DCA ${tipMoney(d.wealth)}` })),
+              ...lumpPoints.map((d) => ({
+                x: d.date,
+                y: d.wealth,
+                label: `lump ${tipMoney(d.wealth)}`,
+              })),
+              ...heldPoints.map((d) => ({
+                x: d.date,
+                y: d.wealth,
+                label: `held ${tipMoney(d.wealth)}`,
+                // "held", matching the brevity of "DCA" and "lump": at 360px
+                // "your BTC $11.79M" was one pixel over the budget and lost
+                // its last digits. The legend spells out whose line it is.
+                //
+                // Clipped to the simulated lines' domain, so it may be far
+                // outside the frame in either direction; it reports, it does
+                // not anchor.
+                anchor: false,
+              })),
+            ],
+            isoDay,
+            width,
           ),
         ],
         style: {

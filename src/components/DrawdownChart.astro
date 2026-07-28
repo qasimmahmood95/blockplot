@@ -29,17 +29,25 @@ const { riskMetrics } = dataFor(currency);
 <script>
   import * as Plot from '@observablehq/plot';
   import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { crosshairAnchors, isoDay } from '../lib/crosshair';
+  import { crosshairMarksFrom } from '../lib/crosshair-marks';
 
   const series = chartData<{ date: string; drawdownPct: number }[]>('drawdown-chart-data');
   const container = document.getElementById('drawdown-chart');
   const points = series.map((p) => ({ date: new Date(p.date), drawdownPct: p.drawdownPct }));
 
+  const crosshair = crosshairAnchors(
+    points.map((d) => ({ x: d.date, y: d.drawdownPct, label: `${d.drawdownPct.toFixed(1)}%` })),
+    isoDay,
+  );
+
   function render(): void {
     if (!container) return;
     const neg = cssVar('--neg');
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 260,
         marginLeft: 48,
         x: { label: null },
@@ -48,15 +56,7 @@ const { riskMetrics } = dataFor(currency);
           Plot.areaY(points, { x: 'date', y: 'drawdownPct', fill: neg, fillOpacity: 0.12 }),
           Plot.lineY(points, { x: 'date', y: 'drawdownPct', stroke: neg, strokeWidth: 1.5 }),
           Plot.ruleY([0], { stroke: cssVar('--line') }),
-          Plot.tip(
-            points,
-            Plot.pointerX({
-              x: 'date',
-              y: 'drawdownPct',
-              title: (d: { date: Date; drawdownPct: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\ndrawdown ${d.drawdownPct.toFixed(1)}%`,
-            }),
-          ),
+          ...crosshairMarksFrom(crosshair, width),
         ],
         style: {
           background: 'transparent',
