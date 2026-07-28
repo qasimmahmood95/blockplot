@@ -583,7 +583,7 @@ code {
 .theme-toggle,
 .chart-toggle button,
 .header-holdings a {
-  /* Both measured under the 24px floor at 375px: 23.4 and 18. */
+  /* All three measured under the 24px floor at 375px: 23.4, 23.0 and 18. */
   display: inline-flex;
   align-items: center;
   min-height: 24px;
