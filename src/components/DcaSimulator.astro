@@ -54,8 +54,9 @@ const payload = { code: meta.code, series: btcHistory.series };
   import * as Plot from '@observablehq/plot';
   import { compareDcaVsLumpSum, type DcaFrequency } from '../../pipeline/dca';
   import { holdingsSeries } from '../../pipeline/holdings';
-  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
   import { isoDay } from '../lib/crosshair';
+  import { crosshairMarks } from '../lib/crosshair-marks';
   import { HOLDINGS_EVENT, readHoldings } from '../lib/holdings-store';
 
   const { code, series } = chartData<{ code: string; series: { date: string; price: number }[] }>(
@@ -179,11 +180,22 @@ const payload = { code: meta.code, series: btcHistory.series };
         : holdingsSeries(series, held, dca.series[0]?.date)
             .map((p) => ({ date: new Date(p.date), wealth: p.value }))
             .filter((p) => Number.isFinite(p.wealth));
-    const heldClipped = heldPoints.some((p) => p.wealth > wealthDomain[1]);
+    // Both bounds, and the two cases said differently. Testing only the top
+    // meant a stack small enough to sit entirely *below* the simulated lines'
+    // floor drew no line at all while the legend and the tooltip went on
+    // reporting it — a figure attached to a series that was nowhere on screen.
+    const outside = (w: number): boolean => w > wealthDomain[1] || w < wealthDomain[0];
+    const outsideCount = heldPoints.filter((p) => outside(p.wealth)).length;
+    const heldClipped = outsideCount > 0;
+    const heldNote =
+      heldPoints.length > 0 && outsideCount === heldPoints.length
+        ? ' (entirely off this scale)'
+        : heldClipped
+          ? ' (runs off this scale)'
+          : '';
     const btcAmount = (v: number): string =>
       new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 }).format(v);
-    const heldLabel =
-      held === null ? '' : `your ${btcAmount(held)} BTC${heldClipped ? ' (runs off this scale)' : ''}`;
+    const heldLabel = held === null ? '' : `your ${btcAmount(held)} BTC${heldNote}`;
     if (legend) {
       legend.replaceChildren(
         ...[
@@ -208,9 +220,10 @@ const payload = { code: meta.code, series: btcHistory.series };
       );
     }
 
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 320,
         marginLeft: 70,
         x: { label: null },
@@ -261,13 +274,18 @@ const payload = { code: meta.code, series: btcHistory.series };
               ...heldPoints.map((d) => ({
                 x: d.date,
                 y: d.wealth,
-                label: `your holdings ${money.format(d.wealth)}`,
+                // "your BTC", not "your holdings": with an eight-figure stack
+                // the longer label took the tip to 197px, wider than the plot
+                // area on a phone, and Plot pushed it off the left of the
+                // window — losing the date line and the DCA figure with it.
+                label: `your BTC ${money.format(d.wealth)}`,
                 // Clipped to the simulated lines' domain, so it may be far
                 // above the top of the frame; it reports, it does not anchor.
                 anchor: false,
               })),
             ],
             isoDay,
+            width,
           ),
         ],
         style: {

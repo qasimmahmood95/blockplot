@@ -91,8 +91,9 @@ const payload = {
     type Holdings,
   } from '../../pipeline/holdings';
   import type { Currency } from '../../pipeline/currencies';
-  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
   import { isoDay } from '../lib/crosshair';
+  import { crosshairMarks } from '../lib/crosshair-marks';
   import {
     clearHoldings,
     HOLDINGS_EXTERNAL_EVENT,
@@ -287,9 +288,10 @@ const payload = {
       `${btcAmount(btc)} BTC valued at every daily close since ${points[0]?.date.toISOString().slice(0, 10)}. This holds the amount ` +
       'constant — the site does not know when any of it was bought, so this is what this much BTC ' +
       'was worth, not a reconstruction of a position. Prices are blockchain.com daily closes.';
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 300,
         marginLeft: 70,
         x: { label: null },
@@ -304,6 +306,7 @@ const payload = {
           ...crosshairMarks(
             points.map((d) => ({ x: d.date, y: d.value, label: axisMoney(d.value) })),
             isoDay,
+            width,
           ),
         ],
         style: {

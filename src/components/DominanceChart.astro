@@ -15,19 +15,26 @@ import { toJsonScript } from '../lib/embed';
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
-  import { isoDay } from '../lib/crosshair';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { crosshairAnchors, isoDay } from '../lib/crosshair';
+  import { crosshairMarksFrom } from '../lib/crosshair-marks';
 
   const series = chartData<{ date: string; btcDominancePct: number }[]>('dominance-chart-data');
   const container = document.getElementById('dominance-chart');
   const points = series.map((p) => ({ date: new Date(p.date), pct: p.btcDominancePct }));
 
+  const crosshair = crosshairAnchors(
+    points.map((d) => ({ x: d.date, y: d.pct, label: `BTC dominance ${d.pct.toFixed(2)}%` })),
+    isoDay,
+  );
+
   function render(): void {
     if (!container) return;
     const accent = cssVar('--accent');
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 240,
         marginLeft: 48,
         x: { label: null },
@@ -40,14 +47,7 @@ import { toJsonScript } from '../lib/embed';
           // Dots keep a young accreted series visible before the line forms.
           Plot.dot(points, { x: 'date', y: 'pct', fill: accent, r: 2 }),
           Plot.lineY(points, { x: 'date', y: 'pct', stroke: accent, strokeWidth: 1.5 }),
-          ...crosshairMarks(
-            points.map((d) => ({
-              x: d.date,
-              y: d.pct,
-              label: `BTC dominance ${d.pct.toFixed(2)}%`,
-            })),
-            isoDay,
-          ),
+          ...crosshairMarksFrom(crosshair, width),
         ],
         style: {
           background: 'transparent',

@@ -25,8 +25,9 @@ const payload = riskMetrics.rollingVol.filter((w) => w.series.length > 0);
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
-  import { isoDay } from '../lib/crosshair';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { crosshairAnchors, isoDay } from '../lib/crosshair';
+  import { crosshairMarksFrom } from '../lib/crosshair-marks';
 
   const windows = chartData<{ windowDays: number; series: { date: string; volPct: number }[] }[]>(
     'vol-chart-data',
@@ -48,6 +49,11 @@ const payload = riskMetrics.rollingVol.filter((w) => w.series.length > 0);
   });
   const domain = windows.map((w) => `${w.windowDays}d`);
 
+  const crosshair = crosshairAnchors(
+    points.map((d) => ({ x: d.date, y: d.volPct, label: `${d.window} ${d.volPct.toFixed(1)}%` })),
+    isoDay,
+  );
+
   function render(): void {
     if (!container) return;
     const range = domain.map((w) => cssVar(RAMP[w] ?? '--ink'));
@@ -64,9 +70,10 @@ const payload = riskMetrics.rollingVol.filter((w) => w.series.length > 0);
         }),
       );
     }
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 300,
         marginLeft: 48,
         marginRight: 44,
@@ -86,14 +93,7 @@ const payload = riskMetrics.rollingVol.filter((w) => w.series.length > 0);
           // All three windows at the hovered date. Comparing them is the whole
           // reason they share an axis, and the per-point tip could only ever
           // report whichever line the cursor was nearest.
-          ...crosshairMarks(
-            points.map((d) => ({
-              x: d.date,
-              y: d.volPct,
-              label: `${d.window} ${d.volPct.toFixed(1)}%`,
-            })),
-            isoDay,
-          ),
+          ...crosshairMarksFrom(crosshair, width),
         ],
         style: {
           background: 'transparent',

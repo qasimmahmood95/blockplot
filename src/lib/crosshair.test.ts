@@ -90,6 +90,31 @@ describe('crosshairAnchors', () => {
     expect(anchors[0]?.title).toContain('your holdings $9,000,000');
   });
 
+  it('takes the anchor from a real row that arrives after a clipped one', () => {
+    // The order matters and negative data is the case that exposes it. With
+    // the clipped row first the group starts with y = null, so the update has
+    // to recover from null rather than compare against it: `row.y > null`
+    // coerces to `row.y > 0`, which is true for every positive series — so a
+    // chart of positive numbers cannot catch this, and the drawdown chart is
+    // entirely negative.
+    const rows: CrosshairRow<number>[] = [
+      { x: 1, y: -5, label: 'clipped', anchor: false },
+      { x: 1, y: -40, label: 'drawdown -40.0%' },
+    ];
+    const anchors = crosshairAnchors(rows, (x) => `t${x}`);
+    expect(anchors[0]?.y).toBe(-40);
+    expect(anchors[0]?.title).toBe('t1\nclipped\ndrawdown -40.0%');
+  });
+
+  it('takes the highest of several real rows even when negative', () => {
+    const rows: CrosshairRow<number>[] = [
+      { x: 1, y: -80, label: 'a' },
+      { x: 1, y: -12, label: 'b' },
+      { x: 1, y: -45, label: 'c' },
+    ];
+    expect(crosshairAnchors(rows, (x) => `t${x}`)[0]?.y).toBe(-12);
+  });
+
   it('drops an x where nothing may position the tip', () => {
     // Before the held line's own start date there is only the clipped series.
     const rows: CrosshairRow<number>[] = [{ x: 1, y: 9e6, label: 'held', anchor: false }];

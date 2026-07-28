@@ -34,7 +34,9 @@ const payload = halvingCycles.cycles.map((c) => ({
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { crosshairAnchors } from '../lib/crosshair';
+  import { crosshairMarksFrom } from '../lib/crosshair-marks';
 
   const cyclesData = chartData<{ label: string; series: { day: number; multiple: number }[] }[]>(
     'cycles-chart-data',
@@ -56,6 +58,11 @@ const payload = halvingCycles.cycles.map((c) => ({
 
   let scale: 'log' | 'linear' = 'log';
 
+  const crosshair = crosshairAnchors(
+    points.map((d) => ({ x: d.day, y: d.multiple, label: `${d.cycle} ×${d.multiple.toFixed(2)}` })),
+    (day: number) => `day ${day} since halving`,
+  );
+
   function render(): void {
     if (!container) return;
     const range = domain.map((_, i) => cssVar(RAMP[i] ?? '--accent'));
@@ -72,9 +79,10 @@ const payload = halvingCycles.cycles.map((c) => ({
         }),
       );
     }
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 380,
         marginLeft: 48,
         marginRight: 44,
@@ -99,14 +107,7 @@ const payload = halvingCycles.cycles.map((c) => ({
           // Every cycle still running at this day, in ramp order. Cycles have
           // different lengths and the newest is incomplete, so the later days
           // legitimately list fewer than four.
-          ...crosshairMarks(
-            points.map((d) => ({
-              x: d.day,
-              y: d.multiple,
-              label: `${d.cycle} ×${d.multiple.toFixed(2)}`,
-            })),
-            (day: number) => `day ${day} since halving`,
-          ),
+          ...crosshairMarksFrom(crosshair, width),
         ],
         style: {
           background: 'transparent',

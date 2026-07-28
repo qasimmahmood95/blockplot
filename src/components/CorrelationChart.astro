@@ -35,8 +35,9 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, cssVar, responsiveChart } from '../lib/charts';
   import { isoDay } from '../lib/crosshair';
+  import { crosshairMarks } from '../lib/crosshair-marks';
 
   type Regime = 'positive' | 'neutral' | 'negative';
   type Segment = {
@@ -106,9 +107,10 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
       .map((r) => ({ ...r, fill: bandFill(r.regime) }))
       .filter((r) => r.fill !== null)
       .map((r) => ({ ...r, bandStart: r.startDate < first ? first : r.startDate }));
+    const width = container.clientWidth || 720;
     container.replaceChildren(
       Plot.plot({
-        width: container.clientWidth || 720,
+        width,
         height: 300,
         marginLeft: 44,
         x: { label: null },
@@ -136,6 +138,7 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
               label: `${pairLabel(pair)} ${d.corr.toFixed(2)}`,
             })),
             isoDay,
+            width,
           ),
         ],
         style: {
