@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { crosshairAnchors, isoDay, type CrosshairRow } from './crosshair';
+import { crosshairAnchors, isoDay, tipLineWidth, type CrosshairRow } from './crosshair';
 
 const day = (iso: string): Date => new Date(`${iso}T00:00:00Z`);
 
@@ -128,6 +128,51 @@ describe('crosshairAnchors', () => {
   it('handles a single series, which is the majority of the charts', () => {
     const rows: CrosshairRow<Date>[] = [{ x: day('2024-03-01'), y: 42, label: '$42' }];
     expect(crosshairAnchors(rows, isoDay)[0]?.title).toBe('2024-03-01\n$42');
+  });
+});
+
+/**
+ * The first version of this clamp was dead code: it bottomed out at exactly
+ * Plot's own default for any plot wider than 236px, so it never fired at any
+ * viewport a phone reports, and the tooltip went on being pushed off the edge
+ * of the window. Nothing caught it, because there was no test — five separate
+ * mutations of that one line left the whole suite green. These assert the
+ * numbers, so a cap that does not cap fails here.
+ */
+describe('tipLineWidth', () => {
+  it('actually binds at phone widths', () => {
+    // Container widths measured off the built site at 320/360/380/414px
+    // viewports. Every one of these must come out below Plot's default of 20.
+    expect(tipLineWidth(246)).toBe(12);
+    expect(tipLineWidth(286)).toBe(14);
+    expect(tipLineWidth(306)).toBe(15);
+    expect(tipLineWidth(340)).toBe(17);
+  });
+
+  it('leaves desktop at Plot’s default, so wide charts are untouched', () => {
+    expect(tipLineWidth(694)).toBe(20);
+    expect(tipLineWidth(886)).toBe(20);
+    expect(tipLineWidth(1400)).toBe(20);
+  });
+
+  it('is half the plot width, in ems against a ~10px tip font', () => {
+    // The bound that survives the cursor at either end, whichever side Plot
+    // puts the tip on.
+    expect(tipLineWidth(400)).toBe(20);
+    expect(tipLineWidth(360)).toBe(18);
+  });
+
+  it('has a legible floor rather than a column of single words', () => {
+    expect(tipLineWidth(100)).toBe(8);
+    expect(tipLineWidth(1)).toBe(8);
+  });
+
+  it('falls back to the default for a width that is not a width', () => {
+    // `container.clientWidth` is 0 for a display:none chart, and the charts
+    // pass `|| 720` — but a 0 slipping through must not produce an 8em tip.
+    expect(tipLineWidth(0)).toBe(20);
+    expect(tipLineWidth(-50)).toBe(20);
+    expect(tipLineWidth(Number.NaN)).toBe(20);
   });
 });
 

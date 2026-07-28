@@ -91,6 +91,21 @@ const payload = { code: meta.code, series: btcHistory.series };
     maximumFractionDigits: 0,
   });
   const signedPct = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+  /**
+   * The held-stack line, and only it, can be astronomically large: the budget
+   * bounds the two simulated lines, but the stack is whatever the reader
+   * entered, up to the 21M supply cap. Spelled out, that is a 27-character
+   * label which made the tooltip wider than the plot area on a phone and got
+   * it pushed off the edge of the window. Compact above eight figures, where
+   * the trailing digits are noise anyway; exact below, where they are not.
+   */
+  const compactMoney = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: code,
+    notation: 'compact',
+    maximumFractionDigits: 2,
+  });
+  const heldMoney = (v: number): string => (v >= 1e7 ? compactMoney.format(v) : money.format(v));
 
   function readOptions() {
     if (!form) return null;
@@ -186,13 +201,19 @@ const payload = { code: meta.code, series: btcHistory.series };
     // reporting it — a figure attached to a series that was nowhere on screen.
     const outside = (w: number): boolean => w > wealthDomain[1] || w < wealthDomain[0];
     const outsideCount = heldPoints.filter((p) => outside(p.wealth)).length;
-    const heldClipped = outsideCount > 0;
+    // A caveat that is always on says nothing. Both wealth lines are
+    // proportional to price and so is this one, so a stack that is not exactly
+    // the lump sum's own BTC clips *somewhere* — in practice a single point at
+    // one end. The note is for a line the reader cannot properly see, so it
+    // wants a portion, not an instance.
     const heldNote =
-      heldPoints.length > 0 && outsideCount === heldPoints.length
-        ? ' (entirely off this scale)'
-        : heldClipped
-          ? ' (runs off this scale)'
-          : '';
+      heldPoints.length === 0
+        ? ''
+        : outsideCount === heldPoints.length
+          ? ' (entirely off this scale)'
+          : outsideCount / heldPoints.length > 0.01
+            ? ' (runs off this scale)'
+            : '';
     const btcAmount = (v: number): string =>
       new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 }).format(v);
     const heldLabel = held === null ? '' : `your ${btcAmount(held)} BTC${heldNote}`;
@@ -278,7 +299,7 @@ const payload = { code: meta.code, series: btcHistory.series };
                 // the longer label took the tip to 197px, wider than the plot
                 // area on a phone, and Plot pushed it off the left of the
                 // window — losing the date line and the DCA figure with it.
-                label: `your BTC ${money.format(d.wealth)}`,
+                label: `your BTC ${heldMoney(d.wealth)}`,
                 // Clipped to the simulated lines' domain, so it may be far
                 // above the top of the frame; it reports, it does not anchor.
                 anchor: false,

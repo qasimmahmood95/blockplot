@@ -60,7 +60,10 @@ const payload = halvingCycles.cycles.map((c) => ({
 
   const crosshair = crosshairAnchors(
     points.map((d) => ({ x: d.day, y: d.multiple, label: `${d.cycle} ×${d.multiple.toFixed(2)}` })),
-    (day: number) => `day ${day} since halving`,
+    // Just "day N": the x-axis is already labelled "days since halving", and
+    // spelling it out again made this the widest line in the tooltip, which on
+    // a 320px screen is what pushed the whole tip off the edge.
+    (day: number) => `day ${day}`,
   );
 
   function render(): void {

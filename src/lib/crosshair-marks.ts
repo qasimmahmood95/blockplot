@@ -6,7 +6,12 @@
  * drag Plot into the chartless routes). Only chart components import this.
  */
 import * as Plot from '@observablehq/plot';
-import { crosshairAnchors, type CrosshairAnchor, type CrosshairRow } from './crosshair';
+import {
+  crosshairAnchors,
+  tipLineWidth,
+  type CrosshairAnchor,
+  type CrosshairRow,
+} from './crosshair';
 import { cssVar } from './charts';
 
 /**
@@ -19,12 +24,7 @@ import { cssVar } from './charts';
  * the difference between reading one line and comparing them, which is the
  * only reason those series share an axis.
  *
- * `width` is the plot's width in pixels. Plot picks which side of the cursor
- * to put the tip on, but does not shrink one that is wider than the space it
- * chose — so on a phone a four-line tip with eight-figure amounts hung off the
- * left edge of the *window*, taking the date and the first line with it. The
- * cap keeps it inside the frame; the labels are what should be short enough
- * not to need it.
+ * `width` is the plot's width in pixels; see `tipLineWidth` for what it buys.
  *
  * Add the result last, so the rule draws over the lines and the tip over both.
  */
@@ -32,10 +32,7 @@ export function crosshairMarksFrom<X extends Date | number>(
   anchors: readonly CrosshairAnchor<X>[],
   width: number,
 ): Plot.Markish[] {
-  // Plot measures lineWidth in ems against its own 10px default, not the
-  // chart's font size. Leaving room for the tip's own padding and the left
-  // margin, and never below a legible floor.
-  const lineWidth = Math.max(9, Math.min(20, Math.floor((width - 96) / 7)));
+  const lineWidth = tipLineWidth(width);
   return [
     Plot.ruleX(anchors, Plot.pointerX({ x: 'x', stroke: cssVar('--ink-muted'), strokeOpacity: 0.4 })),
     Plot.tip(

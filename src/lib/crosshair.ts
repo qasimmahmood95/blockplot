@@ -87,3 +87,29 @@ export function crosshairAnchors<X extends Date | number>(
 
 /** The x heading most of these charts want: a plain ISO date. */
 export const isoDay = (x: Date): string => x.toISOString().slice(0, 10);
+
+/**
+ * Plot's default tip `lineWidth`, in ems against its own 10px tip font — so
+ * roughly a 200px wrap. Named because a cap must be *below* it to do anything:
+ * the first attempt at this clamp bottomed out at exactly 20 for any plot
+ * wider than 236px, which is every real viewport, and was therefore inert.
+ */
+const PLOT_DEFAULT_LINE_WIDTH = 20;
+
+/**
+ * How wide the tooltip may wrap, in ems, for a plot of `width` pixels.
+ *
+ * Plot chooses which side of the cursor to put the tip on but does not shrink
+ * one too wide for the side it chose, so a wide tip near an edge is pushed off
+ * the *window* — losing the heading line and the first series with it. Half the
+ * plot's width is the bound that survives the worst case, the cursor at either
+ * end, whichever side Plot picks.
+ *
+ * ~20 ems per pixel-half because the tip font is ~10px. Floored at 8 ems so a
+ * very narrow chart truncates rather than becoming a column of single words,
+ * and never above Plot's own default, so desktop is untouched.
+ */
+export function tipLineWidth(width: number): number {
+  if (!Number.isFinite(width) || width <= 0) return PLOT_DEFAULT_LINE_WIDTH;
+  return Math.max(8, Math.min(PLOT_DEFAULT_LINE_WIDTH, Math.round(width / 20)));
+}
