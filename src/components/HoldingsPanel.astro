@@ -155,6 +155,19 @@ const payload = {
   let costEdited = false;
 
   /**
+   * A foreign cost basis whose field *the site* blanked, because the two trees
+   * are different days old and the implied rate is not a rate today.
+   *
+   * Held apart from `storedCost` because it has to outlive a keystroke. The
+   * reader is looking at an empty box they did not empty; one stray character
+   * commits a cost in this currency, and without this the GBP figure behind
+   * the box is gone before the Backspace lands — destroyed by a gesture that
+   * corrects itself everywhere else on the form. It survives until a cost is
+   * actually committed over it, or the record is deleted outright.
+   */
+  let suppressedCost: { cost: number; costCurrency: Currency } | null = null;
+
+  /**
    * The cost as loaded, held here rather than re-read from storage.
    *
    * Emptying the BTC field clears storage, so reading the un-edited cost back
@@ -205,19 +218,30 @@ const payload = {
     }
     const bare: Holdings = { btc, cost: null, costCurrency: data.currency };
     const costRaw = String(raw.get('cost') ?? '').trim();
+    /**
+     * A cost held in the other currency cannot be restated while the two trees
+     * disagree on the date; showing the stack's value without it beats printing
+     * a P&L against a rate that is not one. It is still stored, and shown again
+     * the moment the rate is a rate.
+     */
+    const suppressed = (): FormState | null =>
+      suppressedCost
+        ? {
+            holdings: { btc, ...suppressedCost },
+            display: bare,
+            invalid: null,
+            costUnavailable: true,
+          }
+        : null;
     if (!costEdited) {
-      if (!storedCost) return state(bare);
-      const held: Holdings = { btc, ...storedCost };
-      // A cost held in the other currency cannot be restated while the two
-      // trees disagree on the date; showing the stack's value without it beats
-      // printing a P&L against a rate that is not one. It is still stored, and
-      // still shown, the moment the rate is a rate again.
-      if (!data.ratesAligned && storedCost.costCurrency !== data.currency) {
-        return { holdings: held, display: bare, invalid: null, costUnavailable: true };
-      }
-      return state(held);
+      const held = suppressed();
+      if (held) return held;
+      return storedCost ? state({ btc, ...storedCost }) : state(bare);
     }
-    if (costRaw === '') return state(bare);
+    // An empty cost field always means "nothing entered in *this* currency",
+    // never "delete what is held in the other one" — the same reading the
+    // untouched branch above gives it.
+    if (costRaw === '') return suppressed() ?? state(bare);
     const cost = Number(costRaw);
     if (!Number.isFinite(cost) || cost < 0 || cost > MAX_COST) {
       return { holdings: null, display: null, invalid: 'total paid', costUnavailable: false };
@@ -426,6 +450,7 @@ const payload = {
     clearHoldings();
     costEdited = false;
     storedCost = null;
+    suppressedCost = null;
     form.reset();
     render();
     renderChart(0);
@@ -473,6 +498,7 @@ const payload = {
       form.reset();
       costEdited = false;
       storedCost = null;
+      suppressedCost = null;
       // No message: an empty store is also what a first-time visitor has, and
       // load() cannot tell that from a deletion. The external handler knows,
       // and passes the reason in.
@@ -486,6 +512,7 @@ const payload = {
     storedCost =
       stored.cost === null ? null : { cost: stored.cost, costCurrency: stored.costCurrency };
     const foreign = stored.cost !== null && stored.costCurrency !== data.currency;
+    suppressedCost = foreign && !data.ratesAligned ? storedCost : null;
     if (costInput) {
       if (stored.cost === null || (foreign && !data.ratesAligned)) {
         // Blank rather than wrong: with the trees a different age the rate is
@@ -510,7 +537,15 @@ const payload = {
     afterTyping(commit);
   });
   // A debounced write must not be lost to a navigation or a closed tab.
-  form?.addEventListener('change', () => {
+  form?.addEventListener('change', (event) => {
+    // A cost the reader has finished entering replaces a suppressed one for
+    // good — otherwise clearing the box later would resurrect a figure they
+    // had already written over. `change`, not `input`, for the same reason
+    // the amount field uses it: a keystroke is not a decision.
+    const target = event.target as HTMLInputElement | null;
+    if (target?.getAttribute('name') === 'cost' && target.value.trim() !== '') {
+      suppressedCost = null;
+    }
     flushPending();
     commitEmptyAmount();
   });
@@ -526,6 +561,7 @@ const payload = {
     form?.reset();
     costEdited = false;
     storedCost = null;
+    suppressedCost = null;
     render();
     renderChart(0);
     setStatus('cleared — nothing is stored for this browser');

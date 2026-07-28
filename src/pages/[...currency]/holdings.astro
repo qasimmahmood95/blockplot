@@ -39,9 +39,9 @@ const { currency } = Astro.props as { currency: Currency };
       reconciled. Profit and loss compare that value against the total you entered, so it
       is a simple return on money in, ignoring fees you have already paid, taxes, and anything you
       have since sold. A cost entered in the other currency is converted at the rate implied by
-      today's two closes, which is today's rate rather than the one you actually paid.{
-        fxNote(currency)
-      }
+      today's two closes, which is today's rate rather than the one you actually paid — unless the
+      two currencies' datasets are a different age, in which case that ratio is not a rate at all
+      and the cost is held back rather than converted. It stays stored either way.{fxNote(currency)}
     </p>
   </section>
 </Base>
