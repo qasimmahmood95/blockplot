@@ -537,7 +537,7 @@ const bandSignalSchema = z.object({
 export const signalsDatasetSchema = z.object({
   schemaVersion: z.literal(1),
   currency: currencySchema,
-  fetchedAt: z.string().datetime(),
+  fetchedAt: z.iso.datetime(),
   asOf: isoDate,
   /** Thresholds recorded alongside the states, so a reader can check the call. */
   thresholds: z.object({

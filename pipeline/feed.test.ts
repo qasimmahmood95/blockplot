@@ -157,6 +157,92 @@ describe('signalFeed', () => {
     ]);
   });
 
+  it('throws on a duplicate id rather than shipping a feed that merges events', () => {
+    // The schema does not forbid two spans sharing a start date, and a
+    // duplicate guid makes readers collapse two distinct turns into one —
+    // silently, which is the worst way for a feed to be wrong.
+    const signals: SignalsDataset = {
+      ...base,
+      vol: {
+        state: 'high',
+        since: '2026-01-10',
+        observations: 10,
+        pending: null,
+        history: [span('low', '2025-07-29'), span('normal', '2026-01-10'), span('high', '2026-01-10')],
+      },
+    };
+    expect(() => signalFeed(signals)).toThrow('duplicate entry id');
+  });
+
+  it('words a volatility turn by the band it moved into', () => {
+    // The GBP feed leading with "Volatility turned quiet" is what proves the
+    // per-currency split works, and it was the one string nothing asserted.
+    const forState = (state: string): string =>
+      signalFeed({
+        ...base,
+        vol: {
+          state,
+          since: '2026-01-10',
+          observations: 10,
+          pending: null,
+          history: [span('normal', '2025-07-29'), span(state, '2026-01-10')],
+        },
+      })[0]?.title ?? '';
+    expect(forState('low')).toBe('Volatility turned quiet');
+    expect(forState('high')).toBe('Volatility turned turbulent');
+    expect(forState('normal')).toBe('Volatility turned ordinary');
+  });
+
+  it('falls back to the raw state for a band it has no word for', () => {
+    expect(
+      signalFeed({
+        ...base,
+        vol: {
+          state: 'extreme',
+          since: '2026-01-10',
+          observations: 10,
+          pending: null,
+          history: [span('low', '2025-07-29'), span('extreme', '2026-01-10')],
+        },
+      })[0]?.title,
+    ).toBe('Volatility turned extreme');
+  });
+
+  it('summarises a turn with the direction and the window that produced it', () => {
+    // Summaries are the text a subscriber actually reads, and nothing asserted
+    // any of them: from/to could swap, or the window and confirmDays could
+    // trade places, with the whole suite green.
+    const vol = signalFeed({
+      ...base,
+      vol: {
+        state: 'high',
+        since: '2026-01-10',
+        observations: 10,
+        pending: null,
+        history: [span('low', '2025-07-29'), span('high', '2026-01-10')],
+      },
+    })[0];
+    expect(vol?.summary).toBe(
+      '90-day realised volatility moved from the low band to the high band, confirmed by 10 ' +
+        'consecutive readings and dated to the first of them.',
+    );
+
+    const dd = signalFeed({
+      ...base,
+      drawdown: {
+        state: '-30',
+        since: '2026-01-30',
+        observations: 10,
+        pending: null,
+        history: [span('-10', '2025-07-29'), span('-30', '2026-01-30')],
+      },
+    })[0];
+    expect(dd?.summary).toBe(
+      'BTC moved from the -10% band to the -30% band, confirmed by 10 consecutive readings and ' +
+        'dated to the first of them.',
+    );
+  });
+
   it('is empty when nothing has ever turned', () => {
     expect(signalFeed(base)).toEqual([]);
     expect(

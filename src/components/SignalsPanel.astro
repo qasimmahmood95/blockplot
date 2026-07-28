@@ -9,7 +9,11 @@ interface Props {
 }
 
 const { currency } = Astro.props;
-const { signals } = dataFor(currency);
+const { signals, riskMetrics } = dataFor(currency);
+/** The reading behind the volatility band, for the note that names its source. */
+const volLatest =
+  riskMetrics.rollingVol.find((w) => w.windowDays === signals.thresholds.volWindowDays)?.series.at(-1)
+    ?.volPct ?? null;
 const meta = CURRENCY_META[currency];
 /** This currency's own feed — see rss.xml.ts for why they are not shared. */
 const feedBase = `${base}${meta.segment ? `/${meta.segment}` : ''}`;
@@ -126,11 +130,13 @@ if (signals.dominance) {
     label on it. A candidate that has not yet earned the switch is shown as pending rather than
     hidden, so a state sitting on its threshold says so.
     Volatility bands are below {t.volLowPct}% and above {t.volHighPct}% annualised; drawdown bands
-    are {t.drawdownBandsPct.join('%, ')}% from the running peak. The all-time high is read from
-    blockchain.com's full history; the drawdown band and the volatility windows come from
-    CoinGecko's trailing year, which is why the two peak figures differ by a fraction of a percent
-    and the distance below the peak does not reconcile exactly with the drawdown chart. Each is
-    labelled with its source rather than quietly reconciled.{
+    are {t.drawdownBandsPct.join('%, ')}% from the running peak. The volatility windows and the
+    all-time high read blockchain.com's full history; the drawdown band reads CoinGecko's trailing
+    year, which is why the two peak figures differ by a fraction of a percent and the distance below
+    the peak does not reconcile exactly with the drawdown chart. Each is labelled with its source
+    rather than quietly reconciled — and the distinction is not academic here: today's 90d reading
+    is {volLatest === null ? 'on the band edge' : `${volLatest.toFixed(2)}%`}, where the two sources
+    disagree by enough to land either side of it.{
       signals.dominance ? '' : ' Dominance is omitted: its source publishes no history, so the series accretes one point per run and is not yet deep enough to carry a signal.'
     }
   </p>

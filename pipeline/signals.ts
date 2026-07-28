@@ -7,13 +7,12 @@ import type { CyclePoint, DailyPrice, DominancePoint, DrawdownPoint, VolPoint } 
  *
  * Every signal here is a *state*, not an event, and states are hysteretic —
  * see `pipeline/hysteresis.ts` for why a bare threshold test is unusable on
- * this data. What that buys, concretely: on the committed series the 90d
- * volatility reading today is 34.74%, which is 0.26 points under the 35% band
- * edge. A raw test calls that "low, since the 20th"; ten days from now a
- * fractional move calls it normal again, and the page contradicts itself for
- * the rest of the month. The confirmed answer is "normal since 2026-04-30,
- * with a low reading pending for 8 days", which is both stable and more
- * informative.
+ * this data. What that buys, concretely — as of writing, and the figures move
+ * every six hours: the 90d volatility reading sat a fraction under the 35%
+ * band edge. A raw test called that "low since the 20th"; a fractional move
+ * the following week calls it normal again, and the page contradicts itself
+ * for the rest of the month. The confirmed answer was "normal since
+ * 2026-04-30, with a low reading pending" — stable, and more informative.
  *
  * So every band signal reports the unconfirmed candidate alongside the state.
  * Suppressing it would be the opposite mistake: the reader would see "normal"

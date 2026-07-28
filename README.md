@@ -124,8 +124,10 @@ fixed fixtures with exact, independently derived expected values.
 - **Signal states** are hysteretic. A volatility or drawdown band is only
   entered once 10 consecutive observations agree, and is then dated to the
   first of them — the day the change began, not the day it became certain. On
-  the committed series a bare threshold test yields 9 volatility spans and 42
-  drawdown spans in a year; confirmation reduces both to 4. A candidate that
+  the committed USD series a bare threshold test yields 9 volatility spans and
+  42 drawdown spans in a year (GBP: 5 and 42, since its metrics are recomputed
+  from converted closes); confirmation reduces them to 4. The page quotes its
+  own tree's figure, computed in the pipeline rather than written down. A candidate that
   has not yet earned the switch is published as `pending` rather than hidden,
   so a state sitting on its threshold says so rather than flapping. The same
   machine drives the correlation regimes.
