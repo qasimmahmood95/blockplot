@@ -29,7 +29,8 @@ const payload = { hashRate: network.hashRate.series, txCount: network.txCount.se
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
+  import { isoDay } from '../lib/crosshair';
 
   type Point = { date: string; value: number };
   const data = chartData<{ hashRate: Point[]; txCount: Point[] }>('network-chart-data');
@@ -56,14 +57,9 @@ const payload = { hashRate: network.hashRate.series, txCount: network.txCount.se
         marks: [
           Plot.areaY(points, { x: 'date', y: 'value', fill: accent, fillOpacity: 0.08 }),
           Plot.lineY(points, { x: 'date', y: 'value', stroke: accent, strokeWidth: 1.5 }),
-          Plot.tip(
-            points,
-            Plot.pointerX({
-              x: 'date',
-              y: 'value',
-              title: (d: { date: Date; value: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\n${tipLabel(d.value)}`,
-            }),
+          ...crosshairMarks(
+            points.map((d) => ({ x: d.date, y: d.value, label: tipLabel(d.value) })),
+            isoDay,
           ),
         ],
         style: {

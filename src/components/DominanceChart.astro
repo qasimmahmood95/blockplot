@@ -15,7 +15,8 @@ import { toJsonScript } from '../lib/embed';
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
+  import { isoDay } from '../lib/crosshair';
 
   const series = chartData<{ date: string; btcDominancePct: number }[]>('dominance-chart-data');
   const container = document.getElementById('dominance-chart');
@@ -39,14 +40,13 @@ import { toJsonScript } from '../lib/embed';
           // Dots keep a young accreted series visible before the line forms.
           Plot.dot(points, { x: 'date', y: 'pct', fill: accent, r: 2 }),
           Plot.lineY(points, { x: 'date', y: 'pct', stroke: accent, strokeWidth: 1.5 }),
-          Plot.tip(
-            points,
-            Plot.pointerX({
-              x: 'date',
-              y: 'pct',
-              title: (d: { date: Date; pct: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\nBTC dominance ${d.pct.toFixed(2)}%`,
-            }),
+          ...crosshairMarks(
+            points.map((d) => ({
+              x: d.date,
+              y: d.pct,
+              label: `BTC dominance ${d.pct.toFixed(2)}%`,
+            })),
+            isoDay,
           ),
         ],
         style: {

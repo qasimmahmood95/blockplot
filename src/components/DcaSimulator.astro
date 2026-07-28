@@ -54,7 +54,8 @@ const payload = { code: meta.code, series: btcHistory.series };
   import * as Plot from '@observablehq/plot';
   import { compareDcaVsLumpSum, type DcaFrequency } from '../../pipeline/dca';
   import { holdingsSeries } from '../../pipeline/holdings';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
+  import { isoDay } from '../lib/crosshair';
   import { HOLDINGS_EVENT, readHoldings } from '../lib/holdings-store';
 
   const { code, series } = chartData<{ code: string; series: { date: string; price: number }[] }>(
@@ -245,14 +246,28 @@ const payload = { code: meta.code, series: btcHistory.series };
                   clip: true,
                 }),
               ]),
-          Plot.tip(
-            dcaPoints,
-            Plot.pointerX({
-              x: 'date',
-              y: 'wealth',
-              title: (d: { date: Date; wealth: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\nDCA ${money.format(d.wealth)}`,
-            }),
+          // All three lines at the hovered date. The comparison is the point
+          // of the page, and the tip used to report only the DCA line — so
+          // the one number a reader actually wants, the gap between the
+          // strategies, had to be eyeballed off the axis.
+          ...crosshairMarks(
+            [
+              ...dcaPoints.map((d) => ({ x: d.date, y: d.wealth, label: `DCA ${money.format(d.wealth)}` })),
+              ...lumpPoints.map((d) => ({
+                x: d.date,
+                y: d.wealth,
+                label: `lump sum ${money.format(d.wealth)}`,
+              })),
+              ...heldPoints.map((d) => ({
+                x: d.date,
+                y: d.wealth,
+                label: `your holdings ${money.format(d.wealth)}`,
+                // Clipped to the simulated lines' domain, so it may be far
+                // above the top of the frame; it reports, it does not anchor.
+                anchor: false,
+              })),
+            ],
+            isoDay,
           ),
         ],
         style: {

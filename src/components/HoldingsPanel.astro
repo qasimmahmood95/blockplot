@@ -91,7 +91,8 @@ const payload = {
     type Holdings,
   } from '../../pipeline/holdings';
   import type { Currency } from '../../pipeline/currencies';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
+  import { isoDay } from '../lib/crosshair';
   import {
     clearHoldings,
     HOLDINGS_EXTERNAL_EVENT,
@@ -300,14 +301,9 @@ const payload = {
             stroke: cssVar('--accent'),
             strokeWidth: 1.5,
           }),
-          Plot.tip(
-            points,
-            Plot.pointerX({
-              x: 'date',
-              y: 'value',
-              title: (d: { date: Date; value: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\n${axisMoney(d.value)}`,
-            }),
+          ...crosshairMarks(
+            points.map((d) => ({ x: d.date, y: d.value, label: axisMoney(d.value) })),
+            isoDay,
           ),
         ],
         style: {

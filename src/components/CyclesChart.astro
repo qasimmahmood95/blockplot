@@ -34,7 +34,7 @@ const payload = halvingCycles.cycles.map((c) => ({
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
 
   const cyclesData = chartData<{ label: string; series: { day: number; multiple: number }[] }[]>(
     'cycles-chart-data',
@@ -96,14 +96,16 @@ const payload = halvingCycles.cycles.map((c) => ({
             fill: cssVar('--ink'),
             fontSize: 11,
           }),
-          Plot.tip(
-            points,
-            Plot.pointerX({
-              x: 'day',
-              y: 'multiple',
-              title: (d: { cycle: string; day: number; multiple: number }) =>
-                `${d.cycle} cycle · day ${d.day}\n×${d.multiple.toFixed(2)}`,
-            }),
+          // Every cycle still running at this day, in ramp order. Cycles have
+          // different lengths and the newest is incomplete, so the later days
+          // legitimately list fewer than four.
+          ...crosshairMarks(
+            points.map((d) => ({
+              x: d.day,
+              y: d.multiple,
+              label: `${d.cycle} ×${d.multiple.toFixed(2)}`,
+            })),
+            (day: number) => `day ${day} since halving`,
           ),
         ],
         style: {

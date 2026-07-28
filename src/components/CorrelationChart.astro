@@ -35,7 +35,8 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
 
 <script>
   import * as Plot from '@observablehq/plot';
-  import { chartData, cssVar, responsiveChart } from '../lib/charts';
+  import { chartData, crosshairMarks, cssVar, responsiveChart } from '../lib/charts';
+  import { isoDay } from '../lib/crosshair';
 
   type Regime = 'positive' | 'neutral' | 'negative';
   type Segment = {
@@ -128,14 +129,13 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
             strokeOpacity: 0.7,
           }),
           Plot.lineY(points, { x: 'date', y: 'corr', stroke: cssVar('--accent'), strokeWidth: 1.5 }),
-          Plot.tip(
-            points,
-            Plot.pointerX({
-              x: 'date',
-              y: 'corr',
-              title: (d: { date: Date; corr: number }) =>
-                `${d.date.toISOString().slice(0, 10)}\n${pairLabel(pair)}: ${d.corr.toFixed(2)}`,
-            }),
+          ...crosshairMarks(
+            points.map((d) => ({
+              x: d.date,
+              y: d.corr,
+              label: `${pairLabel(pair)} ${d.corr.toFixed(2)}`,
+            })),
+            isoDay,
           ),
         ],
         style: {
