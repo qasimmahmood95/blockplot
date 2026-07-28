@@ -27,6 +27,10 @@ jobs:
       # nothing.
       - name: Stage the build at its deploy path
         run: mkdir -p .lhci-root && cp -r dist .lhci-root/blockplot
+      # Thresholds live in lighthouserc.json and are set from what this runner
+      # class actually reports, not from a local machine — the overview medians
+      # 0.89 here against 0.97-1.00 locally. See the score table below for the
+      # per-page numbers each run measured.
       - run: npx --yes @lhci/cli@0.14.x autorun
       # Every score, in the log, on pass and on fail. The artifact below is the
       # full report; this is the number you actually want when a badge goes red,
