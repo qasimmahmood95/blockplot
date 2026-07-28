@@ -43,10 +43,11 @@ export function crosshairMarksFrom<X extends Date | number>(
         title: 'title',
         lineWidth,
         textOverflow: 'ellipsis-end',
-        // Every chart renders this in IBM Plex Mono. Without it Plot measures
-        // against a proportional-font table and underestimates the width by
-        // about a fifth, which is how a "cap" let a 155px tip through a 120px
-        // budget and straight into the frame's clip path.
+        // Without this Plot measures against a proportional-font table and
+        // underestimates by about a fifth, which is how a "cap" let a 155px
+        // tip through a 120px budget and into the frame's clip path. Note it
+        // also *changes* the tip's font to ui-monospace rather than the
+        // chart's Plex — see the advance figure in `tipLineWidth`.
         monospace: true,
       }),
     ),

@@ -19,9 +19,10 @@
  * strictly worse than a rounded figure: it is indistinguishable from $4.8bn,
  * $4.8tn, or anything between.
  *
- * Seven and not eight because eight was still too long: measured on the built
- * site at 360px, `your BTC $6,067,043` truncated to `your BTC $6,06…` while
- * the compacted `$11.79M` beside it fitted with room to spare. A threshold
+ * Seven and not eight because eight was still too long. With the labels as
+ * they now ship, `held $6,067,043` is 15 graphemes: it fits the 360px budget
+ * of 15 but not the 320px budget of 14, so an eight-figure threshold left an
+ * ordinary stack truncated on an iPhone SE. `held $6.07M` is 11. A threshold
  * that only catches the absurd cases leaves the ordinary ones broken.
  *
  * The exact figures stay on the stat tiles and the holdings page, which have

@@ -106,10 +106,12 @@ const TIP_CHROME_PX = 28;
  * Pixels of text one unit of `lineWidth` actually buys.
  *
  * `monospace: true` does not make Plot's measurement *accurate* — it makes it
- * *predictable*. Plot switches to a flat 63 width-units per grapheme, and
- * these charts render the tip at 11px IBM Plex Mono, measured at 6.6234px per
- * character. So one unit buys 100/63 × 6.6234 ≈ 10.5px, not the 7 assumed
- * before.
+ * *predictable*. Plot switches to a flat 63 width-units per grapheme, and it
+ * also overrides the tip's font: the group is set to `ui-monospace, monospace`
+ * rather than inheriting the chart's IBM Plex Mono. Measured advance at 11px
+ * is 6.6226px per character, so one unit buys 100/63 × 6.6226 ≈ 10.5px, not
+ * the 7 assumed before. (Plex would be ~7.0px per character and 11.1px per
+ * unit; the number here is the font Plot actually substitutes.)
  *
  * That error was 1.5× and it was being hidden: an earlier version deducted a
  * 70px axis margin from the budget, which happened to cancel most of it. When

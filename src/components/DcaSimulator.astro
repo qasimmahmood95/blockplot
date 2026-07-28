@@ -288,10 +288,6 @@ const payload = { code: meta.code, series: btcHistory.series };
               ...heldPoints.map((d) => ({
                 x: d.date,
                 y: d.wealth,
-                // "your BTC", not "your holdings": with an eight-figure stack
-                // the longer label took the tip to 197px, wider than the plot
-                // area on a phone, and Plot pushed it off the left of the
-                // window — losing the date line and the DCA figure with it.
                 label: `held ${tipMoney(d.wealth)}`,
                 // "held", matching the brevity of "DCA" and "lump": at 360px
                 // "your BTC $11.79M" was one pixel over the budget and lost

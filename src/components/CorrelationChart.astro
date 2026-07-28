@@ -135,16 +135,16 @@ const payload = { threshold: correlations.regimeThreshold, pairs };
             points.map((d) => ({
               x: d.date,
               y: d.corr,
-              // Drop a leading "BTC – ", because the pressed pair button
-              // beside the chart already spells the pair out in full and the
-              // tooltip has to fit a phone. Only the leading side is dropped,
-              // so the three non-BTC pairs still read "S&P 500 – gold 0.11"
-              // and no label is ambiguous about which two things it relates.
+              // The correlation alone, as on every other single-series chart
+              // here. The pressed pair button directly above the chart names
+              // the pair, so repeating it in the tooltip buys nothing and
+              // costs the one thing the tooltip is for: an earlier version
+              // kept the pair and "S&P 500 – gol…" was all that fitted at
+              // 320px, cutting off the only figure on offer.
               //
-              // Not justified by the heading or the aria-label: neither says
-              // "BTC". Worth stating, because a previous version of this
-              // comment claimed they did.
-              label: `${pairLabel(pair).replace(/^BTC\s*[–-]\s*/, '')} ${d.corr.toFixed(2)}`,
+              // Not justified by the heading or the aria-label — neither
+              // mentions the assets. It is the button, and only the button.
+              label: d.corr.toFixed(2),
             })),
             isoDay,
             width,
