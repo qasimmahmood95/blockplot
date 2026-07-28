@@ -28,10 +28,44 @@ jobs:
       - name: Stage the build at its deploy path
         run: mkdir -p .lhci-root && cp -r dist .lhci-root/blockplot
       - run: npx --yes @lhci/cli@0.14.x autorun
-      # A red badge with no report is unactionable.
+      # Every score, in the log, on pass and on fail. The artifact below is the
+      # full report; this is the number you actually want when a badge goes red,
+      # and it costs one step instead of a download. autorun writes the manifest
+      # even when the assertions fail, so this runs after either outcome.
+      - name: Report scores
+        if: always()
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = ".lighthouseci/reports/manifest.json";
+            if (!fs.existsSync(path)) { console.log("no manifest — collection failed"); process.exit(0); }
+            const runs = JSON.parse(fs.readFileSync(path, "utf8"));
+            const by = new Map();
+            for (const r of runs) {
+              const url = r.url.replace(/^https?:\/\/[^/]+/, "");
+              if (!by.has(url)) by.set(url, []);
+              by.get(url).push(r.summary);
+            }
+            const cats = ["performance", "accessibility", "best-practices", "seo"];
+            for (const [url, summaries] of by) {
+              console.log(url);
+              for (const c of cats) {
+                const vals = summaries.map((s) => s[c]).sort((a, b) => a - b);
+                const median = vals[(vals.length - 1) >> 1];
+                console.log(
+                  "  " + c.padEnd(15) + "median " + median.toFixed(2) +
+                  "   runs " + vals.map((v) => v.toFixed(2)).join(" "),
+                );
+              }
+            }
+          '
+      # A red badge with no report is unactionable. include-hidden-files is
+      # required: the directory is .lighthouseci, upload-artifact skips dotted
+      # paths by default, and it had been silently uploading nothing.
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-reports
           path: .lighthouseci/
+          include-hidden-files: true
           retention-days: 14

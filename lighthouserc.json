@@ -7,7 +7,7 @@
         "http://localhost/blockplot/methodology/index.html",
         "http://localhost/blockplot/holdings/index.html"
       ],
-      "numberOfRuns": 3,
+      "numberOfRuns": 5,
       "settings": {
         "chromeFlags": "--no-sandbox --disable-dev-shm-usage"
       }
