@@ -176,3 +176,59 @@ export function legendSwatch(entry: DcaLegendEntry): string {
   const off = entry.dash === 'dotted' ? 3 : 6;
   return `repeating-linear-gradient(90deg, ${entry.color} 0 ${on}px, transparent ${on}px ${off}px)`;
 }
+
+/**
+ * Escape a value for HTML text or an attribute value.
+ *
+ * Nothing here is reader-supplied — the figures come from `Intl` and the only
+ * variable label quotes a BTC amount out of `localStorage`, which is a number
+ * by the time it arrives. Escaped anyway, because the alternative is a builder
+ * whose safety depends on every future caller knowing that.
+ */
+const esc = (value: string): string =>
+  value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/**
+ * The stat grid's inner markup, as a string both renderers emit verbatim.
+ *
+ * Sharing the *figures* was not enough. The element structure existed twice —
+ * once as JSX in the component's template, once as `createElement` calls in its
+ * island — and review demonstrated the consequence: adding a single class to
+ * the template alone made the served and client markup disagree, which took
+ * `#dca-stats` from zero writes on load to one. That is the aria-live
+ * re-announcement this whole change exists to prevent, and lint, `astro check`,
+ * all tests, the build and the Lighthouse gate stayed green through it, because
+ * nothing in the repo compares the two. Now there is nothing to compare: one
+ * function produces both.
+ */
+export function dcaTilesHtml(tiles: readonly DcaTile[]): string {
+  return tiles
+    .map(
+      (t) =>
+        `<div class="stat"><dt>${esc(t.label)}</dt>` +
+        `<dd class="${esc(`num ${t.tone}`.trim())}">${esc(t.value)}</dd>` +
+        `<dd class="sub num">${esc(t.sub)}</dd></div>`,
+    )
+    .join('');
+}
+
+/**
+ * The legend's inner markup, on the same terms as the tiles.
+ *
+ * The swatch colour is written as an attribute string rather than assigned
+ * through `element.style`. That is not a stylistic preference: the CSSOM
+ * re-serializes `background:var(--accent)` as `background: var(--accent);`, so
+ * an island that assigned the property could never compare equal to the markup
+ * the build emitted, and the skip-if-unchanged guard was silently inert on this
+ * element for exactly that reason.
+ */
+export function dcaLegendHtml(entries: readonly DcaLegendEntry[]): string {
+  return entries
+    .map(
+      (entry) =>
+        `<span class="legend-item">` +
+        `<span class="legend-swatch" style="background:${esc(legendSwatch(entry))}"></span>` +
+        `${esc(entry.label)}</span>`,
+    )
+    .join('');
+}

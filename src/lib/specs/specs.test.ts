@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DCA_LEGEND_BASE,
   dcaFormatters,
+  dcaLegendHtml,
   dcaTiles,
+  dcaTilesHtml,
   defaultStartDate,
   legendSwatch,
   wealthExtent,
@@ -190,6 +193,58 @@ describe('dcaFormatters', () => {
     expect(signedPct(-2.05)).toBe('-2.0%');
     expect(signedPct(-2.06)).toBe('-2.1%');
     expect(signedPct(0)).toBe('+0.0%');
+  });
+});
+
+describe('dcaTilesHtml', () => {
+  it('emits the grid markup both renderers use, exactly', () => {
+    // Pinned as a whole string rather than probed with selectors: the point of
+    // this function is that one definition of the markup exists, so the test
+    // that matters is the one a change to either renderer would have to update.
+    expect(
+      dcaTilesHtml([{ label: 'Invested', value: '$15,700', sub: '157 buys', tone: '' }]),
+    ).toBe(
+      '<div class="stat"><dt>Invested</dt><dd class="num">$15,700</dd>' +
+        '<dd class="sub num">157 buys</dd></div>',
+    );
+  });
+
+  it('carries the tone onto the value, and omits it when there is none', () => {
+    expect(dcaTilesHtml([{ label: 'l', value: 'v', sub: 's', tone: 'down' }])).toContain(
+      'class="num down"',
+    );
+    expect(dcaTilesHtml([{ label: 'l', value: 'v', sub: 's', tone: '' }])).toContain('class="num"');
+  });
+
+  it('concatenates tiles with nothing between them', () => {
+    const one = { label: 'a', value: 'b', sub: 'c', tone: '' } as const;
+    expect(dcaTilesHtml([one, one])).toBe(dcaTilesHtml([one]) + dcaTilesHtml([one]));
+  });
+
+  it('escapes text so a label can never open a tag', () => {
+    expect(dcaTilesHtml([{ label: '<b>&"x"', value: 'v', sub: 's', tone: '' }])).toContain(
+      '<dt>&lt;b&gt;&amp;&quot;x&quot;</dt>',
+    );
+  });
+});
+
+describe('dcaLegendHtml', () => {
+  it('writes the swatch as an attribute, not through the CSSOM', () => {
+    // `background:var(--accent)` with no space: assigning this through
+    // `element.style` would re-serialize it as `background: var(--accent);`,
+    // which never compares equal to the markup the build emits — the reason
+    // the skip-if-unchanged guard was inert on this element.
+    expect(dcaLegendHtml(DCA_LEGEND_BASE)).toBe(
+      '<span class="legend-item"><span class="legend-swatch" style="background:var(--accent)">' +
+        '</span>DCA</span>' +
+        '<span class="legend-item"><span class="legend-swatch" style="background:' +
+        legendSwatch(DCA_LEGEND_BASE[1] as never) +
+        '"></span>lump sum</span>',
+    );
+  });
+
+  it('renders nothing for no entries, which is how the notice state clears it', () => {
+    expect(dcaLegendHtml([])).toBe('');
   });
 });
 

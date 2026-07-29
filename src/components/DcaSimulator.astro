@@ -15,8 +15,9 @@ import { dcaSpec, defaultStartDate, wealthExtent } from '../lib/specs/dca';
 import {
   DCA_LEGEND_BASE,
   dcaFormatters,
+  dcaLegendHtml,
   dcaTiles,
-  legendSwatch,
+  dcaTilesHtml,
 } from '../lib/specs/dca-shared';
 
 const { currency } = Astro.props;
@@ -97,29 +98,15 @@ const svg = renderResponsiveChart((w) =>
   </label>
 </form>
 
-<dl class="stat-grid" id="dca-stats" aria-live="polite">
-  {
-    initialTiles.map((t) => (
-      <div class="stat">
-        <dt>{t.label}</dt>
-        <dd class={`num ${t.tone}`.trim()}>{t.value}</dd>
-        <dd class="sub num">{t.sub}</dd>
-      </div>
-    ))
-  }
-</dl>
+<dl class="stat-grid" id="dca-stats" aria-live="polite" set:html={dcaTilesHtml(initialTiles)} />
 
 <figure class="chart-frame">
-  <div id="dca-legend" class="chart-legend" aria-hidden="true">
-    {
-      DCA_LEGEND_BASE.map((entry) => (
-        <span class="legend-item">
-          <span class="legend-swatch" style={`background:${legendSwatch(entry)}`} />
-          {entry.label}
-        </span>
-      ))
-    }
-  </div>
+  <div
+    id="dca-legend"
+    class="chart-legend"
+    aria-hidden="true"
+    set:html={dcaLegendHtml(DCA_LEGEND_BASE)}
+  />
   <div
     id="dca-chart"
     role="img"
@@ -136,8 +123,9 @@ const svg = renderResponsiveChart((w) =>
   import {
     DCA_LEGEND_BASE,
     dcaFormatters,
+    dcaLegendHtml,
     dcaTiles,
-    legendSwatch,
+    dcaTilesHtml,
     wealthExtent,
   } from '../lib/specs/dca-shared';
   import { clipNote, compactMoney } from '../lib/chart-format';
@@ -167,7 +155,6 @@ const svg = renderResponsiveChart((w) =>
   // produce.
 
   const { money: fmtMoney, signedPct } = dcaFormatters(code);
-  const money = { format: fmtMoney };
   /**
    * Tooltip figures, shortened above eight digits.
    *
@@ -185,8 +172,7 @@ const svg = renderResponsiveChart((w) =>
     notation: 'compact',
     maximumFractionDigits: 2,
   });
-  const tipMoney = (v: number): string =>
-    compactMoney(v, (x) => money.format(x), (x) => compact.format(x));
+  const tipMoney = (v: number): string => compactMoney(v, fmtMoney, (x) => compact.format(x));
 
   function readOptions() {
     if (!form) return null;
@@ -201,21 +187,6 @@ const svg = renderResponsiveChart((w) =>
     return { startDate, amount, feePct, frequency };
   }
 
-  function tile(label: string, value: string, sub: string, tone = ''): HTMLElement {
-    const wrap = document.createElement('div');
-    wrap.className = 'stat';
-    const dt = document.createElement('dt');
-    dt.textContent = label;
-    const dd = document.createElement('dd');
-    dd.className = `num ${tone}`.trim();
-    dd.textContent = value;
-    const ddSub = document.createElement('dd');
-    ddSub.className = 'sub num';
-    ddSub.textContent = sub;
-    wrap.append(dt, dd, ddSub);
-    return wrap;
-  }
-
   /**
    * Write only when the result differs from what is already there.
    *
@@ -226,14 +197,17 @@ const svg = renderResponsiveChart((w) =>
    * the browser computes, and it would have made every page load announce
    * itself for nothing.
    *
-   * Comparing rendered HTML rather than the inputs, because it is the rendered
-   * text an assistive technology would read out.
+   * Both sides of the comparison are put through the parser first. Reading
+   * `innerHTML` back gives the browser's own normalisation — entity spelling,
+   * attribute quoting, void-element form — so staging the candidate the same
+   * way means the two agree whenever the markup is equivalent, rather than
+   * only when the strings happen to match character for character.
    */
-  function replaceIfChanged(target: Element, children: Element[]): void {
+  function replaceIfChanged(target: Element, html: string): void {
     const staged = document.createElement('div');
-    staged.append(...children.map((c) => c.cloneNode(true)));
+    staged.innerHTML = html;
     if (staged.innerHTML === target.innerHTML) return;
-    target.replaceChildren(...children);
+    target.replaceChildren(...staged.childNodes);
   }
 
   /**
@@ -293,18 +267,7 @@ const svg = renderResponsiveChart((w) =>
         ? []
         : [{ label: heldLabel, color: 'var(--pos)', dash: 'dotted' as const }]),
     ];
-    replaceIfChanged(
-      legend,
-      entries.map((entry) => {
-        const item = document.createElement('span');
-        item.className = 'legend-item';
-        const swatch = document.createElement('span');
-        swatch.className = 'legend-swatch';
-        swatch.style.background = legendSwatch(entry);
-        item.append(swatch, entry.label);
-        return item;
-      }),
-    );
+    replaceIfChanged(legend, dcaLegendHtml(entries));
   }
 
   /**
@@ -322,30 +285,42 @@ const svg = renderResponsiveChart((w) =>
     const state = compute();
     if (state === null) return;
     if (state === 'no-purchases') {
-      stats.replaceChildren(tile('No purchases', '—', 'pick an earlier start date'));
-      legend?.replaceChildren();
+      // Through the same guard as every other write: this branch is hard to
+      // reach through the form, but "hard to reach" is not "reached once", and
+      // an unguarded write here would re-announce the notice on every keystroke
+      // that stayed in the state.
+      replaceIfChanged(
+        stats,
+        dcaTilesHtml([
+          { label: 'No purchases', value: '—', sub: 'pick an earlier start date', tone: '' },
+        ]),
+      );
+      if (legend) replaceIfChanged(legend, '');
       return;
     }
     const { dca, lumpSum, delta } = state;
-    // Same builder the build used, so the figures cannot differ between the
-    // served markup and the first client render.
+    // Same builders the build used — the figures and the markup around them —
+    // so neither can differ between the served page and the first client
+    // render.
     replaceIfChanged(
       stats,
-      dcaTiles(
-        {
-          totalInvested: dca.totalInvested,
-          totalFees: dca.totalFees,
-          buys: dca.purchases.length,
-          btcAccumulated: dca.btcAccumulated,
-          dcaFinal: dca.finalValue,
-          dcaReturnPct: dca.returnPct,
-          lumpFinal: lumpSum.finalValue,
-          lumpReturnPct: lumpSum.returnPct,
-          delta,
-        },
-        (v) => money.format(v),
-        signedPct,
-      ).map((t) => tile(t.label, t.value, t.sub, t.tone)),
+      dcaTilesHtml(
+        dcaTiles(
+          {
+            totalInvested: dca.totalInvested,
+            totalFees: dca.totalFees,
+            buys: dca.purchases.length,
+            btcAccumulated: dca.btcAccumulated,
+            dcaFinal: dca.finalValue,
+            dcaReturnPct: dca.returnPct,
+            lumpFinal: lumpSum.finalValue,
+            lumpReturnPct: lumpSum.returnPct,
+            delta,
+          },
+          fmtMoney,
+          signedPct,
+        ),
+      ),
     );
     renderLegend(state);
   }
@@ -385,7 +360,7 @@ const svg = renderResponsiveChart((w) =>
         heldPoints,
         wealthDomain,
         width: w,
-        axisMoney: (value: number) => money.format(value),
+        axisMoney: fmtMoney,
         tipMoney,
         interactive: true,
       }),
