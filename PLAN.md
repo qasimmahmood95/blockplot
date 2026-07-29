@@ -185,6 +185,185 @@ returns 88 KB to every first visit for the majority who never hover, and
 Safari or Firefox. Gate it on the app being *installed* instead. Someone who
 installed the PWA has opted into offline use; someone who opened a tab has not.
 
+### M17-M21 — plan
+
+M16 finished the performance work. What follows is scope, not cleanup: five
+milestones, one PR each, in order. The ordering is deliberate — M17 exists
+partly to start clocks that cannot be started retroactively, and M18 depends on
+what M17 ingests.
+
+**A probe ran before any of it** (`scripts/probe.ts`, since deleted; runs
+30442380383 and 30442577892). Outbound network is blocked in the dev
+environment, so every field name and chart slug below started as memory rather
+than measurement, and this project has shipped confident prose the data
+contradicted often enough that memory is not good enough to plan on. What
+follows is what the endpoints actually returned on 2026-07-29.
+
+It earned its place twice. The first run reported ETH coarsened to weekly bars
+— but it asked with `range=max`, which `benchmarks.ts:193` documents as
+deliberately never used precisely because Yahoo serves coarser bars for it.
+That measured the parameter, not the ticker. And blockchain.com's own `period`
+field turned out to be unreliable, which is only visible if you measure the
+spacing instead of reading it.
+
+#### Decisions taken before M17 (2026-07-29)
+
+Four calls that change the work, recorded with their reasoning so the next
+reader does not have to reconstruct them:
+
+- **Correlation depth.** BTC-ETH gets the full depth the other BTC pairs have;
+  ETH against S&P, gold and DXY keeps the 365d window. This extends M11's
+  existing rule rather than inventing one, and bounds the growth of the largest
+  page on the site.
+- **ETH dominance is charted immediately**, not held back until the series is
+  deep. It will be a very short line at first — that is honest about when
+  capture started, and the alternative is a page that quietly waits months.
+- **The /dca layout shift is its own PR, before M17**, so a rendering fix does
+  not ride along inside a data milestone.
+- **ETH in the GBP tree is quoted natively** (`ETH-GBP`), not converted through
+  the committed FX series. This is a deliberate departure: every other figure in
+  that tree is a re-denomination of one USD source, so ETH becomes the only
+  series whose GBP value comes from its own market rather than a cross-rate.
+  The reasoning for it is that a GBP holder's ETH really does trade in GBP.
+  Two consequences must be handled rather than absorbed: the methodology page
+  has to say plainly that BTC is converted and ETH is not, and the pipeline
+  should assert that the native and converted figures stay within a stated
+  band, so a divergence surfaces as a data-quality signal instead of as two
+  numbers that quietly disagree.
+
+#### M17 — widen what we ingest
+
+The pipeline already calls CoinGecko's `/global`, and
+`coingeckoGlobalSchema` keeps exactly two fields from it:
+`total_market_cap.usd` and `market_cap_percentage.btc`. The same response
+carries the rest of `market_cap_percentage` and `total_volume.usd`. Capturing
+them costs no new request.
+
+- **ETH dominance**, and the **stablecoin share** of total market cap
+  (`usdt + usdc`), which pairs with the stablecoin supply chart already on
+  `/flows`.
+- **Aggregate 24h volume**, and volume over market cap as a turnover ratio.
+**Measured:** all four wanted keys are present — `btc`, `eth`, `usdt`, `usdc`
+(alongside `xrp`, `sol`, `trx`, `steth` and others), plus `total_volume.usd`
+and `market_cap_change_percentage_24h_usd`. The premise holds.
+
+- **ETH as a benchmark asset** — `ETH-USD` through the existing
+  `fetchYahooDaily(tickers)` helper, the same path gold and DXY already take.
+  This is option A of the ETH question: ETH becomes a fifth benchmark, not a
+  second asset tree. It then appears in the correlation matrix and the
+  risk-adjusted comparison table without either page changing.
+
+  **Measured at the repo's own parameters** (`range=10y&interval=1d`):
+  `ETH-USD` 3,185 daily points from 2017-11-09, `ETH=F` 1,380 from 2021-02-05.
+  Daily, not coarsened.
+
+  **And a decision the probe surfaced:** `ETH-GBP` also exists and is daily
+  (3,183 points from 2017-11-11). The GBP tree could take ETH natively instead
+  of converting USD through the committed FX series. Tempting and probably
+  wrong — every other series in that tree is a re-denomination of one USD
+  source, so a natively-quoted ETH would be the only figure whose GBP value
+  came from somewhere else, and would disagree with the rest by the spread
+  between Yahoo's two quotes. M17 should convert like everything else and say
+  so.
+
+**Why first, and why not deferred:** dominance history is pro-only on the
+keyless tier, so `data/dominance.json` accretes one snapshot per UTC day — it
+holds three points today. Every day these fields are not captured is a day of
+history that cannot be recovered later. The charts can come afterwards; the
+capture cannot.
+
+**The cost to plan for, not discover:** a fifth benchmark takes the correlation
+matrix from 6 pairs to 10. `correlations.json` is already 640 KB and
+`/correlation` is already the largest page on the site at 54 KB gz, 77% of it
+payload, and the columnar codec cannot compact it because its dates are
+trading-day-based. M17 must decide pair depth explicitly rather than let the
+file grow — most likely by extending M11's existing rule that pairs without BTC
+keep the shorter window.
+
+#### M18 — rebased performance comparison
+
+The site commits daily S&P 500, gold and DXY series and never plots them:
+`benchmarks-daily.json` is read for one footnote about gold's source and for
+correlation maths. It computes how BTC *co-moves* with those assets and never
+shows how it *performed* against them.
+
+A rebased chart — every series indexed to 100 at a chosen start, log toggle,
+ETH included once M17 lands. Pure `rebase()` function with fixtures. The start
+date is the reader's choice, which makes it the second chart after DCA whose
+shape is chosen at runtime, so it follows the same build-renders-the-default
+pattern.
+
+#### M19 — network history
+
+`/network` shows live fee tiers with no historical context at all — the one
+page where a reader can see today's number and nothing to judge it against.
+`fetchChart(slug)` on blockchain.com is already generic over slug, with the
+same response shape, parser and validation, so each series is one argument:
+
+**Measured — and the response's own `period` field cannot be trusted.** Daily
+at 1,091-1,095 points over three years, so they drop straight into the existing
+`fetchChart` path:
+
+- `transaction-fees` (unit BTC) and `transaction-fees-usd` (unit USD) — fee
+  history under the live tiers. Two variants; the USD one is directly
+  comparable to what a reader pays, the BTC one is not currency-dependent.
+- `miners-revenue` (USD), `difficulty`, `n-unique-addresses`, `avg-block-size`.
+
+Two are **not** daily and need aggregating in the pipeline before they could be
+committed, which is exactly the kind of thing that is unpleasant to discover
+mid-milestone:
+
+- `mempool-size` — reports `period=minute`, measured **15-minute** spacing,
+  105,029 points.
+- `total-bitcoins` — reports `period=day` and is measured at **6 minutes**,
+  144,506 points. The metadata is simply wrong, so any consumer must measure.
+
+M19 should take the daily four and treat mempool size as a separate decision
+with a stated downsampling rule, not fold it in silently.
+
+#### M20 — real returns
+
+`parseFredCsv(text, id)` is generic over FRED series id, so `CPIAUCSL` (US CPI)
+is one more id through tested code. **Measured:** header
+`observation_date,CPIAUCSL`, 954 rows, 1947-01-01 to 2026-06-01 — **monthly**,
+and lagging the present by a month or two. Joining a monthly, revised, lagging
+index to a daily price series needs a documented rule, the same class of
+decision as M9's FX carry-forward, and the deflator's base period has to be
+stated on the page or the figures mean nothing. That buys inflation-adjusted BTC returns —
+a figure most Bitcoin dashboards do not show, on a site that already holds the
+full price history and the risk machinery to compute it. Nominal and real side
+by side, with the deflator and base period stated.
+
+#### M21 — holding-period matrix
+
+Buy in year X, sell in year Y, as a triangular heatmap reusing the monthly
+heatmap's colour system. Pure maths over committed history. It answers "did
+entry timing actually matter" better than any other single visual, and it
+subsumes several smaller ideas (best/worst windows, time-to-recovery framing).
+
+#### Carried, and not forgotten
+
+Three items from M15/M16 that are real and unscheduled:
+
+- ~~`/dca`'s 0.0895 layout shift~~ — **done**, in the PR that carried this
+  plan. The stat tiles *and* the legend are server-rendered from the defaults
+  the build already simulates; `/dca` and `/gbp/dca` are now audited and assert
+  CLS at or under 0.02, measured 0.0025 at 412px and 0 at 1280px.
+- `downsample.ts` ships tested and **unwired**. Wiring needs per-series
+  bucketing and pinned series endpoints.
+- **Fetched payloads** stay deferred, with the seven preconditions recorded
+  above. `/correlation` is the page that would benefit and the one where the
+  atomicity risk is sharpest, since its regime bands and its tables come from
+  the same file.
+
+Two quality gates worth their own milestone eventually, both justified by this
+repo's own history rather than by principle: a test that extracts figures from
+rendered page copy and asserts them against `/data` (this project has shipped
+prose the data contradicted at least six times), and visual-regression
+snapshots (two silent visual regressions shipped in one session — 4.6px axis
+type on phones, and a printed chart contradicting its own labels — with lint,
+typecheck, unit tests and Lighthouse all green on both).
+
 ## Testing
 
 - Every metric calculation (volatility, drawdown, Sharpe/Sortino, correlation,
