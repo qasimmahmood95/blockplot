@@ -54,3 +54,70 @@ export function wealthExtent(
   }
   return [lo, hi];
 }
+
+/** One stat tile, as both the build and the browser render it. */
+export interface DcaTile {
+  label: string;
+  value: string;
+  sub: string;
+  tone: 'up' | 'down' | '';
+}
+
+export interface DcaTileInput {
+  totalInvested: number;
+  totalFees: number;
+  buys: number;
+  btcAccumulated: number;
+  dcaFinal: number;
+  dcaReturnPct: number;
+  lumpFinal: number;
+  lumpReturnPct: number;
+  delta: number;
+}
+
+/**
+ * The four figures beside the chart, as data rather than DOM.
+ *
+ * Shared for the same reason the chart specs are: the build renders these into
+ * the markup and the browser re-renders them on every keystroke, and if the two
+ * disagreed the page would visibly change the moment it became interactive.
+ * Before this, the grid was empty in the markup and filled by script on load —
+ * which pushed the chart down 204px and was the largest layout shift left on
+ * the site.
+ */
+export function dcaTiles(
+  input: DcaTileInput,
+  money: (value: number) => string,
+  signedPct: (value: number) => string,
+): DcaTile[] {
+  const deltaLabel =
+    Math.abs(input.delta) < 0.005
+      ? 'even with DCA'
+      : `${input.delta > 0 ? 'leads' : 'trails'} by ${money(Math.abs(input.delta))}`;
+  return [
+    {
+      label: 'Invested',
+      value: money(input.totalInvested),
+      sub: `${input.buys} ${input.buys === 1 ? 'buy' : 'buys'} · fees ${money(input.totalFees)}`,
+      tone: '',
+    },
+    {
+      label: 'BTC accumulated',
+      value: input.btcAccumulated.toFixed(4),
+      sub: 'BTC',
+      tone: '',
+    },
+    {
+      label: 'DCA value now',
+      value: money(input.dcaFinal),
+      sub: signedPct(input.dcaReturnPct),
+      tone: input.dcaReturnPct < 0 ? 'down' : 'up',
+    },
+    {
+      label: 'Lump sum now',
+      value: money(input.lumpFinal),
+      sub: `${signedPct(input.lumpReturnPct)} · ${deltaLabel}`,
+      tone: input.lumpReturnPct < 0 ? 'down' : 'up',
+    },
+  ];
+}

@@ -206,6 +206,31 @@ That measured the parameter, not the ticker. And blockchain.com's own `period`
 field turned out to be unreliable, which is only visible if you measure the
 spacing instead of reading it.
 
+#### Decisions taken before M17 (2026-07-29)
+
+Four calls that change the work, recorded with their reasoning so the next
+reader does not have to reconstruct them:
+
+- **Correlation depth.** BTC-ETH gets the full depth the other BTC pairs have;
+  ETH against S&P, gold and DXY keeps the 365d window. This extends M11's
+  existing rule rather than inventing one, and bounds the growth of the largest
+  page on the site.
+- **ETH dominance is charted immediately**, not held back until the series is
+  deep. It will be a very short line at first — that is honest about when
+  capture started, and the alternative is a page that quietly waits months.
+- **The /dca layout shift is its own PR, before M17**, so a rendering fix does
+  not ride along inside a data milestone.
+- **ETH in the GBP tree is quoted natively** (`ETH-GBP`), not converted through
+  the committed FX series. This is a deliberate departure: every other figure in
+  that tree is a re-denomination of one USD source, so ETH becomes the only
+  series whose GBP value comes from its own market rather than a cross-rate.
+  The reasoning for it is that a GBP holder's ETH really does trade in GBP.
+  Two consequences must be handled rather than absorbed: the methodology page
+  has to say plainly that BTC is converted and ETH is not, and the pipeline
+  should assert that the native and converted figures stay within a stated
+  band, so a divergence surfaces as a data-quality signal instead of as two
+  numbers that quietly disagree.
+
 #### M17 — widen what we ingest
 
 The pipeline already calls CoinGecko's `/global`, and

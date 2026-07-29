@@ -12,6 +12,7 @@ interface Props {
 import { compareDcaVsLumpSum } from '../../pipeline/dca';
 import { renderResponsiveChart } from '../lib/plot-ssr';
 import { dcaSpec, defaultStartDate, wealthExtent } from '../lib/specs/dca';
+import { dcaTiles } from '../lib/specs/dca-shared';
 
 const { currency } = Astro.props;
 const { btcHistory } = dataFor(currency);
@@ -38,6 +39,26 @@ const axisMoney = new Intl.NumberFormat('en-US', {
   currency: meta.code,
   maximumFractionDigits: 0,
 });
+const signedPctSsr = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+// Rendered into the markup so the grid is not empty until script runs. It used
+// to fill in on load and push the chart down 204px — the largest layout shift
+// left on the site, and the reason /dca was kept out of the CLS assertion.
+const initialTiles = dcaTiles(
+  {
+    totalInvested: initial.dca.totalInvested,
+    totalFees: initial.dca.totalFees,
+    buys: initial.dca.purchases.length,
+    btcAccumulated: initial.dca.btcAccumulated,
+    dcaFinal: initial.dca.finalValue,
+    dcaReturnPct: initial.dca.returnPct,
+    lumpFinal: initial.lumpSum.finalValue,
+    lumpReturnPct: initial.lumpSum.returnPct,
+    delta: initial.delta,
+  },
+  (v) => axisMoney.format(v),
+  signedPctSsr,
+);
+
 const svg = renderResponsiveChart((w) =>
   dcaSpec({
     dcaPoints,
@@ -76,7 +97,17 @@ const svg = renderResponsiveChart((w) =>
   </label>
 </form>
 
-<dl class="stat-grid" id="dca-stats" aria-live="polite"></dl>
+<dl class="stat-grid" id="dca-stats" aria-live="polite">
+  {
+    initialTiles.map((t) => (
+      <div class="stat">
+        <dt>{t.label}</dt>
+        <dd class={`num ${t.tone}`.trim()}>{t.value}</dd>
+        <dd class="sub num">{t.sub}</dd>
+      </div>
+    ))
+  }
+</dl>
 
 <figure class="chart-frame">
   <div id="dca-legend" class="chart-legend" aria-hidden="true"></div>
@@ -93,7 +124,7 @@ const svg = renderResponsiveChart((w) =>
   import { holdingsSeries } from '../../pipeline/holdings';
   import { chartData, upgradeChart } from '../lib/charts';
   import { decodeDaily } from '../lib/series-codec';
-  import { wealthExtent } from '../lib/specs/dca-shared';
+  import { dcaTiles, wealthExtent } from '../lib/specs/dca-shared';
   import { clipNote, compactMoney } from '../lib/chart-format';
   import { HOLDINGS_EVENT, readHoldings } from '../lib/holdings-store';
 
@@ -266,21 +297,24 @@ const svg = renderResponsiveChart((w) =>
       return;
     }
     const { dca, lumpSum, delta } = state;
-    const buys = dca.purchases.length;
-    const deltaLabel =
-      Math.abs(delta) < 0.005
-        ? 'even with DCA'
-        : `${delta > 0 ? 'leads' : 'trails'} by ${money.format(Math.abs(delta))}`;
+    // Same builder the build used, so the figures cannot differ between the
+    // served markup and the first client render.
     stats.replaceChildren(
-      tile('Invested', money.format(dca.totalInvested), `${buys} ${buys === 1 ? 'buy' : 'buys'} · fees ${money.format(dca.totalFees)}`),
-      tile('BTC accumulated', dca.btcAccumulated.toFixed(4), 'BTC'),
-      tile('DCA value now', money.format(dca.finalValue), signedPct(dca.returnPct), dca.returnPct < 0 ? 'down' : 'up'),
-      tile(
-        'Lump sum now',
-        money.format(lumpSum.finalValue),
-        `${signedPct(lumpSum.returnPct)} · ${deltaLabel}`,
-        lumpSum.returnPct < 0 ? 'down' : 'up',
-      ),
+      ...dcaTiles(
+        {
+          totalInvested: dca.totalInvested,
+          totalFees: dca.totalFees,
+          buys: dca.purchases.length,
+          btcAccumulated: dca.btcAccumulated,
+          dcaFinal: dca.finalValue,
+          dcaReturnPct: dca.returnPct,
+          lumpFinal: lumpSum.finalValue,
+          lumpReturnPct: lumpSum.returnPct,
+          delta,
+        },
+        (v) => money.format(v),
+        signedPct,
+      ).map((t) => tile(t.label, t.value, t.sub, t.tone)),
     );
     renderLegend(state);
   }
