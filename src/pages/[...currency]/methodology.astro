@@ -7,8 +7,20 @@ import { currencyPaths } from '../../lib/routes';
 export const getStaticPaths = currencyPaths;
 
 const { currency } = Astro.props as { currency: Currency };
-const { riskMetrics, correlations, signals, btcHistory, btcDaily } = dataFor(currency);
+const { riskMetrics, correlations, signals, btcHistory, btcDaily, benchmarksDaily } = dataFor(currency);
 const meta = CURRENCY_META[currency];
+
+// Which ticker actually served ETH, read from the committed file rather than
+// asserted. The GBP tree takes ETH natively where every other series there is
+// converted, and a silent fallback to conversion would make the paragraph
+// below false — the exact failure this page exists to avoid.
+const ethBenchmark = benchmarksDaily.benchmarks.find((b) => b.asset === 'eth');
+const ethNative = ethBenchmark?.sourceSeries.endsWith('-GBP') ?? false;
+// The divergence figures are read from the file the run wrote, not written
+// here. They were prose literals for one commit — including a 95th percentile
+// the check did not compute — which is exactly what this page's opening
+// paragraph promises never happens.
+const div = benchmarksDaily.ethQuoteDivergence;
 
 /**
  * Figures quoted below come from the committed data, not from prose. Every
@@ -56,7 +68,7 @@ const t = signals.thresholds;
       <div class="stat">
         <dt>Benchmarks</dt>
         <dd class="num">Yahoo / FRED</dd>
-        <dd class="sub num">S&amp;P 500, gold, DXY</dd>
+        <dd class="sub num">S&amp;P 500, gold, DXY, ETH</dd>
       </div>
       <div class="stat">
         <dt>Rolling vol reads</dt>
@@ -134,7 +146,63 @@ const t = signals.thresholds;
       a per-date join, so re-dating afterwards leaves the two legs on different days and the FX term
       stops cancelling — measured at 0.16 of noise in GBP correlations, against a 0.25 threshold.
     </p>
+    <p class="method-note">
+      Ether is dated differently from Bitcoin here, and the difference is measured rather than
+      assumed. The BTC series is a snapshot at 00:00 UTC, so the point dated <em>d</em> is really
+      the close of <em>d−1</em> and has to be shifted. Ether arrives from Yahoo, which dates a
+      daily crypto bar by the day it covers — checked by comparing Yahoo's own BTC quote against
+      the committed CoinGecko series across 365 overlapping days, where a one-day forward shift
+      matched to a median 0.019% against 1.285% unshifted. So ETH is already on the session it
+      closes and is left alone. Shifting it as well would put back exactly the offset the BTC
+      shift removes, and it would surface as BTC and ETH looking less alike than they are.
+    </p>
   </section>
+
+  {ethBenchmark && (
+  <section class="chart-section">
+    <h2>Ether in {meta.label}</h2>
+    <p class="method-note">
+      {
+        currency === 'usd'
+          ? 'Ether is a benchmark here rather than a second asset tree: it appears in the correlation matrix and the risk comparison, and no page is built around it. It annualises on 365 days like BTC rather than 252 like the market-hours assets, because it trades every day — using the market base would overstate its volatility by about a fifth while still looking like a plausible number.'
+          : ethNative
+            ? 'One deliberate inconsistency, stated plainly. Every other figure in the GBP tree is a re-denomination of a single USD source, converted at each day\'s rate. Ether is not: it is quoted natively as ETH-GBP, from its own market, because a sterling holder\'s ether really does trade in sterling. BTC is converted; ETH is not.'
+            : 'Ether is normally quoted natively here as ETH-GBP, from its own market. That quote was unavailable when this data was built, so the figures on this page came from ETH-USD converted at each day\'s rate — the same route every other series in this tree takes.'
+      }
+    </p>
+    {
+      currency !== 'usd' && ethNative && (
+        <p class="method-note">
+          The cost of that choice is that two markets can disagree, so the pipeline measures it
+          every run: the natively quoted series is compared against the converted one on every date
+          both carry. {
+            div
+              ? `Over the ${div.days.toLocaleString('en-US')} shared days in this file the median gap is ${div.medianPct}%, the 95th percentile ${div.p95Pct}%, and the widest single day ${div.maxPct}% on ${div.maxDate}; ${div.beyond1Pct} of them sit beyond 1%.`
+              : 'This file carries no such measurement — either it was built before the check existed, or one of the two routes was unavailable when it ran.'
+          } The build fails if the <em>median</em> passes {div?.bandPct ?? 1}%, and only reports the
+          worst day. That split is the point: a median that far out cannot be moved by one bad
+          quote, so reaching it means something systematic is wrong — the wrong ticker, an inverted
+          rate, a mis-joined date. A single wide day is two real markets on a bad afternoon, and
+          failing on it would make this site hostage to a data provider's worst quote.
+        </p>
+        <p class="method-note">
+          Two limits on that check, stated because they are easy to assume away. It compares every
+          shared date including weekends, since both series trade through them — so a share of
+          those days is converted at a rate carried over from Friday, and the median is a little
+          easier than a weekday-only one would be. And a median is the wrong instrument for a stale
+          rate feed: a stale tail is a minority of the record by construction and cannot move the
+          middle of the distribution however wrong it is. That case is covered separately, by a
+          check on how far the rate series lags the price series, which warns rather than failing.
+        </p>
+      )
+    }
+    <p class="method-note">
+      The ticker that actually served this file is <code>{ethBenchmark.sourceSeries}</code>, read
+      from the committed data rather than asserted here. This whole section is absent when no ETH
+      source answered, rather than describing a series the file does not carry.
+    </p>
+  </section>
+  )}
 
   <section class="chart-section">
     <h2>Signals</h2>

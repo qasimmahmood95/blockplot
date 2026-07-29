@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { accreteDominance, parseStablecoinChart, stablecoinChange30dPct } from './flows';
-import { dominanceDatasetSchema, stablecoinDatasetSchema } from './schema';
+import {
+  accreteDominance,
+  parseStablecoinChart,
+  sharePoints,
+  stablecoinChange30dPct,
+  toDominanceSnapshot,
+  turnoverPct,
+} from './flows';
+import { coingeckoGlobalSchema, dominanceDatasetSchema, stablecoinDatasetSchema } from './schema';
 import { trimToLastDays } from './series';
 
 describe('accreteDominance', () => {
@@ -25,6 +32,110 @@ describe('accreteDominance', () => {
     expect(() =>
       accreteDominance(existing, { date: '2026-07-20', btcDominancePct: 50, totalMcapUsd: 1 }),
     ).toThrow('precedes series end');
+  });
+});
+
+describe('toDominanceSnapshot', () => {
+  const payload = (pct: Record<string, number>, volume?: number): unknown => ({
+    data: {
+      total_market_cap: { usd: 2_420_000_000_123 },
+      ...(volume === undefined ? {} : { total_volume: { usd: volume } }),
+      market_cap_percentage: pct,
+    },
+  });
+  const snap = (pct: Record<string, number>, volume?: number) =>
+    toDominanceSnapshot(coingeckoGlobalSchema.parse(payload(pct, volume)), '2026-07-29');
+
+  it('keeps the four figures, rounding shares to 2dp and money to whole units', () => {
+    expect(snap({ btc: 56.4321, eth: 12.3456, usdt: 4.111, usdc: 1.222 }, 98_765_432_198.7)).toEqual(
+      {
+        date: '2026-07-29',
+        btcDominancePct: 56.43,
+        totalMcapUsd: 2_420_000_000_123,
+        ethDominancePct: 12.35,
+        stablecoinSharePct: 5.33,
+        volume24hUsd: 98_765_432_199,
+      },
+    );
+  });
+
+  it('omits a share CoinGecko did not report, rather than calling it zero', () => {
+    // The distinction is load-bearing: this file accretes and is never
+    // rewritten, so a defaulted 0 would be indistinguishable from a real
+    // reading for as long as the series exists.
+    const result = snap({ btc: 56.43 });
+    expect(result).toEqual({
+      date: '2026-07-29',
+      btcDominancePct: 56.43,
+      totalMcapUsd: 2_420_000_000_123,
+    });
+    expect('ethDominancePct' in result).toBe(false);
+    expect('volume24hUsd' in result).toBe(false);
+  });
+
+  it('needs both stablecoins, so a partial sum never poses as a total', () => {
+    // A day USDC leaves CoinGecko's leaderboard would otherwise record USDT
+    // alone — about 7.5% against a real 11.25% — under a name that says total,
+    // in a file that is never rewritten. A permanent 3.7pp cliff in a market
+    // share line reads as a market event.
+    expect(snap({ btc: 50, usdt: 4.2, usdc: 1.3 }).stablecoinSharePct).toBe(5.5);
+    expect(snap({ btc: 50, usdt: 4.2 }).stablecoinSharePct).toBeUndefined();
+    expect(snap({ btc: 50, usdc: 1.3 }).stablecoinSharePct).toBeUndefined();
+    expect(snap({ btc: 50, usdt: 0, usdc: 0 }).stablecoinSharePct).toBe(0);
+  });
+
+  it('drops an impossible sum rather than letting it abort the whole run', () => {
+    // Each component clears the read schema's 0-100 on its own, so a corrupt
+    // response can put the sum past the write schema's bound — and that parse
+    // is top-level, uncaught, and the first write of the run, so it would cost
+    // every dataset including the accreted day it was writing.
+    expect(snap({ btc: 50, usdt: 60, usdc: 45 }).stablecoinSharePct).toBeUndefined();
+    expect(snap({ btc: 50, usdt: 60, usdc: 40 }).stablecoinSharePct).toBe(100);
+  });
+
+  it('survives a malformed optional field instead of losing the day', () => {
+    // Optional means absent OR unusable. These all parsed on main, which never
+    // read these fields; requiring them to be well-formed would have made a
+    // widening of what we read a narrowing of what we survive, and the day is
+    // unrecoverable.
+    const bad = (data: Record<string, unknown>): unknown => ({
+      data: {
+        total_market_cap: { usd: 2e12 },
+        market_cap_percentage: { btc: 56 },
+        ...data,
+      },
+    });
+    for (const payload of [
+      bad({ total_volume: { usd: null } }),
+      bad({ total_volume: { eur: 1 } }),
+      bad({ total_volume: 'nope' }),
+      bad({ market_cap_percentage: { btc: 56, usdt: null, usdc: 1 } }),
+      bad({ market_cap_percentage: { btc: 56, eth: '10.1' } }),
+      bad({ market_cap_percentage: { btc: 56, eth: 101 } }),
+    ]) {
+      const parsed = coingeckoGlobalSchema.parse(payload);
+      const result = toDominanceSnapshot(parsed, '2026-07-29');
+      expect(result.btcDominancePct).toBe(56);
+      expect(result.totalMcapUsd).toBe(2e12);
+    }
+  });
+
+  it('records a genuine zero volume as zero, which is not the same as absent', () => {
+    expect(snap({ btc: 50 }, 0).volume24hUsd).toBe(0);
+  });
+
+  it('still requires btc, whose absence is a broken response rather than a gap', () => {
+    expect(() => coingeckoGlobalSchema.parse(payload({ eth: 12 }))).toThrow();
+  });
+
+  it('drops an out-of-range optional share, but still rejects a bad btc', () => {
+    // The bound still holds — an out-of-range eth is never committed — but it
+    // costs the field rather than the day. btc is different: a /global with no
+    // usable BTC share is a broken response, and failing is the right outcome.
+    expect(coingeckoGlobalSchema.parse(payload({ btc: 50, eth: 101 })).data
+      .market_cap_percentage.eth).toBeUndefined();
+    expect(() => coingeckoGlobalSchema.parse(payload({ btc: 101 }))).toThrow();
+    expect(() => coingeckoGlobalSchema.parse(payload({ eth: 12 }))).toThrow();
   });
 });
 
@@ -115,6 +226,28 @@ describe('flows dataset schemas', () => {
         series: [{ date: '2026-07-26', btcDominancePct: 101, totalMcapUsd: 1 }],
       }),
     ).toThrow();
+    // A series that starts before the M17 fields existed and gains them
+    // partway through is the shape the committed file actually has, and will
+    // keep having: accreted days are never rewritten, so there is nothing to
+    // backfill the earlier ones from.
+    expect(() =>
+      dominanceDatasetSchema.parse({
+        schemaVersion: 1,
+        source: 'coingecko',
+        fetchedAt: '2026-07-29T12:00:00.000Z',
+        series: [
+          { date: '2026-07-26', btcDominancePct: 55.8, totalMcapUsd: 2_420_000_000_000 },
+          {
+            date: '2026-07-29',
+            btcDominancePct: 56.4,
+            totalMcapUsd: 2_430_000_000_000,
+            ethDominancePct: 12.3,
+            stablecoinSharePct: 5.3,
+            volume24hUsd: 98_000_000_000,
+          },
+        ],
+      }),
+    ).not.toThrow();
     // Mis-ordered accreted series must fail loudly, never trim silently.
     expect(() =>
       dominanceDatasetSchema.parse({
@@ -140,5 +273,81 @@ describe('flows dataset schemas', () => {
         ],
       }),
     ).not.toThrow();
+  });
+});
+
+describe('sharePoints', () => {
+  const base = { date: '2026-07-26', btcDominancePct: 55.8, totalMcapUsd: 2_400_000_000_000 };
+
+  it('emits only the shares a day actually carried', () => {
+    // The committed file genuinely looks like this: BTC reaches back to M5 and
+    // the other two begin at M17, so the early days have one share and the
+    // later ones three.
+    expect(
+      sharePoints([
+        base,
+        {
+          ...base,
+          date: '2026-07-29',
+          ethDominancePct: 12.3,
+          stablecoinSharePct: 5.3,
+        },
+      ]),
+    ).toEqual([
+      { date: '2026-07-26', pct: 55.8, share: 'BTC' },
+      { date: '2026-07-29', pct: 55.8, share: 'BTC' },
+      { date: '2026-07-29', pct: 12.3, share: 'ETH' },
+      { date: '2026-07-29', pct: 5.3, share: 'stablecoins' },
+    ]);
+  });
+
+  it('does not invent a zero for a share that was never captured', () => {
+    // A zero would draw a line claiming ETH had no market share until the day
+    // this shipped, which is a statement about the market rather than about
+    // the data.
+    expect(sharePoints([base]).map((p) => p.share)).toEqual(['BTC']);
+  });
+
+  it('keeps a genuine zero share, which is a reading and not a gap', () => {
+    expect(sharePoints([{ ...base, ethDominancePct: 0 }]).at(-1)).toEqual({
+      date: '2026-07-26',
+      pct: 0,
+      share: 'ETH',
+    });
+  });
+
+  it('is empty for an empty series', () => {
+    expect(sharePoints([])).toEqual([]);
+  });
+});
+
+describe('turnoverPct', () => {
+  it('reads volume against market cap, to 2 dp', () => {
+    expect(
+      turnoverPct({
+        date: '2026-07-29',
+        btcDominancePct: 55,
+        totalMcapUsd: 2_000_000_000_000,
+        volume24hUsd: 100_000_000_000,
+      }),
+    ).toBe(5);
+  });
+
+  it('is null when the volume was never captured, rather than zero', () => {
+    expect(
+      turnoverPct({ date: '2026-07-29', btcDominancePct: 55, totalMcapUsd: 2e12 }),
+    ).toBeNull();
+    expect(turnoverPct(undefined)).toBeNull();
+  });
+
+  it('keeps a real zero volume as zero', () => {
+    expect(
+      turnoverPct({
+        date: '2026-07-29',
+        btcDominancePct: 55,
+        totalMcapUsd: 2e12,
+        volume24hUsd: 0,
+      }),
+    ).toBe(0);
   });
 });

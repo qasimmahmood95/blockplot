@@ -335,6 +335,13 @@ code {
 
 .chart-toggle {
   display: flex;
+  /* Wraps rather than scrolls. M17 took the correlation page from six pairs to
+     ten, and a single row of ten buttons made the whole document 565px wide in
+     a 412px viewport — the page scrolled sideways, not just the control. A
+     horizontal scroller would have fixed the overflow and hidden half the
+     pairs behind a gesture with nothing indicating they were there; these are
+     the page's navigation, so they wrap and stay visible. */
+  flex-wrap: wrap;
   border: 1px solid var(--line);
 }
 

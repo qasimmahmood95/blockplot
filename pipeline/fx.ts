@@ -213,3 +213,125 @@ export async function fetchGbpUsd(): Promise<FxFetch> {
   }
   return { sources, series };
 }
+
+/**
+ * How far a natively-quoted series sits from the same asset converted through
+ * the committed rate.
+ *
+ * Exists because M17 takes ETH in GBP from its own market (`ETH-GBP`) rather
+ * than re-denominating `ETH-USD`, which makes it the only series in that tree
+ * whose sterling value does not come from the one USD source everything else
+ * shares. That was a deliberate call — a GBP holder's ether really does trade
+ * in GBP — and it came with an obligation: the two figures must be shown to
+ * stay close, so a divergence surfaces as a data-quality signal instead of as
+ * two numbers that quietly disagree.
+ *
+ * Compared on every date both series carry, which for two crypto legs is every
+ * day — weekends included. An earlier version of this comment claimed weekends
+ * were excluded; they are not, and cannot be, because both legs trade through
+ * them. Review measured 132 of 460 shared days falling on a weekend, 90 of them
+ * converted at a rate carried forward from Friday. That is benign and worth
+ * stating rather than implying: weekend divergence is *lower* (median 0.072%
+ * against 0.158% on weekdays), because a weekend ETH-GBP quote is itself
+ * pinned to the same frozen rate. So the headline median is diluted by about a
+ * fifth of structurally easy days and understates the weekday spread — in the
+ * safe direction for a band, but not a number to quote as if it were the
+ * weekday one.
+ */
+export interface QuoteDivergence {
+  days: number;
+  medianPct: number;
+  /**
+   * The 95th percentile. Added because the methodology page quotes one, and
+   * quoted it as something "the pipeline measures every run" while this
+   * function did not compute it at all — a figure attributed to a check that
+   * was not producing it.
+   */
+  p95Pct: number;
+  maxPct: number;
+  maxDate: string;
+  beyond1Pct: number;
+}
+
+export function quoteDivergence(
+  native: BenchmarkDay[],
+  converted: BenchmarkDay[],
+): QuoteDivergence | null {
+  const convertedBy = new Map(converted.map((d) => [d.date, d.close]));
+  const diffs: { date: string; pct: number }[] = [];
+  for (const { date, close } of native) {
+    const other = convertedBy.get(date);
+    if (other === undefined || !(other > 0)) continue;
+    diffs.push({ date, pct: Math.abs(close / other - 1) * 100 });
+  }
+  if (diffs.length === 0) return null;
+  const sorted = [...diffs].sort((a, b) => a.pct - b.pct);
+  // The median is the upper of the two middles on an even count, and the p95 is
+  // nearest-rank — `ceil(q*n)`, not `floor`. Both err toward the larger figure,
+  // which is the safe direction for numbers that gate a build and get quoted.
+  //
+  // The distinction is not pedantry at these sizes: `floor(0.95*n)` indexes the
+  // *last* element for any n below 20, so on a short series the p95 would
+  // silently be the maximum — and the methodology page prints the two side by
+  // side as different numbers. On the real ~2,500-day series both formulas
+  // separate them, which is exactly why this would not have shown up in the
+  // committed data.
+  const median = sorted[Math.floor(sorted.length / 2)];
+  const p95 = sorted[Math.max(0, Math.ceil(0.95 * sorted.length) - 1)];
+  const worst = sorted.at(-1);
+  if (!median || !p95 || !worst) return null;
+  const round3 = (v: number): number => Math.round(v * 1000) / 1000;
+  return {
+    days: diffs.length,
+    medianPct: round3(median.pct),
+    p95Pct: round3(p95.pct),
+    maxPct: round3(worst.pct),
+    maxDate: worst.date,
+    beyond1Pct: diffs.filter((d) => d.pct > 1).length,
+  };
+}
+
+/**
+ * The band the median divergence must stay inside.
+ *
+ * Set from measurement, not from taste — and from the pipeline's own
+ * measurement, not the probe's. The probe that justified this band compared
+ * only dates where an FX quote existed exactly, giving 2,531 days and a 0.174%
+ * median; the check as it actually runs uses the carry-forward rate like every
+ * other conversion here, so it sees all 3,183 shared days and reports 0.182%,
+ * p95 0.716%, worst 2.910% (2022-09-29, during the sterling crisis). Nearly the
+ * same numbers, and the difference is real: the extra days are weekends priced
+ * at Friday's rate. The committed figures are the ones quoted, because they are
+ * the ones this constant is compared against. 1% leaves roughly a five-fold
+ * margin on the statistic being asserted.
+ *
+ * The median is asserted and the maximum is not, and that split is the whole
+ * design. A median this far from the band cannot be moved by one bad quote —
+ * it takes a fault that affects most of the record. A single day at 3% is the
+ * spread between two real markets on a day sterling moved, and failing the
+ * build on it would make the site hostage to Yahoo's quote quality on its worst
+ * afternoon. The worst day is reported instead, every run, so a drift upward is
+ * visible before it becomes systematic.
+ *
+ * What that buys, measured rather than asserted — the first version of this
+ * comment listed "a stale FX tail" among the faults this catches, and review
+ * showed it does not:
+ *
+ *   inverted rate (multiply, not divide)   median 44.6%   caught
+ *   wrong ticker                           median 96.8%   caught
+ *   one-day mis-join                       median  1.70%  caught
+ *   FX frozen for 90 days                  median  0.20%  MISSED
+ *   FX frozen for 180 days                 median  0.28%  MISSED
+ *
+ * A median is the wrong instrument for a fault confined to the recent tail: a
+ * stale tail is a minority of a ~3,100-day sample by construction, so it cannot
+ * move the middle of the distribution however wrong it is. That case belongs to
+ * `fxLagDays`/`MAX_FX_LAG_DAYS`, which checks the tail directly — and warns
+ * rather than throwing, which is a deliberate weaker guarantee and now the only
+ * one covering it.
+ *
+ * The mis-join margin is also thinner than it looks: 1.70% against a 1% band is
+ * ETH's own median absolute daily return, so in a quiet ETH regime a full
+ * one-day misalignment could sit under the band and pass.
+ */
+export const MAX_MEDIAN_QUOTE_DIVERGENCE_PCT = 1;

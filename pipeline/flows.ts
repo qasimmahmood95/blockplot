@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { z } from 'zod';
 import { getJson } from './http';
 import { trimToLastDays } from './series';
 import {
@@ -28,15 +29,71 @@ export interface DominanceSnapshot {
   date: string;
   btcDominancePct: number;
   totalMcapUsd: number;
+  ethDominancePct?: number;
+  stablecoinSharePct?: number;
+  volume24hUsd?: number;
+}
+
+/**
+ * Reduce a `/global` payload to the snapshot committed for one day.
+ *
+ * Pure and separately tested, because the interesting behaviour is what it
+ * does with fields that are absent rather than what it does with fields that
+ * are present. Every optional share is omitted from the result rather than
+ * defaulted, so a day CoinGecko did not report one is distinguishable from a
+ * day it reported zero. A `?? 0` here would write a real-looking figure into an
+ * accreted file that can never be corrected — the same shape of bug as the
+ * keyless row that once invented an index in the series codec.
+ */
+export function toDominanceSnapshot(
+  global: z.infer<typeof coingeckoGlobalSchema>,
+  date: string,
+): DominanceSnapshot {
+  const pct = global.data.market_cap_percentage;
+  const volume = global.data.total_volume?.usd;
+  return {
+    date,
+    btcDominancePct: round2(pct.btc),
+    totalMcapUsd: Math.round(global.data.total_market_cap.usd),
+    ...(pct.eth !== undefined ? { ethDominancePct: round2(pct.eth) } : {}),
+    ...stablecoinShare(pct.usdt, pct.usdc),
+    ...(volume !== undefined ? { volume24hUsd: Math.round(volume) } : {}),
+  };
+}
+
+/**
+ * USDT plus USDC, or nothing.
+ *
+ * Both or neither, which is a correction: the first version summed whichever
+ * keys were present, so a day USDC fell out of CoinGecko's leaderboard would
+ * have recorded USDT alone — about 7.5% against a real 11.25% — under a name
+ * that says total. The series accretes and is never rewritten, so that would
+ * be a permanent ~3.7pp cliff in the chart, and a cliff in a market-share line
+ * reads as a market event. Every other field here treats absent and zero as
+ * different things; this one was letting *partial* pose as *complete*, which
+ * is the same error one level up. A day missing either component is a day this
+ * figure was not measured.
+ *
+ * The bound is checked here rather than only at the write schema. Each share
+ * is independently within 0-100, so a corrupt response can put the sum past
+ * 100 — which passes the read schema and then fails the write schema, in a
+ * `parse` that is top-level, uncaught, and the *first* write of the run. A
+ * nonsense pair of components would have cost every dataset the run produces,
+ * including the accreted day it was trying to write. An impossible sum is
+ * treated as what it is: not a measurement.
+ */
+function stablecoinShare(
+  usdt: number | undefined,
+  usdc: number | undefined,
+): { stablecoinSharePct?: number } {
+  if (usdt === undefined || usdc === undefined) return {};
+  const sum = round2(usdt + usdc);
+  return sum > 100 ? {} : { stablecoinSharePct: sum };
 }
 
 export async function fetchDominanceSnapshot(now: Date): Promise<DominanceSnapshot> {
   const global = coingeckoGlobalSchema.parse(await getJson(COINGECKO_GLOBAL_URL));
-  return {
-    date: now.toISOString().slice(0, 10),
-    btcDominancePct: round2(global.data.market_cap_percentage.btc),
-    totalMcapUsd: Math.round(global.data.total_market_cap.usd),
-  };
+  return toDominanceSnapshot(global, now.toISOString().slice(0, 10));
 }
 
 /**
@@ -100,4 +157,47 @@ export function stablecoinChange30dPct(series: StablecoinPoint[]): number | null
 
 export async function fetchStablecoins(): Promise<StablecoinPoint[]> {
   return trimToLastDays(parseStablecoinChart(await getJson(DEFILLAMA_STABLES_URL)), STABLECOIN_KEEP_DAYS);
+}
+
+/** One point of one share, flattened so a chart can separate lines by `share`. */
+export interface SharePoint {
+  date: string;
+  pct: number;
+  share: 'BTC' | 'ETH' | 'stablecoins';
+}
+
+/**
+ * Flatten the accreted series into one list of share points.
+ *
+ * A day that never carried a share contributes nothing for it, which is the
+ * whole reason the snapshot fields are optional: BTC dominance reaches back to
+ * M5 and the other two begin at M17, so the ETH and stablecoin lines genuinely
+ * start later. Emitting a zero to keep the arrays the same length would draw a
+ * line claiming ETH had no market share until the day this shipped.
+ */
+export function sharePoints(series: readonly DominancePoint[]): SharePoint[] {
+  const out: SharePoint[] = [];
+  for (const point of series) {
+    out.push({ date: point.date, pct: point.btcDominancePct, share: 'BTC' });
+    if (point.ethDominancePct !== undefined) {
+      out.push({ date: point.date, pct: point.ethDominancePct, share: 'ETH' });
+    }
+    if (point.stablecoinSharePct !== undefined) {
+      out.push({ date: point.date, pct: point.stablecoinSharePct, share: 'stablecoins' });
+    }
+  }
+  return out;
+}
+
+/**
+ * 24h volume as a fraction of total market cap, %, 2 dp — how much of the
+ * market changed hands today.
+ *
+ * Null rather than zero when either input is missing, because the two read
+ * completely differently: a null is a day the figure was not captured, and a
+ * zero would be a claim that nothing traded.
+ */
+export function turnoverPct(point: DominancePoint | undefined): number | null {
+  if (!point || point.volume24hUsd === undefined || !(point.totalMcapUsd > 0)) return null;
+  return round2((point.volume24hUsd / point.totalMcapUsd) * 100);
 }

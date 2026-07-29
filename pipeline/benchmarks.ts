@@ -15,6 +15,29 @@ export const SP500_FRED_SERIES = 'SP500';
 export const GOLD_YAHOO_TICKERS = ['XAUUSD=X', 'GC=F'];
 /** ICE dollar index: the index itself, front-month futures as fallback. */
 export const DXY_YAHOO_TICKERS = ['DX-Y.NYB', 'DX=F'];
+/**
+ * Ether, spot first and CME futures as fallback (M17).
+ *
+ * `ETH=F` is a genuine fallback rather than a formality, but a shallow one:
+ * measured at this repo's own parameters it serves 1,380 daily bars from
+ * 2021-02-05 against ETH-USD's 3,185 from 2017-11-09. It clears the depth
+ * floor, so a spot outage degrades the history rather than failing the run.
+ *
+ * Quoted natively in GBP as `ETH-GBP` rather than converted — see
+ * `ETH_GBP_YAHOO_TICKERS`.
+ */
+export const ETH_YAHOO_TICKERS = ['ETH-USD', 'ETH=F'];
+/**
+ * Ether in sterling, taken from its own market instead of the committed
+ * cross-rate. The one deliberate departure in the GBP tree, where every other
+ * figure is a re-denomination of a single USD source.
+ *
+ * The reasoning is that a GBP holder's ether really does trade in GBP, and
+ * there is no fallback ticker on purpose: a futures contract quoted in dollars
+ * would defeat the point of quoting natively. If this fails, run.ts falls back
+ * to converting, which is a stated, checked outcome rather than a silent one.
+ */
+export const ETH_GBP_YAHOO_TICKERS = ['ETH-GBP'];
 
 const FRED_CSV_URL = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${SP500_FRED_SERIES}`;
 const YAHOO_CHART_API = 'https://query1.finance.yahoo.com/v8/finance/chart';
@@ -222,3 +245,5 @@ export async function fetchYahooDaily(
 
 export const fetchGold = (): Promise<YahooFetch> => fetchYahooDaily(GOLD_YAHOO_TICKERS);
 export const fetchDxy = (): Promise<YahooFetch> => fetchYahooDaily(DXY_YAHOO_TICKERS);
+export const fetchEth = (): Promise<YahooFetch> => fetchYahooDaily(ETH_YAHOO_TICKERS);
+export const fetchEthGbp = (): Promise<YahooFetch> => fetchYahooDaily(ETH_GBP_YAHOO_TICKERS);

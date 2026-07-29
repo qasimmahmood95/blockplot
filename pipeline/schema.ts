@@ -175,6 +175,31 @@ export const benchmarkDaySchema = z.object({
 
 export type BenchmarkDay = z.infer<typeof benchmarkDaySchema>;
 
+/**
+ * How far the natively-quoted ETH-GBP series sits from the same asset
+ * converted through the committed rate, as measured by the run that wrote this
+ * file. Present only in the GBP tree, and only when both routes were available.
+ *
+ * Committed rather than logged because the methodology page quotes these
+ * figures, and that page's own contract is that every number on it is read from
+ * the file that produced it. They were prose literals for one commit, including
+ * a 95th percentile the check did not compute — a figure attributed to a
+ * measurement that was not making it.
+ */
+const quoteDivergenceSchema = z.object({
+  /** Dates both series carry. */
+  days: z.number().int().positive(),
+  medianPct: z.number().nonnegative(),
+  p95Pct: z.number().nonnegative(),
+  maxPct: z.number().nonnegative(),
+  maxDate: isoDate,
+  beyond1Pct: z.number().int().nonnegative(),
+  /** The band the median is asserted against, so the page cannot quote a stale one. */
+  bandPct: z.number().positive(),
+});
+
+export type QuoteDivergenceStats = z.infer<typeof quoteDivergenceSchema>;
+
 /** Versioned on-disk format of data/benchmarks-daily.json. */
 export const benchmarkDatasetSchema = z.object({
   schemaVersion: z.literal(1),
@@ -183,21 +208,40 @@ export const benchmarkDatasetSchema = z.object({
   fetchedAt: z.string(),
   /** Calendar days of history kept per series (trailing window). */
   keepDays: z.number().int().positive(),
+  ethQuoteDivergence: quoteDivergenceSchema.optional(),
   benchmarks: z
     .array(
       z.object({
-        asset: z.enum(['sp500', 'gold', 'dxy']),
+        asset: z.enum(['sp500', 'gold', 'dxy', 'eth']),
         source: z.enum(['fred', 'yahoo']),
         /** Identifier of the series at its source, e.g. the FRED series id. */
         sourceSeries: z.string().min(1),
         series: z.array(benchmarkDaySchema).min(2),
       }),
     )
-    // The file is whole-or-nothing: all three assets, each exactly once.
-    .length(3)
+    /**
+     * The three original benchmarks are whole-or-nothing; ETH is allowed to be
+     * missing.
+     *
+     * It was briefly `.length(4)`, which made a Yahoo ETH outage cost this
+     * entire file — and `correlations.json` with it — while `risk-metrics.json`
+     * was still rewritten without its ETH row. The site would then have shown
+     * ETH in the benchmark sources and the correlation matrix, from yesterday's
+     * files, and not in the risk table, with nothing anywhere saying why. Two
+     * files silently a day older than the third is worse than one file with a
+     * column missing, because only the second is visible.
+     */
+    .min(3)
+    .max(4)
     .superRefine((benchmarks, ctx) => {
-      if (new Set(benchmarks.map((b) => b.asset)).size !== benchmarks.length) {
+      const assets = new Set(benchmarks.map((b) => b.asset));
+      if (assets.size !== benchmarks.length) {
         ctx.addIssue({ code: 'custom', message: 'duplicate benchmark asset' });
+      }
+      for (const required of ['sp500', 'gold', 'dxy'] as const) {
+        if (!assets.has(required)) {
+          ctx.addIssue({ code: 'custom', message: `missing benchmark asset ${required}` });
+        }
       }
     }),
 });
@@ -222,8 +266,13 @@ export type DrawdownPoint = z.infer<typeof drawdownPointSchema>;
 
 /** Risk figures for one asset over the shared comparison window. */
 export const riskAssetStatsSchema = z.object({
-  asset: z.enum(['btc', 'sp500', 'gold']),
-  /** Annualization base: 365 for BTC (trades daily), 252 for market-hours assets. */
+  asset: z.enum(['btc', 'eth', 'sp500', 'gold']),
+  /**
+   * Annualization base: 365 for the assets that trade every day (BTC, and ETH
+   * from M17), 252 for market-hours assets. Not cosmetic — annualizing a
+   * 7-day series on 252 periods would overstate its volatility by a factor of
+   * sqrt(365/252), about 1.20, and the figure would still look plausible.
+   */
   periodsPerYear: z.union([z.literal(365), z.literal(252)]),
   observations: z.number().int().min(3),
   firstDate: isoDate,
@@ -239,11 +288,46 @@ export const riskAssetStatsSchema = z.object({
 
 export type RiskAssetStats = z.infer<typeof riskAssetStatsSchema>;
 
-/** Raw response shape of CoinGecko `/global` (the parts we read). */
+/**
+ * Raw response shape of CoinGecko `/global` (the parts we read).
+ *
+ * Everything beyond `btc` is optional, and deliberately so. This is one
+ * request that already runs every six hours, so the extra fields cost nothing
+ * — but they are not all equally guaranteed. `market_cap_percentage` is a
+ * leaderboard, not a fixed record: it carries whichever coins are largest at
+ * the time, so a stablecoin dropping out of the top ten would take its key
+ * with it. Requiring `usdt` would then fail the whole flows fetch, and with it
+ * the accreted dominance series' entry for that day — a day of history that
+ * cannot be recovered later. A missing share is recorded as absent instead.
+ *
+ * `btc` stays required: it has been the largest holding since the endpoint
+ * existed, and if it ever vanished the failure would be the correct outcome.
+ *
+ * Optional here means "absent OR unusable", not merely "absent" — hence the
+ * `.catch(undefined)` on each. The first version of this reasoned carefully
+ * about a *dropped key* and not at all about a *malformed value*, which is a
+ * distinction only zod cares about and the accreted file pays for: review
+ * demonstrated that `total_volume: {usd: null}`, a non-numeric share, or a
+ * `total_volume` object carrying other currencies but not `usd` each failed
+ * the whole parse, threw out of the flows fetch, and cost that UTC day
+ * permanently — where the pre-M17 schema, which never looked at those fields,
+ * kept the day. Widening what we read must not narrow what we can survive.
+ */
+const optionalShare = z.number().min(0).max(100).optional().catch(undefined);
+
 export const coingeckoGlobalSchema = z.object({
   data: z.object({
     total_market_cap: z.object({ usd: z.number().positive() }),
-    market_cap_percentage: z.object({ btc: z.number().min(0).max(100) }),
+    total_volume: z
+      .object({ usd: z.number().nonnegative().optional().catch(undefined) })
+      .optional()
+      .catch(undefined),
+    market_cap_percentage: z.object({
+      btc: z.number().min(0).max(100),
+      eth: optionalShare,
+      usdt: optionalShare,
+      usdc: optionalShare,
+    }),
   }),
 });
 
@@ -258,11 +342,34 @@ export const defillamaStablecoinsSchema = z
   )
   .min(1);
 
+/**
+ * One accreted snapshot.
+ *
+ * Every field added after the first is optional, and stays optional forever.
+ * The series accretes one entry per UTC day and earlier days are never
+ * rewritten, so the points committed before a field existed genuinely do not
+ * have it — there is no source to backfill them from. Marking a later field
+ * required would reject the file's own history on the next read, and the
+ * charts have to render a series that starts partway through regardless.
+ */
 const dominancePointSchema = z.object({
   date: isoDate,
   /** BTC share of total crypto market cap, %, 2 dp. */
   btcDominancePct: z.number().min(0).max(100),
   totalMcapUsd: z.number().positive(),
+  /** ETH share of total crypto market cap, %, 2 dp. Captured from M17. */
+  ethDominancePct: z.number().min(0).max(100).optional(),
+  /**
+   * USDT + USDC share of total crypto market cap, %, 2 dp. Captured from M17.
+   *
+   * The two summed rather than kept apart: the question this answers is how
+   * much of the market is sitting in dollars, and splitting it by issuer
+   * invites a reading about issuer market share that the number does not
+   * support — CoinGecko's leaderboard can drop either key on any run.
+   */
+  stablecoinSharePct: z.number().min(0).max(100).optional(),
+  /** Aggregate 24h volume across all tracked assets, whole USD. From M17. */
+  volume24hUsd: z.number().nonnegative().optional(),
 });
 
 export type DominancePoint = z.infer<typeof dominancePointSchema>;
@@ -431,12 +538,24 @@ const regimeSegmentSchema = z.object({
 
 export type RegimeSegment = z.infer<typeof regimeSegmentSchema>;
 
-const corrAsset = z.enum(['btc', 'sp500', 'gold', 'dxy']);
+const corrAsset = z.enum(['btc', 'eth', 'sp500', 'gold', 'dxy']);
 
+/**
+ * Every unordered pair, in the enumeration order `CORRELATION_ASSETS` produces.
+ *
+ * Five assets give ten pairs (M17 added ETH). Only `btc-eth` is carried at full
+ * depth alongside the other BTC pairs; ETH's remaining three keep the 365-day
+ * window, under the rule `NON_BTC_KEEP_DAYS` already states — this is a Bitcoin
+ * site, and a pair with no BTC in it exists to fill one cell of the matrix.
+ */
 const pairIdSchema = z.enum([
+  'btc-eth',
   'btc-sp500',
   'btc-gold',
   'btc-dxy',
+  'eth-sp500',
+  'eth-gold',
+  'eth-dxy',
   'sp500-gold',
   'sp500-dxy',
   'gold-dxy',

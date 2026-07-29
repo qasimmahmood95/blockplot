@@ -2,6 +2,7 @@
 import type { Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
+import { encodeDaily } from '../lib/series-codec';
 import { renderResponsiveChart } from '../lib/plot-ssr';
 import {
   bandFill,
@@ -20,12 +21,23 @@ interface Props {
 const { currency } = Astro.props;
 const { correlations } = dataFor(currency);
 const pairs = correlations.pairs.filter((p) => p.series.length > 0) as Pair[];
-const payload = { threshold: correlations.regimeThreshold, pairs };
+// Each pair's readings go over the wire as a start date plus one number per
+// day where the dates allow it. Most pairs here are trading-day based and fall
+// back to plain rows — but btc-eth is crypto against crypto, so it is the one
+// pair in this file that is genuinely daily-contiguous, and it is also by far
+// the largest: 3,144 readings against about 2,470 for the other deep pairs and
+// 250 for the clipped ones. The encoder decides per pair rather than being
+// told, so a pair that stops being contiguous stores its dates instead of
+// silently shifting every reading by a day.
+const payload = {
+  threshold: correlations.regimeThreshold,
+  pairs: pairs.map((p) => ({ ...p, series: encodeDaily(p.series, 'corr') })),
+};
 const active = pairs[0];
 
-// Only the pressed pair's chart is drawn: six SVGs would be six times the
-// markup for five charts nobody has asked to see. The tables are another
-// matter — all six are a few dozen rows, and rendering them here means the
+// Only the pressed pair's chart is drawn: ten SVGs would be ten times the
+// markup for nine charts nobody has asked to see. The tables are another
+// matter — all ten are a few dozen rows, and rendering them here means the
 // pair switch is a visibility change rather than a DOM build.
 const svg = active
   ? renderResponsiveChart((w) => correlationSpec(active, correlations.regimeThreshold, w, false))
@@ -119,6 +131,7 @@ const svg = active
 
 <script>
   import { chartData, upgradeChart } from '../lib/charts';
+  import { decodeDaily, type DailySeries } from '../lib/series-codec';
   import type { Pair } from '../lib/specs/correlation';
 
   const container = document.getElementById('correlation-chart');
@@ -126,8 +139,16 @@ const svg = active
   const tables = document.querySelectorAll<HTMLTableElement>('.regime-table');
 
   if (container) {
-    const { threshold, pairs } = chartData<{ threshold: number; pairs: Pair[] }>(
-      'correlation-chart-data',
+    const { threshold, pairs: encoded } = chartData<{
+      threshold: number;
+      pairs: (Omit<Pair, 'series'> & { series: DailySeries<'corr'> })[];
+    }>('correlation-chart-data');
+    // Decoded eagerly, and deliberately so: only one pair is drawn at a time,
+    // but the pair switch is a press and decoding then would put the work
+    // between the press and the redraw. Ten pairs of a few thousand numbers is
+    // a fraction of the JSON.parse that just produced them.
+    const pairs = encoded.map(
+      (p) => ({ ...p, series: decodeDaily(p.series, 'corr') }) as unknown as Pair,
     );
     let active = pairs[0]?.pair ?? '';
 

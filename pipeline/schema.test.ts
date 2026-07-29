@@ -88,6 +88,15 @@ describe('benchmarkDatasetSchema', () => {
           { date: '2024-03-04', close: 104.5 },
         ],
       },
+      {
+        asset: 'eth',
+        source: 'yahoo',
+        sourceSeries: 'ETH-USD',
+        series: [
+          { date: '2024-03-01', close: 3400 },
+          { date: '2024-03-04', close: 3500 },
+        ],
+      },
     ],
   };
 
@@ -95,14 +104,36 @@ describe('benchmarkDatasetSchema', () => {
     expect(benchmarkDatasetSchema.parse(valid)).toEqual(valid);
   });
 
-  it('requires exactly the three distinct assets', () => {
+  it('accepts the file without ETH, so one outage costs a column not a file', () => {
+    // Three-asset files are what this schema always guaranteed. Requiring four
+    // made a Yahoo ETH outage skip benchmarks-daily.json and correlations.json
+    // while risk-metrics.json was still rewritten without its ETH row — two
+    // files silently a day stale against a third that was not, which is the
+    // kind of inconsistency a reader cannot see.
     expect(() =>
-      benchmarkDatasetSchema.parse({ ...valid, benchmarks: valid.benchmarks.slice(0, 2) }),
-    ).toThrow();
+      benchmarkDatasetSchema.parse({ ...valid, benchmarks: valid.benchmarks.slice(0, 3) }),
+    ).not.toThrow();
+  });
+
+  it('still requires the three original benchmarks, each exactly once', () => {
+    for (const drop of ['sp500', 'gold', 'dxy']) {
+      expect(() =>
+        benchmarkDatasetSchema.parse({
+          ...valid,
+          benchmarks: valid.benchmarks.filter((b) => b.asset !== drop),
+        }),
+      ).toThrow(`missing benchmark asset ${drop}`);
+    }
+    expect(() => benchmarkDatasetSchema.parse({ ...valid, benchmarks: [] })).toThrow();
     expect(() =>
       benchmarkDatasetSchema.parse({
         ...valid,
-        benchmarks: [valid.benchmarks[0], valid.benchmarks[1], valid.benchmarks[0]],
+        benchmarks: [
+          valid.benchmarks[0],
+          valid.benchmarks[1],
+          valid.benchmarks[2],
+          valid.benchmarks[0],
+        ],
       }),
     ).toThrow('duplicate benchmark asset');
   });

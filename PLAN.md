@@ -259,18 +259,54 @@ and `market_cap_change_percentage_24h_usd`. The premise holds.
 
   **And a decision the probe surfaced:** `ETH-GBP` also exists and is daily
   (3,183 points from 2017-11-11). The GBP tree could take ETH natively instead
-  of converting USD through the committed FX series. Tempting and probably
-  wrong — every other series in that tree is a re-denomination of one USD
-  source, so a natively-quoted ETH would be the only figure whose GBP value
-  came from somewhere else, and would disagree with the rest by the spread
-  between Yahoo's two quotes. M17 should convert like everything else and say
-  so.
+  of converting USD through the committed FX series. This paragraph originally
+  argued against it and concluded "M17 should convert like everything else and
+  say so" — which the Decisions section above overrules, and which is left here
+  corrected rather than deleted because the reasoning against it is still the
+  reason the divergence check exists. ETH *is* quoted natively, and the spread
+  the paragraph worried about was then measured rather than argued about: over
+  the 3,183 days the two series share, the committed check reports a median gap
+  of 0.182%, p95 0.716%, worst day 2.910% (2022-09-29). The build fails if the
+  median passes 1% and only reports the worst day. (The probe that justified the
+  band said 0.174% over 2,531 days, because it required an exact FX quote where
+  the pipeline carries Friday's rate across the weekend like every other
+  conversion. The committed figures are the ones the page and the tests quote.)
 
 **Why first, and why not deferred:** dominance history is pro-only on the
 keyless tier, so `data/dominance.json` accretes one snapshot per UTC day — it
 holds three points today. Every day these fields are not captured is a day of
 history that cannot be recovered later. The charts can come afterwards; the
 capture cannot.
+
+**Shipped.** A second probe ran before the code, because two things this plan
+assumed were not measured (run 30456674325):
+
+- **How Yahoo dates a crypto bar.** BTC is shifted back a day before
+  correlation because a CoinGecko snapshot dated *d* is the close of *d−1*.
+  Yahoo turns out to date a crypto bar by the day it covers: against the
+  committed series over 365 overlapping days, Yahoo BTC-USD dated *d* matched
+  CoinGecko dated *d+1* to a median 0.019% (p95 0.114%), against 1.285% at lag 0
+  and 1.946% at lag −1. So ETH is already session-dated and takes no shift.
+  Shifting it would have put back exactly the offset the BTC shift removes, and
+  would have shown up as BTC and ETH looking less alike than they are.
+- **The native-vs-converted band**, above.
+
+And what it cost, measured against `main` rather than estimated:
+
+| | main | M17 | after codec |
+|---|---|---|---|
+| `/correlation` gz | 58,889 | 74,841 | **66,087** |
+| `correlations.json` | 640 KB | 940 KB | — |
+| pairs | 6 | 10 | 10 |
+
+The M16 codec halved the growth rather than absorbing it: net +7,198 bytes gz,
++12%. It helps exactly one pair, because `btc-eth` is crypto against crypto and
+is the only daily-contiguous series in the file (3,144 readings over 3,144
+days); every other pair is trading-day based and stores its dates. Ten toggle
+buttons in one non-wrapping row also made `/correlation` 565px wide in a 412px
+viewport — a regression against `main`, which measures 412 — fixed by wrapping.
+`/correlation` is now audited: 0.98 performance, 0.0000 CLS over five mobile
+runs.
 
 **The cost to plan for, not discover:** a fifth benchmark takes the correlation
 matrix from 6 pairs to 10. `correlations.json` is already 640 KB and
@@ -350,7 +386,16 @@ Three items from M15/M16 that are real and unscheduled:
   the build already simulates; `/dca` and `/gbp/dca` are now audited and assert
   CLS at or under 0.02, measured 0.0025 at 412px and 0 at 1280px.
 - `downsample.ts` ships tested and **unwired**. Wiring needs per-series
-  bucketing and pinned series endpoints.
+  bucketing and pinned series endpoints. `/correlation` is now the page that
+  would gain most: `btc-eth` carries 3,144 readings drawn at 760px, four per
+  pixel. The obstacle is the crosshair, which reads its anchors from the same
+  array, so downsampling the payload coarsens the readout.
+- **Offset dates in the series codec**, measured during M17 and deliberately not
+  taken there. Storing a gapped series as a start date plus day-offsets, instead
+  of falling back to plain rows, is worth a further 3,270 bytes gz on
+  `/correlation` alone. It changes a codec four components share, so it wants
+  its own PR and its own round-trip tests rather than riding inside a data
+  milestone.
 - **Fetched payloads** stay deferred, with the seven preconditions recorded
   above. `/correlation` is the page that would benefit and the one where the
   atomicity risk is sharpest, since its regime bands and its tables come from

@@ -4,8 +4,10 @@ import {
   convertSeries,
   FX_HISTORY_FROM,
   fxLagDays,
+  MAX_MEDIAN_QUOTE_DIVERGENCE_PCT,
   mergeRates,
   parseFrankfurter,
+  quoteDivergence,
   rateLookup,
 } from './fx';
 
@@ -177,5 +179,87 @@ describe('FX_HISTORY_FROM', () => {
     // converting drops no day — and throws naming this constant if it ever
     // stops holding.
     expect(FX_HISTORY_FROM < '2010-01-01').toBe(true);
+  });
+});
+
+describe('quoteDivergence', () => {
+  const day = (date: string, close: number): { date: string; close: number } => ({ date, close });
+
+  it('reports the median, the worst day and its date', () => {
+    const native = [day('2024-01-01', 100.5), day('2024-01-02', 100), day('2024-01-03', 110)];
+    const converted = [day('2024-01-01', 100), day('2024-01-02', 100), day('2024-01-03', 100)];
+    expect(quoteDivergence(native, converted)).toEqual({
+      days: 3,
+      medianPct: 0.5,
+      // Nearest-rank on three points puts the 95th percentile on the third,
+      // so it coincides with the maximum here — genuinely, not by an off-by-one.
+      p95Pct: 10,
+      maxPct: 10,
+      maxDate: '2024-01-03',
+      beyond1Pct: 1,
+    });
+  });
+
+  it('separates the 95th percentile from the maximum once there is a tail', () => {
+    // Twenty days, one of them wide: p95 must not simply track the worst day,
+    // because the methodology page quotes the two as different numbers.
+    const native = Array.from({ length: 20 }, (_, i) => day(`2024-01-${String(i + 1).padStart(2, '0')}`, i === 19 ? 130 : 101));
+    const converted = Array.from({ length: 20 }, (_, i) => day(`2024-01-${String(i + 1).padStart(2, '0')}`, 100));
+    const result = quoteDivergence(native, converted);
+    expect(result?.medianPct).toBe(1);
+    expect(result?.p95Pct).toBe(1);
+    expect(result?.maxPct).toBe(30);
+  });
+
+  it('counts a hair over 1% as beyond it, including an exact-looking 1%', () => {
+    // 101/100 - 1 is 0.010000000000000009, not 0.01, so a divergence that
+    // reads as exactly 1% falls on the "beyond" side. This count is reported
+    // and never asserted on, so the boundary costs nothing — pinned because a
+    // future reader comparing the log against the threshold would otherwise
+    // find it off by one and go looking for a bug.
+    expect(quoteDivergence([day('2024-01-01', 101)], [day('2024-01-01', 100)])?.beyond1Pct).toBe(1);
+    expect(quoteDivergence([day('2024-01-01', 100.9)], [day('2024-01-01', 100)])?.beyond1Pct).toBe(
+      0,
+    );
+  });
+
+  it('compares only shared dates, so a weekend gap is skipped not counted', () => {
+    // Rates carry forward, so a converted figure exists every day — but
+    // comparing a Saturday native quote against Friday's rate would measure
+    // the carry-forward convention rather than the two markets.
+    const result = quoteDivergence(
+      [day('2024-01-01', 100), day('2024-01-06', 200)],
+      [day('2024-01-01', 100)],
+    );
+    expect(result?.days).toBe(1);
+    expect(result?.maxPct).toBe(0);
+  });
+
+  it('is null when nothing overlaps, which the caller warns about', () => {
+    expect(quoteDivergence([day('2024-01-01', 100)], [day('2024-02-01', 100)])).toBeNull();
+    expect(quoteDivergence([], [])).toBeNull();
+  });
+
+  it('is symmetric in magnitude: a quote under or over reads the same size', () => {
+    const under = quoteDivergence([day('2024-01-01', 90)], [day('2024-01-01', 100)]);
+    const over = quoteDivergence([day('2024-01-01', 100)], [day('2024-01-01', 90)]);
+    expect(under?.maxPct).toBe(10);
+    // Not 10: the ratio is taken against the converted figure, so the two
+    // directions are not mirror images. Pinned so the asymmetry is a
+    // decision on record rather than a surprise in a build failure.
+    expect(over?.maxPct).toBe(11.111);
+  });
+
+  it('skips a non-positive converted figure rather than dividing by it', () => {
+    expect(quoteDivergence([day('2024-01-01', 100)], [day('2024-01-01', 0)])).toBeNull();
+  });
+
+  it('leaves the measured spread a long way inside the asserted band', () => {
+    // What the pipeline actually committed on the real series: 3,183 shared
+    // days, median 0.182%, p95 0.716%, worst 2.910%. The band is on the median
+    // precisely because one bad day cannot move it — so this is the headroom
+    // that matters, and 0.182 against 1 is roughly five-fold.
+    expect(MAX_MEDIAN_QUOTE_DIVERGENCE_PCT).toBe(1);
+    expect(0.182).toBeLessThan(MAX_MEDIAN_QUOTE_DIVERGENCE_PCT);
   });
 });

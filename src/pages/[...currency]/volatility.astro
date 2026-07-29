@@ -2,7 +2,7 @@
 import DrawdownChart from '../../components/DrawdownChart.astro';
 import VolChart from '../../components/VolChart.astro';
 import Base from '../../layouts/Base.astro';
-import { fxNote, type Currency } from '../../lib/currency';
+import { ethNote, fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
 
@@ -20,11 +20,18 @@ const vol30 = latestVol(30);
 const vol90 = latestVol(90);
 const btc = comparison.find((c) => c.asset === 'btc');
 
-// Gold's label carries whichever Yahoo series actually served the data
-// (XAU/USD spot preferred, COMEX front-month futures as fallback).
-const goldSeries = benchmarksDaily.benchmarks.find((b) => b.asset === 'gold')?.sourceSeries;
+// Gold's and ether's labels carry whichever Yahoo series actually served the
+// data (for gold, XAU/USD spot preferred with COMEX front-month as fallback).
+// Ether's matters more than gold's, not less: in the GBP tree it is quoted
+// natively as ETH-GBP rather than converted, so the ticker is the only thing
+// on this page that says which of the two routes produced the row.
+const sourceOf = (asset: string): string | undefined =>
+  benchmarksDaily.benchmarks.find((b) => b.asset === asset)?.sourceSeries;
+const goldSeries = sourceOf('gold');
+const ethSeries = sourceOf('eth');
 const assetLabels: Record<string, string> = {
   btc: 'Bitcoin',
+  eth: ethSeries ? `Ether (${ethSeries})` : 'Ether',
   sp500: 'S&P 500',
   gold: goldSeries ? `Gold (${goldSeries})` : 'Gold',
 };
@@ -33,7 +40,7 @@ const assetLabels: Record<string, string> = {
 <Base
   currency={currency}
   title="blockplot · volatility & risk"
-  description="BTC realized volatility, drawdown, and risk-adjusted returns vs S&P 500 and gold, from a versioned pipeline-committed dataset."
+  description="BTC realized volatility, drawdown, and risk-adjusted returns vs ether, the S&P 500 and gold, from a versioned pipeline-committed dataset."
 >
   <h1 class="visually-hidden">Volatility &amp; risk</h1>
 
@@ -115,15 +122,17 @@ const assetLabels: Record<string, string> = {
       </table>
     </div>
     <p class="method-note">
-      Daily closes: BTC from CoinGecko, S&amp;P 500 from FRED's keyless CSV export, gold from
-      Yahoo Finance's chart API (XAU/USD spot when available, COMEX front-month futures otherwise;
-      this dataset carries {goldSeries ?? 'no gold series'}) — FRED's LBMA gold series were
-      discontinued in 2022. Each asset keeps its own trading calendar inside BTC's {windowDays}-day
-      window; returns are daily log returns.
+      Daily closes: BTC from CoinGecko, S&amp;P 500 from FRED's keyless CSV export, gold and ether
+      from Yahoo Finance's chart API (gold as XAU/USD spot when available, COMEX front-month
+      futures otherwise; this dataset carries {goldSeries ?? 'no gold series'}
+      {ethSeries ? ` and ${ethSeries}` : ''}) — FRED's LBMA gold series were discontinued in 2022.
+      Each asset keeps its own trading calendar inside BTC's {windowDays}-day window; returns are
+      daily log returns.
       Sharpe uses a 0% risk-free rate; Sortino uses target downside deviation below 0% over all
-      observations. Both annualize by √365 for BTC and √252 for market-hours assets, so figures are
-      indicative rather than strictly like-for-like. All metrics are computed in the pipeline by
-      fixture-tested pure functions and committed to <code>/data</code>.{fxNote(currency)}
+      observations. Annualization is by √365 for the assets that trade every day — BTC and ether —
+      and √252 for the market-hours ones, so figures are indicative rather than strictly
+      like-for-like. All metrics are computed in the pipeline by fixture-tested pure functions and
+      committed to <code>/data</code>.{fxNote(currency)}{ethNote(currency, Boolean(ethSeries))}
     </p>
   </section>
 </Base>

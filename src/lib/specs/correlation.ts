@@ -24,8 +24,18 @@ export interface Pair {
   regimes: Segment[];
 }
 
+/**
+ * Display names for the toggle buttons and table captions.
+ *
+ * `pairLabel` falls back to the raw key for anything missing, which is a
+ * reasonable default and a poor failure: ETH shipped without an entry here and
+ * four of the ten buttons read "BTC – eth" and "eth – gold", lowercase, beside
+ * "BTC" and "S&P 500". A missing entry is invisible in review and obvious on
+ * screen.
+ */
 export const ASSET_LABELS: Record<string, string> = {
   btc: 'BTC',
+  eth: 'ETH',
   sp500: 'S&P 500',
   gold: 'gold',
   dxy: 'DXY',

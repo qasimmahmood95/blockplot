@@ -5,8 +5,27 @@ import { trimToLastDays } from './series';
 import type { CorrelationDataset, CorrPoint, PairId } from './schema';
 import type { SeriesPoint } from './risk';
 
-/** Fixed asset order for pair enumeration and the matrix display. */
-export const CORRELATION_ASSETS = ['btc', 'sp500', 'gold', 'dxy'] as const;
+/**
+ * Fixed asset order for pair enumeration and the matrix display.
+ *
+ * ETH sits next to BTC (M17) because that is the pair worth reading, and
+ * because the position decides the matrix's reading order. It changes no
+ * existing pair id: ids are built from the ordered index, and every previous
+ * pair keeps the same two members in the same order.
+ *
+ * ETH takes NO session-close shift, unlike BTC — measured, not assumed. Yahoo
+ * dates a crypto bar by the day it covers, where CoinGecko's snapshot dated d
+ * is the price at 00:00 UTC and therefore the close of d−1. Compared against
+ * the committed CoinGecko series over 365 overlapping days, Yahoo BTC-USD
+ * dated d matched CoinGecko dated d+1 to a median 0.019% (p95 0.114%), against
+ * 1.285% at lag 0 and 1.946% at lag −1. So a Yahoo crypto bar is already dated
+ * on the session it closes, which is exactly what `toSessionClose` converts the
+ * CoinGecko series *into*. Shifting ETH as well would reintroduce the one-day
+ * offset that the shift exists to remove, and it would show up as BTC and ETH
+ * looking less alike than they are — a plausible wrong number, which is the
+ * failure mode worth spending a probe on.
+ */
+export const CORRELATION_ASSETS = ['btc', 'eth', 'sp500', 'gold', 'dxy'] as const;
 
 /** Rolling correlation window (calendar days) and the minimum aligned returns it must hold. */
 export const CORRELATION_WINDOW_DAYS = 90;
@@ -87,6 +106,25 @@ export function toSessionClose<T extends { date: string }>(series: T[]): T[] {
  * at the same label carries R(d−1), and the FX term stops cancelling between
  * them. Swapping these two calls costs up to 0.16 of correlation against a
  * 0.25 regime threshold, and would otherwise be invisible.
+ */
+/**
+ * One exception to the cancellation above, named because the comment used to
+ * state it as an unconditional property of GBP pairs.
+ *
+ * It holds when both legs are converted at the committed rate, which is every
+ * pair except `btc-eth` in the GBP tree: ETH is quoted natively there (M17), so
+ * that leg never touches the rate and there is nothing to cancel exactly.
+ * What enters instead is the day-over-day change in the spread between the
+ * native and converted quotes — independent noise in one leg, which is the
+ * attenuation mode this whole comment is about, just far smaller than the bug
+ * it was written for.
+ *
+ * Measured on the committed window rather than left as a caveat: recomputing
+ * the GBP `btc-eth` rolling correlation both ways over 419 rolling points gives
+ * a mean 0.8431 as shipped against 0.8502 converted — 0.007 of attenuation,
+ * worst point 0.03, against a 0.25 regime threshold and the 0.16 the ordering
+ * bug cost. Choosing native over converted moves this number less than
+ * denominating in GBP at all does (median 0.01 USD-to-GBP over 3,142 points).
  */
 export function correlationBtcLeg(
   history: DailyPrice[],
@@ -206,7 +244,11 @@ export function rollingCorrelation(
  * Pairs without BTC keep a window instead — see NON_BTC_KEEP_DAYS.
  */
 export function buildCorrelationDataset(
-  series: Record<(typeof CORRELATION_ASSETS)[number], SeriesPoint[]>,
+  // Partial, so one benchmark being unavailable costs its pairs rather than
+  // the file. The pair list is not fixed-length in the schema for the same
+  // reason: a dataset with six pairs is a dataset missing an asset, which the
+  // page can render, where a dataset a day stale is one it cannot detect.
+  series: Partial<Record<(typeof CORRELATION_ASSETS)[number], SeriesPoint[]>>,
   opts: {
     fetchedAt: string;
     asOf: string;
@@ -228,7 +270,14 @@ export function buildCorrelationDataset(
       const a = CORRELATION_ASSETS[i];
       const b = CORRELATION_ASSETS[j];
       if (!a || !b) continue;
-      const full = rollingCorrelation(series[a], series[b], windowDays, minObs);
+      const legA = series[a];
+      const legB = series[b];
+      // A pair with a missing leg is omitted, not emitted empty. The schema
+      // permits an empty series (a pair whose sources share no history yet),
+      // so an empty one here would be indistinguishable from that — a source
+      // outage would read as two assets that have never overlapped.
+      if (!legA || !legB) continue;
+      const full = rollingCorrelation(legA, legB, windowDays, minObs);
       // Regimes are classified on the full series first: segmenting a clipped
       // one would date the opening regime at the clip rather than at the
       // change, and the clipped pairs are exactly where that would show.
