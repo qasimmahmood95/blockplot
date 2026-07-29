@@ -1,18 +1,14 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-07-28T19:42:40.118Z",
-  "asOf": "2026-07-28",
+  "fetchedAt": "2026-07-29T03:20:19.644Z",
+  "asOf": "2026-07-29",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
   "rollingVol": [
     {
       "windowDays": 30,
       "series": [
-        {
-          "date": "2025-07-29",
-          "volPct": 26.28
-        },
         {
           "date": "2025-07-30",
           "volPct": 26.21
@@ -1475,10 +1471,6 @@
       "windowDays": 90,
       "series": [
         {
-          "date": "2025-07-29",
-          "volPct": 31.29
-        },
-        {
           "date": "2025-07-30",
           "volPct": 31.29
         },
@@ -2939,10 +2931,6 @@
     {
       "windowDays": 365,
       "series": [
-        {
-          "date": "2025-07-29",
-          "volPct": 48.07
-        },
         {
           "date": "2025-07-30",
           "volPct": 48.01
@@ -4408,56 +4396,52 @@
     "troughDate": "2026-07-01",
     "series": [
       {
-        "date": "2025-07-29",
+        "date": "2025-07-30",
         "drawdownPct": 0
       },
       {
-        "date": "2025-07-30",
-        "drawdownPct": -0.15
-      },
-      {
         "date": "2025-07-31",
-        "drawdownPct": -0.15
+        "drawdownPct": 0
       },
       {
         "date": "2025-08-01",
-        "drawdownPct": -1.92
+        "drawdownPct": -1.77
       },
       {
         "date": "2025-08-02",
-        "drawdownPct": -4.01
+        "drawdownPct": -3.87
       },
       {
         "date": "2025-08-03",
-        "drawdownPct": -4.61
+        "drawdownPct": -4.46
       },
       {
         "date": "2025-08-04",
-        "drawdownPct": -3.2
+        "drawdownPct": -3.05
       },
       {
         "date": "2025-08-05",
-        "drawdownPct": -2.48
+        "drawdownPct": -2.33
       },
       {
         "date": "2025-08-06",
-        "drawdownPct": -3.31
+        "drawdownPct": -3.17
       },
       {
         "date": "2025-08-07",
-        "drawdownPct": -2.54
+        "drawdownPct": -2.39
       },
       {
         "date": "2025-08-08",
-        "drawdownPct": -0.45
+        "drawdownPct": -0.3
       },
       {
         "date": "2025-08-09",
-        "drawdownPct": -1.12
+        "drawdownPct": -0.97
       },
       {
         "date": "2025-08-10",
-        "drawdownPct": -1.28
+        "drawdownPct": -1.13
       },
       {
         "date": "2025-08-11",
@@ -5865,7 +5849,11 @@
       },
       {
         "date": "2026-07-28",
-        "drawdownPct": -48.92
+        "drawdownPct": -48.95
+      },
+      {
+        "date": "2026-07-29",
+        "drawdownPct": -48.81
       }
     ]
   },
@@ -5874,36 +5862,36 @@
       "asset": "btc",
       "periodsPerYear": 365,
       "observations": 365,
-      "firstDate": "2025-07-29",
-      "lastDate": "2026-07-28",
-      "totalReturnPct": -46.01,
+      "firstDate": "2025-07-30",
+      "lastDate": "2026-07-29",
+      "totalReturnPct": -45.81,
       "annualizedVolPct": 43.21,
-      "sharpe": -1.43,
-      "sortino": -1.86,
+      "sharpe": -1.42,
+      "sortino": -1.85,
       "maxDrawdownPct": -53.05
     },
     {
       "asset": "sp500",
       "periodsPerYear": 252,
       "observations": 250,
-      "firstDate": "2025-07-29",
-      "lastDate": "2026-07-27",
-      "totalReturnPct": 16.36,
+      "firstDate": "2025-07-30",
+      "lastDate": "2026-07-28",
+      "totalReturnPct": 16.75,
       "annualizedVolPct": 12.74,
-      "sharpe": 1.2,
-      "sortino": 1.73,
+      "sharpe": 1.23,
+      "sortino": 1.77,
       "maxDrawdownPct": -9.1
     },
     {
       "asset": "gold",
       "periodsPerYear": 252,
       "observations": 251,
-      "firstDate": "2025-07-29",
-      "lastDate": "2026-07-28",
-      "totalReturnPct": 21.13,
-      "annualizedVolPct": 28.58,
-      "sharpe": 0.68,
-      "sortino": 0.88,
+      "firstDate": "2025-07-30",
+      "lastDate": "2026-07-29",
+      "totalReturnPct": 22.23,
+      "annualizedVolPct": 28.56,
+      "sharpe": 0.71,
+      "sortino": 0.92,
       "maxDrawdownPct": -25.06
     }
   ]
