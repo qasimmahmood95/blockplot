@@ -93,6 +93,73 @@ into M14 because it was found by the gate M14 shipped, which is the outcome
 that gate was for: the milestone that adds the measurement is not the
 milestone that gets to act on it.
 
+### M16 — plan
+
+M15 halved what a chart page costs and left three things on the table, all of
+them measured rather than suspected. This is the plan for them; it is written
+before the work so the reasoning can be reviewed rather than reconstructed.
+
+**1. The payload, not the chart, is now the biggest thing on most pages.**
+Splitting each built page into its inline `application/json` and its SVG:
+
+| page | page gz | inline JSON | SVG |
+| --- | --- | --- | --- |
+| `/holdings` | 42.4 KB | **38.2 KB (90%)** | none |
+| `/dca` | 62.3 KB | **38.1 KB (61%)** | 19.8 KB |
+| `/correlation` | 54.0 KB | **30.3 KB (56%)** | 16.8 KB |
+| `/cycles` | 76.6 KB | 28.3 KB (36%) | 44.0 KB |
+| `/network` | 36.3 KB | 9.3 KB | 22.2 KB |
+| `/` | 14.7 KB | 4.9 KB | 4.6 KB |
+
+That payload exists for one reason: to feed the island when it upgrades. Since
+M15 the upgrade is on demand — so the data it needs should be too. Each chart's
+payload moves to a generated JSON route and is fetched beside Plot, on the same
+interaction. `/holdings` is the clearest case: 90% of that page is a history
+series for a chart that does not exist until the reader types an amount.
+
+This adds a class of runtime fetch, so **CLAUDE.md's two-fetch rule is amended
+in the same PR** — the rule requires it. The amendment is narrow and worth
+stating precisely: the sanctioned pair (CoinGecko, mempool.space) are *live
+external* reads whose whole risk is a cached value masquerading as current.
+This is a same-origin read of a committed file that the build already
+produced, on interaction, where failure leaves the served chart exactly as it
+is. Different enough to allow, not so different that it goes unwritten.
+The holdings privacy note enumerates the site's requests, so it is re-checked
+against the built output by driving `dist/`, as that rule requires.
+
+**2. The upgrade still shifts the layout.** Measured CLS 0.0346 at 360px and
+0.0085 at 1280px, against 0 before M15. Cause: the served variant is laid out
+at 400 or 760 and scaled to the container, so its displayed height is
+`340 × width/400`, while the live chart re-renders at a fixed 340. Fix: the
+live render takes the height the static one is *currently occupying*, so the
+box never changes. `drawChart` measures and passes it, which keeps it in one
+place rather than in ten components.
+
+**3. The served SVG is drawn at more precision than a screen has.** `/cycles`
+carries 4,991 points across four lines, 3.3 per pixel at the narrow width.
+Prototyped: min/max-per-x-pixel-bucket downsampling — which preserves the drawn
+envelope exactly, unlike naive decimation — gives 4,991 → 3,985 points and
+21.7 → 17.9 KB gz on the narrow variant. The wide variant is already under two
+points per pixel and is left alone. Applied to the **build-time render only**;
+the live chart keeps every point, so a hovered value is never an approximation.
+
+**4. Offline, charts render but the crosshair does not**, because the worker
+caches what it has served and Plot is only fetched on a first hover. Item 1
+extends that to the data. Two options, and the choice is not obvious:
+prefetch Plot and the payload at idle (restores offline, makes the first hover
+instant, keeps the critical path clear — but re-downloads ~84 KB for readers
+who never hover), or leave it and keep the README's promise narrow. Deferred to
+review rather than decided here.
+
+**5. The Lighthouse ceiling.** Chart pages sit at a median 0.90 where the
+chartless page reaches 0.99, and M15 proved the gap is not the JS payload:
+`/holdings` shipped all of Plot before and none after and scored 0.90 both
+times. Under diagnosis; scope set by what that finds, and "nothing worth
+doing" is an acceptable answer if the numbers say so.
+
+Same rules as every milestone: pure functions with fixture tests for anything
+computed, one PR, gated on review, independent verification and CI.
+
 ## Testing
 
 - Every metric calculation (volatility, drawdown, Sharpe/Sortino, correlation,
