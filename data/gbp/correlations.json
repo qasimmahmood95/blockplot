@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-07-29T14:52:07.629Z",
+  "fetchedAt": "2026-07-29T22:05:14.448Z",
   "asOf": "2026-07-29",
   "windowDays": 90,
   "minObs": 40,
@@ -42639,6 +42639,10 @@
           "corr": -0.28
         },
         {
+          "date": "2026-07-27",
+          "corr": -0.28
+        },
+        {
           "date": "2026-07-28",
           "corr": -0.28
         }
@@ -42766,7 +42770,7 @@
           "startDate": "2026-07-14",
           "confirmedFrom": "2026-07-14",
           "endDate": "2026-07-28",
-          "observations": 10,
+          "observations": 11,
           "days": 15,
           "meanCorr": -0.27
         }
@@ -44801,7 +44805,7 @@
         },
         {
           "date": "2026-07-29",
-          "corr": 0.39
+          "corr": 0.37
         }
       ],
       "regimes": [
@@ -45823,12 +45827,16 @@
           "corr": -0.29
         },
         {
+          "date": "2026-07-27",
+          "corr": -0.29
+        },
+        {
           "date": "2026-07-28",
           "corr": -0.29
         },
         {
           "date": "2026-07-29",
-          "corr": -0.32
+          "corr": -0.3
         }
       ],
       "regimes": [
@@ -45855,7 +45863,7 @@
           "startDate": "2026-07-14",
           "confirmedFrom": "2026-07-14",
           "endDate": "2026-07-29",
-          "observations": 11,
+          "observations": 12,
           "days": 16,
           "meanCorr": -0.28
         }
@@ -47903,6 +47911,10 @@
           "corr": -0.32
         },
         {
+          "date": "2026-07-27",
+          "corr": -0.33
+        },
+        {
           "date": "2026-07-28",
           "corr": -0.33
         }
@@ -47949,7 +47961,7 @@
           "startDate": "2026-04-29",
           "confirmedFrom": "2026-04-29",
           "endDate": "2026-07-28",
-          "observations": 61,
+          "observations": 62,
           "days": 91,
           "meanCorr": -0.38
         }
@@ -48953,12 +48965,16 @@
           "corr": -0.49
         },
         {
-          "date": "2026-07-28",
+          "date": "2026-07-27",
           "corr": -0.49
         },
         {
+          "date": "2026-07-28",
+          "corr": -0.48
+        },
+        {
           "date": "2026-07-29",
-          "corr": -0.47
+          "corr": -0.49
         }
       ],
       "regimes": [
@@ -49003,7 +49019,7 @@
           "startDate": "2026-06-17",
           "confirmedFrom": "2026-06-17",
           "endDate": "2026-07-29",
-          "observations": 28,
+          "observations": 29,
           "days": 43,
           "meanCorr": -0.5
         }
