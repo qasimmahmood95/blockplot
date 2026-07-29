@@ -255,10 +255,11 @@ describe('quoteDivergence', () => {
   });
 
   it('leaves the measured spread a long way inside the asserted band', () => {
-    // Measured over 2,531 overlapping days: median 0.174%, p95 0.711%, worst
-    // 2.910%. The band is on the median precisely because one bad day cannot
-    // move it — so this is the headroom that matters.
+    // What the pipeline actually committed on the real series: 3,183 shared
+    // days, median 0.182%, p95 0.716%, worst 2.910%. The band is on the median
+    // precisely because one bad day cannot move it — so this is the headroom
+    // that matters, and 0.182 against 1 is roughly five-fold.
     expect(MAX_MEDIAN_QUOTE_DIVERGENCE_PCT).toBe(1);
-    expect(0.174).toBeLessThan(MAX_MEDIAN_QUOTE_DIVERGENCE_PCT);
+    expect(0.182).toBeLessThan(MAX_MEDIAN_QUOTE_DIVERGENCE_PCT);
   });
 });

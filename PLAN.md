@@ -265,9 +265,12 @@ and `market_cap_change_percentage_24h_usd`. The premise holds.
   corrected rather than deleted because the reasoning against it is still the
   reason the divergence check exists. ETH *is* quoted natively, and the spread
   the paragraph worried about was then measured rather than argued about: over
-  2,531 overlapping days the median gap is 0.174%, p95 0.711%, worst day 2.910%
-  (2022-09-29). The build fails if the median passes 1% and only reports the
-  worst day.
+  the 3,183 days the two series share, the committed check reports a median gap
+  of 0.182%, p95 0.716%, worst day 2.910% (2022-09-29). The build fails if the
+  median passes 1% and only reports the worst day. (The probe that justified the
+  band said 0.174% over 2,531 days, because it required an exact FX quote where
+  the pipeline carries Friday's rate across the weekend like every other
+  conversion. The committed figures are the ones the page and the tests quote.)
 
 **Why first, and why not deferred:** dominance history is pro-only on the
 keyless tier, so `data/dominance.json` accretes one snapshot per UTC day — it

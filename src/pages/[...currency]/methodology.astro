@@ -177,7 +177,7 @@ const t = signals.thresholds;
           every run: the natively quoted series is compared against the converted one on every date
           both carry. {
             div
-              ? `Over the ${div.days} shared days in this file the median gap is ${div.medianPct}%, the 95th percentile ${div.p95Pct}%, and the widest single day ${div.maxPct}% on ${div.maxDate}; ${div.beyond1Pct} days sit beyond 1%.`
+              ? `Over the ${div.days.toLocaleString('en-US')} shared days in this file the median gap is ${div.medianPct}%, the 95th percentile ${div.p95Pct}%, and the widest single day ${div.maxPct}% on ${div.maxDate}; ${div.beyond1Pct} of them sit beyond 1%.`
               : 'This file carries no such measurement — either it was built before the check existed, or one of the two routes was unavailable when it ran.'
           } The build fails if the <em>median</em> passes {div?.bandPct ?? 1}%, and only reports the
           worst day. That split is the point: a median that far out cannot be moved by one bad

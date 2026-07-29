@@ -294,9 +294,15 @@ export function quoteDivergence(
 /**
  * The band the median divergence must stay inside.
  *
- * Set from measurement, not from taste. Over 2,531 overlapping days the median
- * came out at 0.174%, p95 at 0.711% and the single worst day at 2.910%
- * (2022-09-29, during the sterling crisis). So 1% leaves roughly a six-fold
+ * Set from measurement, not from taste — and from the pipeline's own
+ * measurement, not the probe's. The probe that justified this band compared
+ * only dates where an FX quote existed exactly, giving 2,531 days and a 0.174%
+ * median; the check as it actually runs uses the carry-forward rate like every
+ * other conversion here, so it sees all 3,183 shared days and reports 0.182%,
+ * p95 0.716%, worst 2.910% (2022-09-29, during the sterling crisis). Nearly the
+ * same numbers, and the difference is real: the extra days are weekends priced
+ * at Friday's rate. The committed figures are the ones quoted, because they are
+ * the ones this constant is compared against. 1% leaves roughly a five-fold
  * margin on the statistic being asserted.
  *
  * The median is asserted and the maximum is not, and that split is the whole
