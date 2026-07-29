@@ -1,0 +1,25 @@
+name: Source probe
+
+# Throwaway. The dev environment has no outbound network, so the field names
+# and chart slugs M17-M20 depend on are documentation and memory rather than
+# measurement. This prints the live response shapes so the plan can be written
+# against what the APIs actually return. Delete once the plan is settled.
+#
+# Read-only: it fetches and prints. It commits nothing and touches no dataset.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/whats-next-nq5xz6]
+    paths: ['.github/workflows/probe.yml', 'scripts/probe.ts']
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/probe.ts
