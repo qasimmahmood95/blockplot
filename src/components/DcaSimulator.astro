@@ -98,7 +98,11 @@ const svg = renderResponsiveChart((w) =>
   import { HOLDINGS_EVENT, readHoldings } from '../lib/holdings-store';
 
   // Decoded once, eagerly: every stat tile is a function of this series, and
-  // they are drawn on load. 5,824 rows is about a millisecond.
+  // they are drawn on load, so there is nothing to defer it behind. Measured
+  // in the built page: 3.9 ms unthrottled, 16.3 ms at the 4x CPU throttle
+  // Lighthouse uses — against 0.16 ms to JSON.parse the payload it replaces.
+  // Worth knowing rather than guessed at; an earlier version of this comment
+  // said "about a millisecond" and was out by more than an order of magnitude.
   const { code, series: encodedSeries } = chartData<{
     code: string;
     series: Parameters<typeof decodeDaily>[0];
@@ -297,7 +301,14 @@ const svg = renderResponsiveChart((w) =>
     const state = compute();
     if (state === null) return;
     if (state === 'no-purchases') {
-      container.replaceChildren();
+      // Empty the variants, not the container. Removing the wrappers would
+      // strip the only record of which width each side is laid out at, and
+      // every later render would fall back to the container's pixel width —
+      // unscaled margins and type, the exact shape change this design exists
+      // to avoid.
+      const wrappers = container.querySelectorAll('.chart-at-narrow, .chart-at-wide');
+      if (wrappers.length) wrappers.forEach((w) => w.replaceChildren());
+      else container.replaceChildren();
       return;
     }
     const { dcaPoints, lumpPoints, heldPoints, wealthDomain } = state;

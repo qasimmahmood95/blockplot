@@ -76,10 +76,17 @@ export function encodeIndexed(
   xKey: string,
   yKey: string,
 ): IndexedSeries {
-  for (let i = 1; i < rows.length; i++) {
-    if ((rows[i]?.[xKey] ?? 0) - (rows[i - 1]?.[xKey] ?? 0) !== 1) return { rows: [...rows] };
-  }
   if (rows.length === 0) return { rows: [] };
+  // Every row must actually carry both keys. `?? 0` here let a row with no x
+  // through the contiguity check and invented an index for it on decode.
+  for (const row of rows) {
+    if (typeof row[xKey] !== 'number' || typeof row[yKey] !== 'number') return { rows: [...rows] };
+  }
+  for (let i = 1; i < rows.length; i++) {
+    if ((rows[i]?.[xKey] as number) - (rows[i - 1]?.[xKey] as number) !== 1) {
+      return { rows: [...rows] };
+    }
+  }
   return { x0: rows[0]?.[xKey] as number, values: rows.map((r) => r[yKey] as number) };
 }
 

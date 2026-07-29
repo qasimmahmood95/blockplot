@@ -18,21 +18,9 @@ import { plot } from '@observablehq/plot';
 import { keepMarkAriaLabelsStripped } from './plot-a11y';
 import { NARROW_CLASS, NARROW_WIDTH, WIDE_CLASS, WIDE_WIDTH } from './plot-theme';
 
-/**
- * The variant wrapper CSS is currently showing, or null if there is none —
- * the holdings chart has no build-time form, so it has no wrappers.
- *
- * Read from computed style rather than from a media query in JavaScript. The
- * breakpoint lives in `global.css` and should live in exactly one place; asking
- * the browser which wrapper it is showing cannot drift from the rule that makes
- * it so.
- */
-function visibleVariant(container: Element): HTMLElement | null {
-  const wrappers = container.querySelectorAll<HTMLElement>(`.${NARROW_CLASS}, .${WIDE_CLASS}`);
-  for (const wrapper of wrappers) {
-    if (getComputedStyle(wrapper).display !== 'none') return wrapper;
-  }
-  return null;
+/** Every served variant wrapper, or empty when the chart has none. */
+function variants(container: Element): HTMLElement[] {
+  return [...container.querySelectorAll<HTMLElement>(`.${NARROW_CLASS}, .${WIDE_CLASS}`)];
 }
 
 /**
@@ -55,16 +43,42 @@ function visibleVariant(container: Element): HTMLElement | null {
  * correct chart immediately rather than a blank frame, and the resize handler
  * re-renders into whichever wrapper has become visible.
  */
-export function drawChart(container: Element, build: (width: number) => Parameters<typeof plot>[0]): void {
-  const wrapper = visibleVariant(container);
-  if (wrapper) {
-    const width = wrapper.classList.contains(NARROW_CLASS) ? NARROW_WIDTH : WIDE_WIDTH;
-    wrapper.replaceChildren(plot(build(width)));
-  } else {
+export function drawChart(
+  container: Element,
+  build: (width: number) => Parameters<typeof plot>[0],
+): void {
+  const wrappers = variants(container);
+  if (wrappers.length === 0) {
     // No served variants: the holdings chart, which is built entirely in the
     // browser from an amount the build cannot know. Its true pixel width is
     // the right width, because nothing is scaling it.
     container.replaceChildren(plot(build(container.clientWidth || WIDE_WIDTH)));
+    keepMarkAriaLabelsStripped(container);
+    return;
+  }
+
+  // Both, not just the one on screen. An earlier version drew only the visible
+  // wrapper and left the other holding its build-time SVG, which is fine while
+  // the live chart still shows what the build drew and wrong the moment it does
+  // not. Printing is where that surfaced: the print stylesheet lays out at
+  // ~816px, so a phone reader who pressed "linear" got a sheet showing the log
+  // chart with "linear" as its only visible label; on /correlation, pair A's
+  // chart above pair B's table; on /dca, the build's default simulation beside
+  // a form and stat tiles describing different inputs — and the print rules
+  // deliberately keep that form visible so the figures are reproducible, which
+  // made the wrong version look authoritative. Printing fires no resize and no
+  // mutation, so nothing healed it.
+  //
+  // Crossing the breakpoint had a smaller version of the same problem: the
+  // resize re-render is deferred to an animation frame, so the frame in which
+  // the media query flips painted the stale variant.
+  //
+  // Drawing both costs a second Plot render per update. That is the price of
+  // the two variants never disagreeing, and it is paid on interaction rather
+  // than on load.
+  for (const wrapper of wrappers) {
+    const width = wrapper.classList.contains(NARROW_CLASS) ? NARROW_WIDTH : WIDE_WIDTH;
+    wrapper.replaceChildren(plot(build(width)));
   }
   keepMarkAriaLabelsStripped(container);
 }

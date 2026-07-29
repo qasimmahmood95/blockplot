@@ -49,13 +49,13 @@ const svg = renderResponsiveChart((w) =>
         { drawChart },
         { priceSpec, priceFormat },
         { crosshairAnchors, isoDay },
+        { decodeDaily },
       ] = await Promise.all([
         import('../lib/plot-client'),
         import('../lib/specs/price'),
         import('../lib/crosshair'),
+        import('../lib/series-codec'),
       ]);
-
-      const { decodeDaily } = await import('../lib/series-codec');
       const { code, series } = chartData<{
         code: string;
         series: Parameters<typeof decodeDaily>[0];

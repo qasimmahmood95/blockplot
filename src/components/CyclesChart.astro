@@ -78,14 +78,13 @@ const svg = renderResponsiveChart((w) => cyclesSpec(points, lineEnds, domain, 'l
     let scale: CycleScale = 'log';
 
     const upgrade = upgradeChart(container, async () => {
-      const [{ drawChart }, { cyclesSpec }, { crosshairAnchors }] =
+      const [{ drawChart }, { cyclesSpec }, { crosshairAnchors }, { decodeIndexed }] =
         await Promise.all([
           import('../lib/plot-client'),
           import('../lib/specs/cycles'),
           import('../lib/crosshair'),
+          import('../lib/series-codec'),
         ]);
-
-      const { decodeIndexed } = await import('../lib/series-codec');
       const encoded = chartData<
         { label: string; series: Parameters<typeof decodeIndexed>[0] }[]
       >('cycles-chart-data');
