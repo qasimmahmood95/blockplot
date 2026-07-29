@@ -191,10 +191,24 @@ describe('quoteDivergence', () => {
     expect(quoteDivergence(native, converted)).toEqual({
       days: 3,
       medianPct: 0.5,
+      // Nearest-rank on three points puts the 95th percentile on the third,
+      // so it coincides with the maximum here — genuinely, not by an off-by-one.
+      p95Pct: 10,
       maxPct: 10,
       maxDate: '2024-01-03',
       beyond1Pct: 1,
     });
+  });
+
+  it('separates the 95th percentile from the maximum once there is a tail', () => {
+    // Twenty days, one of them wide: p95 must not simply track the worst day,
+    // because the methodology page quotes the two as different numbers.
+    const native = Array.from({ length: 20 }, (_, i) => day(`2024-01-${String(i + 1).padStart(2, '0')}`, i === 19 ? 130 : 101));
+    const converted = Array.from({ length: 20 }, (_, i) => day(`2024-01-${String(i + 1).padStart(2, '0')}`, 100));
+    const result = quoteDivergence(native, converted);
+    expect(result?.medianPct).toBe(1);
+    expect(result?.p95Pct).toBe(1);
+    expect(result?.maxPct).toBe(30);
   });
 
   it('counts a hair over 1% as beyond it, including an exact-looking 1%', () => {

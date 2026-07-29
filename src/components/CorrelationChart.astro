@@ -35,9 +35,9 @@ const payload = {
 };
 const active = pairs[0];
 
-// Only the pressed pair's chart is drawn: six SVGs would be six times the
-// markup for five charts nobody has asked to see. The tables are another
-// matter — all six are a few dozen rows, and rendering them here means the
+// Only the pressed pair's chart is drawn: ten SVGs would be ten times the
+// markup for nine charts nobody has asked to see. The tables are another
+// matter — all ten are a few dozen rows, and rendering them here means the
 // pair switch is a visibility change rather than a DOM build.
 const svg = active
   ? renderResponsiveChart((w) => correlationSpec(active, correlations.regimeThreshold, w, false))

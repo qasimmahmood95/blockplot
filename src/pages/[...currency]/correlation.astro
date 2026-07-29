@@ -1,9 +1,10 @@
 ---
 import CorrelationChart from '../../components/CorrelationChart.astro';
 import Base from '../../layouts/Base.astro';
-import { dxyNote, fxNote, type Currency } from '../../lib/currency';
+import { dxyNote, ethNote, fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
+import { CORRELATION_ASSETS } from '../../../pipeline/correlation';
 
 export const getStaticPaths = currencyPaths;
 
@@ -23,11 +24,32 @@ const lastCorrDate = pairs.reduce((max, p) => {
 
 const assetLabels: Record<string, string> = {
   btc: 'BTC',
+  eth: 'ETH',
   sp500: 'S&P 500',
   gold: 'Gold',
   dxy: 'DXY',
 };
-const assets = ['btc', 'sp500', 'gold', 'dxy'];
+// Derived from the data rather than written down. This list was hardcoded and
+// was not updated when ETH was ingested, so the matrix stayed 4x4 while the
+// file carried ten pairs — the page paid the payload for four pairs it never
+// showed, and the note below claiming the non-BTC pairs "exist to fill the
+// matrix" was false for three of them. Reading the assets off the pairs means
+// a future asset cannot be ingested and silently left out of the one view it
+// was ingested for, and an asset whose sources failed drops out on its own.
+const assets = [...new Set(pairs.flatMap((p) => [p.a, p.b]))].sort(
+  (a, b) => CORRELATION_ASSETS.indexOf(a as never) - CORRELATION_ASSETS.indexOf(b as never),
+);
+
+const hasEth = assets.includes('eth');
+// Read off the data, not stated: the depth of this pair is set by ether's own
+// history, not by the ten-year source caps the paragraph below gives as the
+// reason for every other BTC pair.
+const btcEthSeries = pairs.find((p) => p.pair === 'btc-eth')?.series ?? [];
+const btcEthYears = (
+  (Date.parse(`${btcEthSeries.at(-1)?.date ?? ''}T00:00:00Z`) -
+    Date.parse(`${btcEthSeries[0]?.date ?? ''}T00:00:00Z`)) /
+  (365.2425 * 86_400_000)
+).toFixed(1);
 
 const latest = new Map<string, number | null>(
   pairs.map((p) => [p.pair, p.series.at(-1)?.corr ?? null]),
@@ -52,7 +74,7 @@ const btcPairs = [
 <Base
   currency={currency}
   title="blockplot · correlation"
-  description="Rolling 90-day correlation of BTC daily returns with the S&P 500, gold, and the dollar index, over full history, with correlation-regime segmentation."
+  description="Rolling 90-day correlation of BTC daily returns with ether, the S&P 500, gold, and the dollar index, over full history, with correlation-regime segmentation."
 >
   <h1 class="visually-hidden">Correlation</h1>
 
@@ -104,11 +126,13 @@ const btcPairs = [
       Pearson correlation of daily log returns over a trailing {windowDays}-calendar-day window,
       computed on each pair's shared trading days (a holiday or weekend in either series becomes
       one multi-day return); windows holding fewer than {minObs} shared returns are omitted. Each
-      pair with BTC in it runs about ten years — FRED publishes the S&amp;P 500 as a rolling
-      decade, and ten years is the deepest range Yahoo serves at daily granularity rather than
-      quietly coarsening to monthly bars. Pairs <em>without</em> BTC keep a 365-day window — they exist to fill the
-      matrix above, which reads one number from each, and at full depth they were more than half
-      the dataset. Their regimes are still classified over the whole history, so a row may report
+      pair with BTC in it carries its whole shared history, which for the benchmarks is about ten
+      years — FRED publishes the S&amp;P 500 as a rolling decade, and ten years is the deepest
+      range Yahoo serves at daily granularity rather than quietly coarsening to monthly bars. BTC
+      and ether reach back {btcEthYears} years instead, bounded by ether's own history rather than
+      by either source's cap, and every day of it rather than trading days only. Pairs
+      <em>without</em> BTC keep a 365-day window — they exist to fill the matrix above, which reads
+      one number from each, and at full depth they were more than half the dataset. Their regimes are still classified over the whole history, so a row may report
       a regime that began before the charted window and count observations the chart does not
       show.
     </p>
@@ -126,10 +150,13 @@ const btcPairs = [
       opening too short to confirm anything, the table says which date it was confirmed from.
     </p>
     <p class="method-note">
-      BTC uses blockchain.com's daily series, the S&amp;P 500 FRED's, and gold and the dollar index
-      Yahoo Finance's (DXY falls back to front-month futures when the index itself is
-      unavailable). All values are computed in the pipeline by fixture-tested pure functions and
-      committed to <code>/data</code>.{fxNote(currency)}{dxyNote(currency)}
+      BTC uses blockchain.com's daily series, the S&amp;P 500 FRED's, and gold, ether and the dollar
+      index Yahoo Finance's (DXY falls back to front-month futures when the index itself is
+      unavailable). Ether is dated differently from BTC and deliberately so — a Yahoo crypto bar
+      already falls on the session it closes, where a 00:00-UTC BTC snapshot does not, which is
+      measured on the methodology page. All values are computed in the pipeline by fixture-tested
+      pure functions and committed to
+      <code>/data</code>.{fxNote(currency)}{ethNote(currency, hasEth)}{dxyNote(currency)}
     </p>
   </section>
 </Base>

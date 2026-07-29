@@ -29,7 +29,7 @@ import {
   quoteDivergence,
 } from './fx';
 import { buildHalvingDataset } from './halvings';
-import type { DominancePoint, HalvingDataset } from './schema';
+import type { DominancePoint, HalvingDataset, QuoteDivergenceStats } from './schema';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
 import {
@@ -255,14 +255,17 @@ for (const currency of CURRENCIES) {
   // routine 1.5% front-month basis trips the throw, which would take out every
   // GBP dataset and network.json for a reason that is not a fault.
   const ethSpotUsd = ethFetch?.ticker === 'ETH-USD';
+  let ethQuoteDivergence: QuoteDivergenceStats | undefined;
   if (ethNative && ethConverted && ethSpotUsd) {
     const divergence = quoteDivergence(ethNative, ethConverted);
     if (!divergence) {
       console.warn(`warning: ${currency} eth native and converted share no dates`);
     } else {
+      ethQuoteDivergence = { ...divergence, bandPct: MAX_MEDIAN_QUOTE_DIVERGENCE_PCT };
       console.log(
         `${currency} eth native vs converted: ${divergence.days} shared days, ` +
-          `median ${divergence.medianPct}%, worst ${divergence.maxPct}% on ${divergence.maxDate}, ` +
+          `median ${divergence.medianPct}%, p95 ${divergence.p95Pct}%, ` +
+          `worst ${divergence.maxPct}% on ${divergence.maxDate}, ` +
           `${divergence.beyond1Pct} days beyond 1%`,
       );
       if (divergence.medianPct > MAX_MEDIAN_QUOTE_DIVERGENCE_PCT) {
@@ -331,6 +334,7 @@ for (const currency of CURRENCIES) {
       currency,
       fetchedAt,
       keepDays: BENCHMARK_KEEP_DAYS,
+      ...(ethQuoteDivergence ? { ethQuoteDivergence } : {}),
       benchmarks: [
         { asset: 'sp500', source: 'fred', sourceSeries: SP500_FRED_SERIES, series: sp },
         { asset: 'gold', source: 'yahoo', sourceSeries: goldFetch.ticker, series: au },

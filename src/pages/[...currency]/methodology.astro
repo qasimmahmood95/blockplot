@@ -16,6 +16,11 @@ const meta = CURRENCY_META[currency];
 // below false — the exact failure this page exists to avoid.
 const ethBenchmark = benchmarksDaily.benchmarks.find((b) => b.asset === 'eth');
 const ethNative = ethBenchmark?.sourceSeries.endsWith('-GBP') ?? false;
+// The divergence figures are read from the file the run wrote, not written
+// here. They were prose literals for one commit — including a 95th percentile
+// the check did not compute — which is exactly what this page's opening
+// paragraph promises never happens.
+const div = benchmarksDaily.ethQuoteDivergence;
 
 /**
  * Figures quoted below come from the committed data, not from prose. Every
@@ -169,14 +174,25 @@ const t = signals.thresholds;
       currency !== 'usd' && ethNative && (
         <p class="method-note">
           The cost of that choice is that two markets can disagree, so the pipeline measures it
-          every run: the natively quoted series is compared against the converted one on every
-          date both carry. Across the record the median gap is 0.174%, the 95th percentile 0.711%,
-          and the widest single day 2.910% — 29 September 2022, during the sterling crisis. The
-          build fails if the <em>median</em> passes 1%, and only reports the worst day. That split
-          is the point: a median that far out cannot be moved by one bad quote, so reaching it
-          means something systematic is wrong — the wrong ticker, an inverted or stale rate, a
-          mis-joined date. A single wide day is two real markets on a bad afternoon, and failing on
-          it would make this site hostage to a data provider's worst quote.
+          every run: the natively quoted series is compared against the converted one on every date
+          both carry. {
+            div
+              ? `Over the ${div.days} shared days in this file the median gap is ${div.medianPct}%, the 95th percentile ${div.p95Pct}%, and the widest single day ${div.maxPct}% on ${div.maxDate}; ${div.beyond1Pct} days sit beyond 1%.`
+              : 'This file carries no such measurement — either it was built before the check existed, or one of the two routes was unavailable when it ran.'
+          } The build fails if the <em>median</em> passes {div?.bandPct ?? 1}%, and only reports the
+          worst day. That split is the point: a median that far out cannot be moved by one bad
+          quote, so reaching it means something systematic is wrong — the wrong ticker, an inverted
+          rate, a mis-joined date. A single wide day is two real markets on a bad afternoon, and
+          failing on it would make this site hostage to a data provider's worst quote.
+        </p>
+        <p class="method-note">
+          Two limits on that check, stated because they are easy to assume away. It compares every
+          shared date including weekends, since both series trade through them — so a share of
+          those days is converted at a rate carried over from Friday, and the median is a little
+          easier than a weekday-only one would be. And a median is the wrong instrument for a stale
+          rate feed: a stale tail is a minority of the record by construction and cannot move the
+          middle of the distribution however wrong it is. That case is covered separately, by a
+          check on how far the rate series lags the price series, which warns rather than failing.
         </p>
       )
     }

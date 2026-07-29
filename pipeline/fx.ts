@@ -241,6 +241,13 @@ export async function fetchGbpUsd(): Promise<FxFetch> {
 export interface QuoteDivergence {
   days: number;
   medianPct: number;
+  /**
+   * The 95th percentile. Added because the methodology page quotes one, and
+   * quoted it as something "the pipeline measures every run" while this
+   * function did not compute it at all — a figure attributed to a check that
+   * was not producing it.
+   */
+  p95Pct: number;
   maxPct: number;
   maxDate: string;
   beyond1Pct: number;
@@ -259,13 +266,26 @@ export function quoteDivergence(
   }
   if (diffs.length === 0) return null;
   const sorted = [...diffs].sort((a, b) => a.pct - b.pct);
+  // The median is the upper of the two middles on an even count, and the p95 is
+  // nearest-rank — `ceil(q*n)`, not `floor`. Both err toward the larger figure,
+  // which is the safe direction for numbers that gate a build and get quoted.
+  //
+  // The distinction is not pedantry at these sizes: `floor(0.95*n)` indexes the
+  // *last* element for any n below 20, so on a short series the p95 would
+  // silently be the maximum — and the methodology page prints the two side by
+  // side as different numbers. On the real ~2,500-day series both formulas
+  // separate them, which is exactly why this would not have shown up in the
+  // committed data.
   const median = sorted[Math.floor(sorted.length / 2)];
+  const p95 = sorted[Math.max(0, Math.ceil(0.95 * sorted.length) - 1)];
   const worst = sorted.at(-1);
-  if (!median || !worst) return null;
+  if (!median || !p95 || !worst) return null;
+  const round3 = (v: number): number => Math.round(v * 1000) / 1000;
   return {
     days: diffs.length,
-    medianPct: Math.round(median.pct * 1000) / 1000,
-    maxPct: Math.round(worst.pct * 1000) / 1000,
+    medianPct: round3(median.pct),
+    p95Pct: round3(p95.pct),
+    maxPct: round3(worst.pct),
     maxDate: worst.date,
     beyond1Pct: diffs.filter((d) => d.pct > 1).length,
   };

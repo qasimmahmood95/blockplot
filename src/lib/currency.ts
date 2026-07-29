@@ -27,6 +27,25 @@ export const GBP_METHOD_NOTE =
   'experienced.';
 
 /**
+ * The exception to the note above, for the pages that show ether's figures.
+ *
+ * Ether is quoted natively as ETH-GBP rather than converted (M17). The note
+ * says "each daily close is converted", which is true of everything except
+ * that one series — so on the two pages that actually display ether numbers,
+ * saying only the general rule states something the data contradicts. The
+ * methodology page carried the exception and the pages carrying the figures did
+ * not, which is the wrong way round.
+ */
+export const GBP_ETH_NOTE =
+  'Ether is the one exception: it is quoted natively in GBP from its own market rather than ' +
+  'converted, because a sterling holder’s ether really does trade in sterling. The pipeline ' +
+  'checks the two routes against each other every run — see the methodology page.';
+
+/** The ether caveat when the page is in GBP and actually shows ether, otherwise nothing. */
+export const ethNote = (currency: Currency, hasEth: boolean): string =>
+  currency === 'gbp' && hasEth ? ` ${GBP_ETH_NOTE}` : '';
+
+/**
  * Correlation-page caveat. The dollar index measures the dollar itself, so
  * converting it into GBP would be meaningless; it stays as quoted while BTC,
  * the S&P 500 and gold are re-denominated.

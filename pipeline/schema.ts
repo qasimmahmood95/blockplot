@@ -175,6 +175,31 @@ export const benchmarkDaySchema = z.object({
 
 export type BenchmarkDay = z.infer<typeof benchmarkDaySchema>;
 
+/**
+ * How far the natively-quoted ETH-GBP series sits from the same asset
+ * converted through the committed rate, as measured by the run that wrote this
+ * file. Present only in the GBP tree, and only when both routes were available.
+ *
+ * Committed rather than logged because the methodology page quotes these
+ * figures, and that page's own contract is that every number on it is read from
+ * the file that produced it. They were prose literals for one commit, including
+ * a 95th percentile the check did not compute — a figure attributed to a
+ * measurement that was not making it.
+ */
+const quoteDivergenceSchema = z.object({
+  /** Dates both series carry. */
+  days: z.number().int().positive(),
+  medianPct: z.number().nonnegative(),
+  p95Pct: z.number().nonnegative(),
+  maxPct: z.number().nonnegative(),
+  maxDate: isoDate,
+  beyond1Pct: z.number().int().nonnegative(),
+  /** The band the median is asserted against, so the page cannot quote a stale one. */
+  bandPct: z.number().positive(),
+});
+
+export type QuoteDivergenceStats = z.infer<typeof quoteDivergenceSchema>;
+
 /** Versioned on-disk format of data/benchmarks-daily.json. */
 export const benchmarkDatasetSchema = z.object({
   schemaVersion: z.literal(1),
@@ -183,6 +208,7 @@ export const benchmarkDatasetSchema = z.object({
   fetchedAt: z.string(),
   /** Calendar days of history kept per series (trailing window). */
   keepDays: z.number().int().positive(),
+  ethQuoteDivergence: quoteDivergenceSchema.optional(),
   benchmarks: z
     .array(
       z.object({
