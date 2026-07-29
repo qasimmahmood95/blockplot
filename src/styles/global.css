@@ -590,6 +590,22 @@ code {
 .sim-form select {
   font-family: var(--font-mono);
   font-size: 0.9rem;
+  /*
+   * Explicit, and load-bearing.
+   *
+   * Without it a form control's height comes from the resolved font's own
+   * metrics, and that resolution lands after the first layout: measured on /dca
+   * at 412px, the select went 23.8px to 26.8px and the date input 24.2px to
+   * 26.8px at t=129ms, taking the form from 139.0px to 144.6px and pushing the
+   * stat grid and the whole chart 5.6px down the page. That was the last
+   * measurable layout shift on the site, CLS 0.0024.
+   *
+   * A unitless ratio pins the content box to font-size alone, so the control is
+   * the same height whichever family wins the stack — which is why this fixes it
+   * on every machine, where matching the webfont's metrics against a named local
+   * fallback only would have helped readers who happen to have that font.
+   */
+  line-height: 1.45;
   color: var(--ink);
   background: transparent;
   border: none;
