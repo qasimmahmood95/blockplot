@@ -134,3 +134,46 @@ export function stablecoinChange30dPct(series: StablecoinPoint[]): number | null
 export async function fetchStablecoins(): Promise<StablecoinPoint[]> {
   return trimToLastDays(parseStablecoinChart(await getJson(DEFILLAMA_STABLES_URL)), STABLECOIN_KEEP_DAYS);
 }
+
+/** One point of one share, flattened so a chart can separate lines by `share`. */
+export interface SharePoint {
+  date: string;
+  pct: number;
+  share: 'BTC' | 'ETH' | 'stablecoins';
+}
+
+/**
+ * Flatten the accreted series into one list of share points.
+ *
+ * A day that never carried a share contributes nothing for it, which is the
+ * whole reason the snapshot fields are optional: BTC dominance reaches back to
+ * M5 and the other two begin at M17, so the ETH and stablecoin lines genuinely
+ * start later. Emitting a zero to keep the arrays the same length would draw a
+ * line claiming ETH had no market share until the day this shipped.
+ */
+export function sharePoints(series: readonly DominancePoint[]): SharePoint[] {
+  const out: SharePoint[] = [];
+  for (const point of series) {
+    out.push({ date: point.date, pct: point.btcDominancePct, share: 'BTC' });
+    if (point.ethDominancePct !== undefined) {
+      out.push({ date: point.date, pct: point.ethDominancePct, share: 'ETH' });
+    }
+    if (point.stablecoinSharePct !== undefined) {
+      out.push({ date: point.date, pct: point.stablecoinSharePct, share: 'stablecoins' });
+    }
+  }
+  return out;
+}
+
+/**
+ * 24h volume as a fraction of total market cap, %, 2 dp — how much of the
+ * market changed hands today.
+ *
+ * Null rather than zero when either input is missing, because the two read
+ * completely differently: a null is a day the figure was not captured, and a
+ * zero would be a claim that nothing traded.
+ */
+export function turnoverPct(point: DominancePoint | undefined): number | null {
+  if (!point || point.volume24hUsd === undefined || !(point.totalMcapUsd > 0)) return null;
+  return round2((point.volume24hUsd / point.totalMcapUsd) * 100);
+}

@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   accreteDominance,
   parseStablecoinChart,
+  sharePoints,
   stablecoinChange30dPct,
   toDominanceSnapshot,
+  turnoverPct,
 } from './flows';
 import { coingeckoGlobalSchema, dominanceDatasetSchema, stablecoinDatasetSchema } from './schema';
 import { trimToLastDays } from './series';
@@ -224,5 +226,81 @@ describe('flows dataset schemas', () => {
         ],
       }),
     ).not.toThrow();
+  });
+});
+
+describe('sharePoints', () => {
+  const base = { date: '2026-07-26', btcDominancePct: 55.8, totalMcapUsd: 2_400_000_000_000 };
+
+  it('emits only the shares a day actually carried', () => {
+    // The committed file genuinely looks like this: BTC reaches back to M5 and
+    // the other two begin at M17, so the early days have one share and the
+    // later ones three.
+    expect(
+      sharePoints([
+        base,
+        {
+          ...base,
+          date: '2026-07-29',
+          ethDominancePct: 12.3,
+          stablecoinSharePct: 5.3,
+        },
+      ]),
+    ).toEqual([
+      { date: '2026-07-26', pct: 55.8, share: 'BTC' },
+      { date: '2026-07-29', pct: 55.8, share: 'BTC' },
+      { date: '2026-07-29', pct: 12.3, share: 'ETH' },
+      { date: '2026-07-29', pct: 5.3, share: 'stablecoins' },
+    ]);
+  });
+
+  it('does not invent a zero for a share that was never captured', () => {
+    // A zero would draw a line claiming ETH had no market share until the day
+    // this shipped, which is a statement about the market rather than about
+    // the data.
+    expect(sharePoints([base]).map((p) => p.share)).toEqual(['BTC']);
+  });
+
+  it('keeps a genuine zero share, which is a reading and not a gap', () => {
+    expect(sharePoints([{ ...base, ethDominancePct: 0 }]).at(-1)).toEqual({
+      date: '2026-07-26',
+      pct: 0,
+      share: 'ETH',
+    });
+  });
+
+  it('is empty for an empty series', () => {
+    expect(sharePoints([])).toEqual([]);
+  });
+});
+
+describe('turnoverPct', () => {
+  it('reads volume against market cap, to 2 dp', () => {
+    expect(
+      turnoverPct({
+        date: '2026-07-29',
+        btcDominancePct: 55,
+        totalMcapUsd: 2_000_000_000_000,
+        volume24hUsd: 100_000_000_000,
+      }),
+    ).toBe(5);
+  });
+
+  it('is null when the volume was never captured, rather than zero', () => {
+    expect(
+      turnoverPct({ date: '2026-07-29', btcDominancePct: 55, totalMcapUsd: 2e12 }),
+    ).toBeNull();
+    expect(turnoverPct(undefined)).toBeNull();
+  });
+
+  it('keeps a real zero volume as zero', () => {
+    expect(
+      turnoverPct({
+        date: '2026-07-29',
+        btcDominancePct: 55,
+        totalMcapUsd: 2e12,
+        volume24hUsd: 0,
+      }),
+    ).toBe(0);
   });
 });

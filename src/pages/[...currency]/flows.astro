@@ -5,10 +5,18 @@ import StablecoinChart from '../../components/StablecoinChart.astro';
 import Base from '../../layouts/Base.astro';
 import { dominance, stablecoins } from '../../lib/data';
 import { formatPct, formatUsdCompact } from '../../lib/format';
+import { turnoverPct } from '../../../pipeline/flows';
 
 const latestDominance = dominance.series.at(-1);
 const latestStable = stablecoins.series.at(-1);
 const { change30dPct } = stablecoins;
+const turnover = turnoverPct(latestDominance);
+// The first day each M17 share was captured, read off the data rather than
+// written down: a hardcoded date would be wrong the moment the pipeline's
+// first run of that day lands, and this page already says when BTC's series
+// began by reading it the same way.
+const ethFrom = dominance.series.find((p) => p.ethDominancePct !== undefined)?.date;
+const sharesFrom = dominance.series.find((p) => p.stablecoinSharePct !== undefined)?.date;
 
 export const getStaticPaths = currencyPaths;
 
@@ -21,7 +29,7 @@ const { currency } = Astro.props as { currency: import('../../lib/currency').Cur
 <Base
   currency={currency}
   title="blockplot · flows & dominance"
-  description="BTC dominance and total USD-pegged stablecoin supply, from keyless public sources."
+  description="BTC and ETH dominance, the stablecoin share of total market cap, and total USD-pegged stablecoin supply, from keyless public sources."
 >
   <h1 class="visually-hidden">Flows &amp; dominance</h1>
 
@@ -32,9 +40,23 @@ const { currency } = Astro.props as { currency: import('../../lib/currency').Cur
       <dd class="sub num">{latestDominance?.date}</dd>
     </div>
     <div class="stat">
+      <dt>ETH dominance</dt>
+      <dd class="num">
+        {latestDominance?.ethDominancePct === undefined
+          ? '—'
+          : `${latestDominance.ethDominancePct.toFixed(1)}%`}
+      </dd>
+      <dd class="sub num">{ethFrom ? `since ${ethFrom}` : 'not yet captured'}</dd>
+    </div>
+    <div class="stat">
       <dt>Total crypto mcap</dt>
       <dd class="num">{latestDominance ? formatUsdCompact(latestDominance.totalMcapUsd) : '—'}</dd>
       <dd class="sub num">CoinGecko global</dd>
+    </div>
+    <div class="stat">
+      <dt>Turnover, 24h</dt>
+      <dd class="num">{turnover === null ? '—' : `${turnover.toFixed(1)}%`}</dd>
+      <dd class="sub num">volume ÷ mcap</dd>
     </div>
     <div class="stat">
       <dt>Stablecoin supply</dt>
@@ -61,14 +83,22 @@ const { currency } = Astro.props as { currency: import('../../lib/currency').Cur
   </section>
 
   <section class="chart-section">
-    <h2>BTC dominance · accreting daily</h2>
+    <h2>Shares of total market cap · accreting daily</h2>
     <DominanceChart />
     <p class="method-note">
-      BTC's share of total crypto market cap from CoinGecko's global endpoint. Historical
-      dominance has no keyless source, so this series accretes: every 6-hourly pipeline run
-      records one point per UTC day (the day's last run wins), growing from
-      its {dominance.series[0]?.date} start. Exchange netflow was considered for this view and
-      dropped — no free source exists (see PLAN.md).
+      Each line is a share of total crypto market cap from CoinGecko's global endpoint:
+      BTC, ETH, and USDT plus USDC together. Historical dominance has no keyless source, so
+      this series accretes — every 6-hourly pipeline run records one point per UTC day, the
+      day's last run wins, and nothing earlier is ever rewritten. BTC has been recorded
+      since {dominance.series[0]?.date}; ETH and the stablecoin share
+      {ethFrom ? ` since ${ethFrom}` : ' are not captured yet'}{
+        ethFrom && sharesFrom && ethFrom !== sharesFrom ? ` and ${sharesFrom}` : ''
+      }. The shorter lines are not a shorter history of the market — they are the history this
+      site has, and there is no source to backfill them from. The stablecoin share sums only
+      the issuers CoinGecko reported that day: it ranks by size, so a coin leaving the top of
+      that list takes its key with it, and a day missing one is recorded as missing rather
+      than as zero. Exchange netflow was considered for this view and dropped — no free source
+      exists (see PLAN.md).
     </p>
   </section>
 </Base>

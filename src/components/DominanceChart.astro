@@ -2,27 +2,41 @@
 import { dominance } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
 import { renderResponsiveChart } from '../lib/plot-ssr';
-import { dominanceSpec } from '../lib/specs/flows';
+import { dominanceSpec, SHARE_KEYS, shareColor } from '../lib/specs/flows';
+import { sharePoints } from '../../pipeline/flows';
 
+// One flat list of {date, pct, share} rather than three arrays: Plot separates
+// the lines by the `share` channel, and the crosshair reads a single series.
+const points = sharePoints(dominance.series);
 const svg = renderResponsiveChart((w) =>
   dominanceSpec(
-    dominance.series.map((p) => ({ date: new Date(p.date), pct: p.btcDominancePct })),
+    points.map((p) => ({ date: new Date(p.date), pct: p.pct, share: p.share })),
     w,
   ),
 );
 ---
 
 <figure class="chart-frame">
+  <div id="dominance-chart-legend" class="chart-legend" aria-hidden="true">
+    {
+      SHARE_KEYS.map((share) => (
+        <span class="legend-item">
+          <span class="legend-swatch" style={`background:${shareColor(share)}`} />
+          {share}
+        </span>
+      ))
+    }
+  </div>
   <script
     is:inline
     type="application/json"
     id="dominance-chart-data"
-    set:html={toJsonScript(dominance.series)}
+    set:html={toJsonScript(points)}
   />
   <div
     id="dominance-chart"
     role="img"
-    aria-label="Line chart of BTC dominance, accreting one point per day since the series began"
+    aria-label="Line chart of BTC and ETH dominance and the stablecoin share of total crypto market cap, accreting one point per day since each series began"
     set:html={svg}
   />
 </figure>
@@ -34,17 +48,21 @@ const svg = renderResponsiveChart((w) =>
 
   if (container) {
     upgradeChart(container, async () => {
-      const [{ drawChart }, { dominanceSpec }, { crosshairAnchors, isoDay }] =
-        await Promise.all([
-          import('../lib/plot-client'),
-          import('../lib/specs/flows'),
-          import('../lib/crosshair'),
-        ]);
+      const [{ drawChart }, { dominanceSpec }, { crosshairAnchors, isoDay }] = await Promise.all([
+        import('../lib/plot-client'),
+        import('../lib/specs/flows'),
+        import('../lib/crosshair'),
+      ]);
 
-      const series = chartData<{ date: string; btcDominancePct: number }[]>('dominance-chart-data');
-      const points = series.map((p) => ({ date: new Date(p.date), pct: p.btcDominancePct }));
+      const rows =
+        chartData<{ date: string; pct: number; share: 'BTC' | 'ETH' | 'stablecoins' }[]>(
+          'dominance-chart-data',
+        );
+      const points = rows.map((p) => ({ date: new Date(p.date), pct: p.pct, share: p.share }));
+      // Labelled with the share name, because three lines share one date: an
+      // unlabelled readout would name a figure without saying whose it is.
       const anchors = crosshairAnchors(
-        points.map((d) => ({ x: d.date, y: d.pct, label: `${d.pct.toFixed(2)}%` })),
+        points.map((d) => ({ x: d.date, y: d.pct, label: `${d.share} ${d.pct.toFixed(2)}%` })),
         isoDay,
       );
 
