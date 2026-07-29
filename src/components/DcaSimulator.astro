@@ -3,6 +3,7 @@ import type { Currency } from '../lib/currency';
 import { CURRENCY_META } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
+import { encodeDaily } from '../lib/series-codec';
 
 interface Props {
   currency: Currency;
@@ -15,7 +16,7 @@ import { dcaSpec, defaultStartDate, wealthExtent } from '../lib/specs/dca';
 const { currency } = Astro.props;
 const { btcHistory } = dataFor(currency);
 const meta = CURRENCY_META[currency];
-const payload = { code: meta.code, series: btcHistory.series };
+const payload = { code: meta.code, series: encodeDaily(btcHistory.series, 'price') };
 
 const firstDate = btcHistory.series[0]?.date ?? '';
 const lastDate = btcHistory.series.at(-1)?.date ?? '';
@@ -24,7 +25,7 @@ const startDate = defaultStartDate(firstDate, lastDate);
 // The form's own defaults, simulated here so the page arrives complete. The
 // held-stack line is absent by construction: it comes from localStorage, which
 // the build has no access to and, per CLAUDE.md, must never be given.
-const initial = compareDcaVsLumpSum(payload.series, {
+const initial = compareDcaVsLumpSum(btcHistory.series, {
   startDate,
   amount: 100,
   feePct: 0.5,
@@ -91,13 +92,18 @@ const svg = renderResponsiveChart((w) =>
   import { compareDcaVsLumpSum, type DcaFrequency } from '../../pipeline/dca';
   import { holdingsSeries } from '../../pipeline/holdings';
   import { chartData, upgradeChart } from '../lib/charts';
+  import { decodeDaily } from '../lib/series-codec';
   import { wealthExtent } from '../lib/specs/dca-shared';
   import { clipNote, compactMoney } from '../lib/chart-format';
   import { HOLDINGS_EVENT, readHoldings } from '../lib/holdings-store';
 
-  const { code, series } = chartData<{ code: string; series: { date: string; price: number }[] }>(
-    'dca-data',
-  );
+  // Decoded once, eagerly: every stat tile is a function of this series, and
+  // they are drawn on load. 5,824 rows is about a millisecond.
+  const { code, series: encodedSeries } = chartData<{
+    code: string;
+    series: Parameters<typeof decodeDaily>[0];
+  }>('dca-data');
+  const series = decodeDaily(encodedSeries, 'price') as { date: string; price: number }[];
   const lastDate = series.at(-1)?.date ?? '';
 
   const form = document.getElementById('dca-form') as HTMLFormElement | null;
