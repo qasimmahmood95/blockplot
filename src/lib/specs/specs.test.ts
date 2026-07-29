@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { defaultStartDate, wealthExtent } from './dca-shared';
+import {
+  dcaFormatters,
+  dcaTiles,
+  defaultStartDate,
+  legendSwatch,
+  wealthExtent,
+} from './dca-shared';
 import { bandFill, pairLabel, regimeFrom, type Segment } from './correlation';
 import { billions } from './flows';
 import { volColor } from './vol';
@@ -104,5 +110,99 @@ describe('colour ramps', () => {
       'var(--cycle-4)',
     ]);
     expect(cycleColor(4)).toBe('var(--accent)');
+  });
+});
+
+describe('dcaTiles', () => {
+  const money = (v: number): string => `$${v.toFixed(0)}`;
+  const signedPct = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+  const base = {
+    totalInvested: 15700,
+    totalFees: 79,
+    buys: 157,
+    btcAccumulated: 0.2488,
+    dcaFinal: 15852,
+    dcaReturnPct: 1,
+    lumpFinal: 34068,
+    lumpReturnPct: 117,
+    delta: 18216,
+  };
+  const tiles = (over: Partial<typeof base> = {}): ReturnType<typeof dcaTiles> =>
+    dcaTiles({ ...base, ...over }, money, signedPct);
+
+  it('reports four figures, in the order the grid shows them', () => {
+    expect(tiles().map((t) => t.label)).toEqual([
+      'Invested',
+      'BTC accumulated',
+      'DCA value now',
+      'Lump sum now',
+    ]);
+  });
+
+  it('says which strategy leads, and by how much', () => {
+    expect(tiles().at(-1)?.sub).toBe('+117.0% · leads by $18216');
+    expect(tiles({ delta: -500 }).at(-1)?.sub).toBe('+117.0% · trails by $500');
+  });
+
+  it('calls a hair either way even, rather than leading by nothing', () => {
+    // The threshold exists so a rounding-scale difference does not read as a
+    // result; either side of it must still be reported as a direction.
+    expect(tiles({ delta: 0.004 }).at(-1)?.sub).toContain('even with DCA');
+    expect(tiles({ delta: -0.004 }).at(-1)?.sub).toContain('even with DCA');
+    expect(tiles({ delta: 0.005 }).at(-1)?.sub).toContain('leads');
+  });
+
+  it('agrees with itself on singular and plural buys', () => {
+    expect(tiles({ buys: 1 })[0]?.sub).toBe('1 buy · fees $79');
+    expect(tiles({ buys: 2 })[0]?.sub).toBe('2 buys · fees $79');
+    expect(tiles({ buys: 0 })[0]?.sub).toBe('0 buys · fees $79');
+  });
+
+  it('tones a loss down and a gain up, with zero counting as a gain', () => {
+    expect(tiles({ dcaReturnPct: -0.1 })[2]?.tone).toBe('down');
+    expect(tiles({ dcaReturnPct: 0 })[2]?.tone).toBe('up');
+    expect(tiles({ lumpReturnPct: -50 }).at(-1)?.tone).toBe('down');
+  });
+
+  it('keeps BTC at four decimals, where the other figures are whole units', () => {
+    // `toFixed` rounds the stored double, not the decimal as written, so an
+    // exact-looking half can go either way: 0.24875 gives 0.2487 and 0.24885
+    // gives 0.2488 — both down, neither "round half up". Pinned because the
+    // figure a reader sees is the one this produces, and a future switch to a
+    // different rounding helper would change published numbers.
+    expect(tiles({ btcAccumulated: 0.24875 })[1]?.value).toBe('0.2487');
+    expect(tiles({ btcAccumulated: 0.24885 })[1]?.value).toBe('0.2488');
+    expect(tiles({ btcAccumulated: 0.12345 })[1]?.value).toBe('0.1235');
+    expect(tiles()[0]?.value).toBe('$15700');
+  });
+});
+
+describe('dcaFormatters', () => {
+  it('gives both currencies the same shape, differing only in symbol', () => {
+    expect(dcaFormatters('USD').money(15700)).toBe('$15,700');
+    expect(dcaFormatters('GBP').money(15700)).toBe('£15,700');
+  });
+
+  it('signs a percentage on both sides of zero', () => {
+    const { signedPct } = dcaFormatters('USD');
+    expect(signedPct(1.04)).toBe('+1.0%');
+    // -2.0%, not -2.1%: same binary-rounding characteristic as above.
+    expect(signedPct(-2.05)).toBe('-2.0%');
+    expect(signedPct(-2.06)).toBe('-2.1%');
+    expect(signedPct(0)).toBe('+0.0%');
+  });
+});
+
+describe('legendSwatch', () => {
+  it('paints a solid entry with the colour itself', () => {
+    expect(legendSwatch({ label: 'DCA', color: 'var(--accent)', dash: '' })).toBe('var(--accent)');
+  });
+
+  it('gives dashed and dotted different periods, so they read apart', () => {
+    const dashed = legendSwatch({ label: 'l', color: 'red', dash: 'dashed' });
+    const dotted = legendSwatch({ label: 'h', color: 'red', dash: 'dotted' });
+    expect(dashed).toContain('0 3px');
+    expect(dotted).toContain('0 1px');
+    expect(dashed).not.toBe(dotted);
   });
 });

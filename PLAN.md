@@ -345,10 +345,10 @@ subsumes several smaller ideas (best/worst windows, time-to-recovery framing).
 
 Three items from M15/M16 that are real and unscheduled:
 
-- `/dca` carries a **0.0895 layout shift** when the simulator fills in on load
-  — the largest remaining on the site, pre-existing rather than a regression,
-  and the reason `/dca` is excluded from the CLS assertion. Fixing it means
-  server-rendering the stat tiles, which the build already computes.
+- ~~`/dca`'s 0.0895 layout shift~~ — **done**, in the PR that carried this
+  plan. The stat tiles *and* the legend are server-rendered from the defaults
+  the build already simulates; `/dca` and `/gbp/dca` are now audited and assert
+  CLS at or under 0.02, measured 0.0025 at 412px and 0 at 1280px.
 - `downsample.ts` ships tested and **unwired**. Wiring needs per-series
   bucketing and pinned series endpoints.
 - **Fetched payloads** stay deferred, with the seven preconditions recorded

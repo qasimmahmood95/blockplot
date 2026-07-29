@@ -121,3 +121,58 @@ export function dcaTiles(
     },
   ];
 }
+
+/**
+ * The money and percent formatters, built once from a currency code.
+ *
+ * Both sides call this rather than each constructing their own. They were two
+ * definitions with identical options, which is not the same as being the same:
+ * review demonstrated that changing `maximumFractionDigits` on one alone
+ * produced `$15,700` in the markup against `$15,700.00` after hydration — a
+ * visible flicker on an `aria-live` grid — with lint, typecheck, all tests and
+ * the Lighthouse gate still green. The figures agreeing was luck, not
+ * structure. Now there is one definition to change.
+ */
+export function dcaFormatters(code: string): {
+  money: (value: number) => string;
+  signedPct: (value: number) => string;
+} {
+  const money = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: code,
+    maximumFractionDigits: 0,
+  });
+  return {
+    money: (value) => money.format(value),
+    signedPct: (value) => `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`,
+  };
+}
+
+/** One legend entry: a swatch style and its label. */
+export interface DcaLegendEntry {
+  label: string;
+  color: string;
+  dash: '' | 'dashed' | 'dotted';
+}
+
+/**
+ * The two entries the build can draw. A third — the reader's own stack — is
+ * appended client-side when there is one, because the build cannot know it.
+ *
+ * Server-rendered for the same reason the tiles are: left empty in the markup
+ * and filled on load, this grew from 0 to 18px and pushed the chart down with
+ * it. That was the whole of the residual shift the first version of this fix
+ * left behind, one line below the line it fixed.
+ */
+export const DCA_LEGEND_BASE: readonly DcaLegendEntry[] = [
+  { label: 'DCA', color: 'var(--accent)', dash: '' },
+  { label: 'lump sum', color: 'var(--ink-muted)', dash: 'dashed' },
+];
+
+/** The swatch background for a legend entry, shared by both renderers. */
+export function legendSwatch(entry: DcaLegendEntry): string {
+  if (!entry.dash) return entry.color;
+  const on = entry.dash === 'dotted' ? 1 : 3;
+  const off = entry.dash === 'dotted' ? 3 : 6;
+  return `repeating-linear-gradient(90deg, ${entry.color} 0 ${on}px, transparent ${on}px ${off}px)`;
+}
