@@ -95,11 +95,17 @@ async function probeBlockchainCharts(): Promise<void> {
         continue;
       }
       const day = (x: number): string => new Date(x * 1000).toISOString().slice(0, 10);
+      // Measured spacing, not the self-reported `period`: total-bitcoins
+      // claims period=day and returns ~132 points per day, so the field lies.
+      const gaps = values.slice(1, 400).map((v, i) => v.x - (values[i] as { x: number }).x);
+      const median = [...gaps].sort((a, b) => a - b)[Math.floor(gaps.length / 2)] ?? 0;
+      const spacing =
+        median >= 86000 ? `${Math.round(median / 86400)}d` : `${Math.round(median / 60)}min`;
       console.log(
         ok(
-          `${slug.padEnd(22)} n=${String(values.length).padStart(5)} ` +
-            `${day(first.x)}..${day(last.x)} unit=${payload.unit ?? '?'} ` +
-            `period=${payload.period ?? '?'} last=${last.y}`,
+          `${slug.padEnd(22)} n=${String(values.length).padStart(6)} ` +
+            `${day(first.x)}..${day(last.x)} unit=${(payload.unit ?? '?').padEnd(18)} ` +
+            `claims=${(payload.period ?? '?').padEnd(6)} MEASURED=${spacing.padEnd(6)} last=${last.y}`,
         ),
       );
     } catch (error) {
@@ -127,13 +133,20 @@ async function probeFredCpi(): Promise<void> {
   }
 }
 
-/** ETH-USD for M17, through the same Yahoo chart API gold and DXY use. */
+/**
+ * ETH-USD for M17, through the same Yahoo call gold and DXY actually make.
+ *
+ * The first version of this probe used `range=max`, which `benchmarks.ts:193`
+ * documents as deliberately never used because Yahoo accepts it alongside
+ * `interval=1d` and then serves weekly or monthly bars. Probing with the
+ * known-bad parameter measured the parameter, not the ticker.
+ */
 async function probeYahooEth(): Promise<void> {
-  console.log('\n=== Yahoo ETH-USD ===');
-  for (const ticker of ['ETH-USD', 'ETH=F']) {
+  console.log('\n=== Yahoo ETH (repo params: range=10y&interval=1d) ===');
+  for (const ticker of ['ETH-USD', 'ETH=F', 'ETH-GBP']) {
     try {
       const payload = (await getJson(
-        `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=max&interval=1d`,
+        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?range=10y&interval=1d`,
       )) as {
         chart: { result: { timestamp?: number[]; meta?: Record<string, unknown> }[] };
       };
@@ -149,7 +162,10 @@ async function probeYahooEth(): Promise<void> {
       // range=max is silently coarsened to monthly bars for some tickers — the
       // trap M11 already hit — so the gap between the first two points matters
       // more than the count.
-      const gapDays = Math.round(((stamps[1] as number) - firstStamp) / 86400);
+      // Median over many points, not the first gap: a single weekend at the
+      // start would read as coarsened.
+      const gaps = stamps.slice(1, 200).map((t, i) => t - (stamps[i] as number));
+      const gapDays = Math.round((([...gaps].sort((a, b) => a - b)[Math.floor(gaps.length / 2)] ?? 0) / 86400));
       console.log(
         ok(
           `${ticker.padEnd(8)} n=${stamps.length} ${day(firstStamp)}..${day(lastStamp)} ` +
