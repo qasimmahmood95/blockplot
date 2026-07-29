@@ -381,10 +381,22 @@ subsumes several smaller ideas (best/worst windows, time-to-recovery framing).
 
 Three items from M15/M16 that are real and unscheduled:
 
-- ~~`/dca`'s 0.0895 layout shift~~ — **done**, in the PR that carried this
-  plan. The stat tiles *and* the legend are server-rendered from the defaults
-  the build already simulates; `/dca` and `/gbp/dca` are now audited and assert
-  CLS at or under 0.02, measured 0.0025 at 412px and 0 at 1280px.
+- ~~`/dca`'s 0.0895 layout shift~~ — **done**, and finished off separately. The
+  stat tiles *and* the legend are server-rendered from the defaults the build
+  already simulates, which took it to 0.0024. The last 0.0024 was
+  misattributed twice, by me and by a reviewer, to webfont swap; blocking the
+  fonts does not reproduce it. It was the form controls: their height came from
+  the resolved font's metrics, which land after the first layout, so the select
+  and date input grew ~3px at t=129ms and pushed the grid and chart 5.6px down.
+  An explicit `line-height` on `.sim-form input, .sim-form select` pins the box
+  to font-size alone. **Every page on the site now measures CLS 0.0000**, across
+  26 page/viewport combinations and with the fonts held back 600ms, so the
+  assertion tightened from 0.02 to 0.005 — at 0.02 a return of the original
+  0.0895 would have been caught but this 0.0024 would not.
+  Metric-matched fallback faces (`size-adjust` and the overrides, computed from
+  the shipped woff2) were built and discarded: they fixed nothing, because the
+  mechanism was never text reflow, and `local()` only ever helps a reader who has
+  that exact font installed.
 - `downsample.ts` ships tested and **unwired**. Wiring needs per-series
   bucketing and pinned series endpoints. `/correlation` is now the page that
   would gain most: `btc-eth` carries 3,144 readings drawn at 760px, four per
