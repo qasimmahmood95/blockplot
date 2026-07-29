@@ -85,8 +85,7 @@ const svg = renderResponsiveChart((w) => volSpec(points, lineEnds, domain, w));
         isoDay,
       );
 
-      const width = container.clientWidth || 720;
-      drawChart(container, volSpec(points, lineEnds, domain, width, anchors));
+      drawChart(container, (w) => volSpec(points, lineEnds, domain, w, anchors));
     });
   }
 </script>

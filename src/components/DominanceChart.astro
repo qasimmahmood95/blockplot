@@ -48,8 +48,7 @@ const svg = renderResponsiveChart((w) =>
         isoDay,
       );
 
-      const width = container.clientWidth || 720;
-      drawChart(container, dominanceSpec(points, width, anchors));
+      drawChart(container, (w) => dominanceSpec(points, w, anchors));
     });
   }
 </script>

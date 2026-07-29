@@ -18,6 +18,7 @@
 import { parseHTML } from 'linkedom';
 import * as Plot from '@observablehq/plot';
 import { stripMarkAriaLabels } from './plot-a11y';
+import { NARROW_WIDTH, WIDE_WIDTH } from './plot-theme';
 
 /** Reused across every chart in a build; Plot only ever needs createElement. */
 const { document } = parseHTML('<!doctype html><html><body></body></html>');
@@ -52,23 +53,6 @@ export function renderChartSvg(spec: ChartSpec): string {
 function trimCoordinates(svg: string): string {
   return svg.replace(/-?\d+\.\d{2,}/g, (n) => String(Math.round(Number(n) * 10) / 10));
 }
-
-/**
- * The two widths the build draws every chart at.
- *
- * An SVG with a viewBox scales *uniformly*, so a single rendered width is a
- * size and not an aspect ratio: served at 720 and shown in a 301 px phone
- * container it became 301 x 142 with 4.6 px axis type and twelve overlapping
- * month labels. Laying the chart out twice and letting CSS pick keeps the
- * scale factor near 1 at both ends — a phone gets the narrow layout, with the
- * axis ticks Plot chose for that width rather than a shrunken copy of the
- * desktop ones.
- *
- * Two, not three: each variant is real markup, and the third would cost more
- * bytes than the fit it buys.
- */
-export const NARROW_WIDTH = 400;
-export const WIDE_WIDTH = 760;
 
 /**
  * Render both variants, wrapped so `global.css` can show exactly one.

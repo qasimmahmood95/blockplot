@@ -101,8 +101,7 @@ const svg = renderResponsiveChart((w) => cyclesSpec(points, lineEnds, domain, 'l
         (day: number) => `day ${day}`,
       );
 
-      const width = container.clientWidth || 720;
-      drawChart(container, cyclesSpec(points, lineEnds, domain, scale, width, anchors));
+      drawChart(container, (w) => cyclesSpec(points, lineEnds, domain, scale, w, anchors));
     });
 
     const show = (next: CycleScale): void => {

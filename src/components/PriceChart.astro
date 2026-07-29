@@ -65,8 +65,7 @@ const svg = renderResponsiveChart((w) =>
         isoDay,
       );
 
-      const width = container.clientWidth || 720;
-      drawChart(container, priceSpec(points, code, width, anchors));
+      drawChart(container, (w) => priceSpec(points, code, w, anchors));
     });
   }
 </script>

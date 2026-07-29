@@ -85,16 +85,9 @@ const txCountSvg = renderResponsiveChart((w) =>
         cache.set(id, entry);
       }
 
-      const width = container.clientWidth || 720;
-      drawChart(
-        container,
-        networkSpec(
-          entry.points,
-          tick,
-          width,
-          entry.anchors as Parameters<typeof networkSpec>[3],
-        ),
-      );
+      const points = entry.points;
+      const anchors = entry.anchors as Parameters<typeof networkSpec>[3];
+      drawChart(container, (w) => networkSpec(points, tick, w, anchors));
     });
   }
 </script>

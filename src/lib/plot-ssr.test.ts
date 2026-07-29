@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { renderChartSvg, NARROW_WIDTH, WIDE_WIDTH, renderResponsiveChart } from './plot-ssr';
+import { renderChartSvg, renderResponsiveChart } from './plot-ssr';
+import { NARROW_WIDTH, WIDE_WIDTH } from './plot-theme';
 import { stripMarkAriaLabels } from './plot-a11y';
 import { priceSpec } from './specs/price';
 

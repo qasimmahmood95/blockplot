@@ -296,15 +296,13 @@ const svg = renderResponsiveChart((w) =>
     }
     const { dcaPoints, lumpPoints, heldPoints, wealthDomain } = state;
 
-    const width = container.clientWidth || 720;
-    drawChart(
-      container,
+    drawChart(container, (w) =>
       dcaSpec({
         dcaPoints,
         lumpPoints,
         heldPoints,
         wealthDomain,
-        width,
+        width: w,
         axisMoney: (value: number) => money.format(value),
         tipMoney,
         interactive: true,

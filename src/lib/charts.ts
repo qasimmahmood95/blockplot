@@ -79,20 +79,25 @@ export function upgradeChart(
   };
 
   /**
-   * The DOM trigger: promote once, then get out of the way.
+   * The DOM trigger: promote once, and never re-render.
    *
-   * This must never re-render an already-live chart, and the listeners are
-   * removed the moment one is spent. Rendering replaces the container's
-   * children, which destroys the node the pointer is over, so the browser
-   * dispatches `pointerenter` again on the next frame — and a handler that
-   * re-rendered on that event fed itself a 60 fps redraw loop for as long as
-   * the cursor rested on the chart. Measured at 179 redraws in three
-   * motionless seconds, and on /dca each one re-ran the whole simulation:
-   * 1.98 s of scripting per 5 s of hover. That is the exact cost this
-   * milestone set out to remove, moved from load to hover and made unbounded.
+   * The state guard is what makes this safe, and it is load-bearing. Rendering
+   * replaces the container's children, which destroys the node the pointer is
+   * over, so the browser dispatches `pointerenter` again on the next frame — a
+   * handler that re-rendered on that event fed itself a 60 fps redraw loop for
+   * as long as the cursor rested on the chart. Measured at 179 redraws in
+   * three motionless seconds, and on /dca each one re-ran the whole
+   * simulation: 1.98 s of scripting per 5 s of hover. That is the exact cost
+   * this milestone set out to remove, moved from load to hover and made
+   * unbounded.
+   *
+   * The listeners deliberately stay attached. An earlier version removed them
+   * on the first trigger, which also removed the only way to retry: a render
+   * that failed set the state back to `static` with nothing left to fire it,
+   * so one flaky request killed the crosshair for the rest of the page view.
+   * Once live, this returns immediately, which costs nothing.
    */
   const promote = (): void => {
-    for (const event of EVENTS) container.removeEventListener(event, promote);
     if (state !== 'static') return;
     run();
   };

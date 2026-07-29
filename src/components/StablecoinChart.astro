@@ -51,8 +51,7 @@ const svg = renderResponsiveChart((w) =>
         isoDay,
       );
 
-      const width = container.clientWidth || 720;
-      drawChart(container, stablecoinSpec(points, width, anchors));
+      drawChart(container, (w) => stablecoinSpec(points, w, anchors));
     });
   }
 </script>
