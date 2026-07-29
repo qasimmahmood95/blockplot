@@ -50,21 +50,45 @@ export function toDominanceSnapshot(
   date: string,
 ): DominanceSnapshot {
   const pct = global.data.market_cap_percentage;
-  // Summed only over the keys actually present: with usdc missing, the honest
-  // answer is USDT's share alone, not a total that silently omits a component
-  // while looking like one. Absent entirely when neither is reported.
-  const stables = [pct.usdt, pct.usdc].filter((v): v is number => v !== undefined);
   const volume = global.data.total_volume?.usd;
   return {
     date,
     btcDominancePct: round2(pct.btc),
     totalMcapUsd: Math.round(global.data.total_market_cap.usd),
     ...(pct.eth !== undefined ? { ethDominancePct: round2(pct.eth) } : {}),
-    ...(stables.length > 0
-      ? { stablecoinSharePct: round2(stables.reduce((a, b) => a + b, 0)) }
-      : {}),
+    ...stablecoinShare(pct.usdt, pct.usdc),
     ...(volume !== undefined ? { volume24hUsd: Math.round(volume) } : {}),
   };
+}
+
+/**
+ * USDT plus USDC, or nothing.
+ *
+ * Both or neither, which is a correction: the first version summed whichever
+ * keys were present, so a day USDC fell out of CoinGecko's leaderboard would
+ * have recorded USDT alone — about 7.5% against a real 11.25% — under a name
+ * that says total. The series accretes and is never rewritten, so that would
+ * be a permanent ~3.7pp cliff in the chart, and a cliff in a market-share line
+ * reads as a market event. Every other field here treats absent and zero as
+ * different things; this one was letting *partial* pose as *complete*, which
+ * is the same error one level up. A day missing either component is a day this
+ * figure was not measured.
+ *
+ * The bound is checked here rather than only at the write schema. Each share
+ * is independently within 0-100, so a corrupt response can put the sum past
+ * 100 — which passes the read schema and then fails the write schema, in a
+ * `parse` that is top-level, uncaught, and the *first* write of the run. A
+ * nonsense pair of components would have cost every dataset the run produces,
+ * including the accreted day it was trying to write. An impossible sum is
+ * treated as what it is: not a measurement.
+ */
+function stablecoinShare(
+  usdt: number | undefined,
+  usdc: number | undefined,
+): { stablecoinSharePct?: number } {
+  if (usdt === undefined || usdc === undefined) return {};
+  const sum = round2(usdt + usdc);
+  return sum > 100 ? {} : { stablecoinSharePct: sum };
 }
 
 export async function fetchDominanceSnapshot(now: Date): Promise<DominanceSnapshot> {

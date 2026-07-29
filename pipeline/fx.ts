@@ -226,10 +226,17 @@ export async function fetchGbpUsd(): Promise<FxFetch> {
  * stay close, so a divergence surfaces as a data-quality signal instead of as
  * two numbers that quietly disagree.
  *
- * Compared only on dates both series carry. Rates carry forward over weekends,
- * so a converted figure exists every day, but comparing a weekend against a
- * Friday rate would measure the carry-forward convention rather than the
- * quotes.
+ * Compared on every date both series carry, which for two crypto legs is every
+ * day — weekends included. An earlier version of this comment claimed weekends
+ * were excluded; they are not, and cannot be, because both legs trade through
+ * them. Review measured 132 of 460 shared days falling on a weekend, 90 of them
+ * converted at a rate carried forward from Friday. That is benign and worth
+ * stating rather than implying: weekend divergence is *lower* (median 0.072%
+ * against 0.158% on weekdays), because a weekend ETH-GBP quote is itself
+ * pinned to the same frozen rate. So the headline median is diluted by about a
+ * fifth of structurally easy days and understates the weekday spread — in the
+ * safe direction for a band, but not a number to quote as if it were the
+ * weekday one.
  */
 export interface QuoteDivergence {
   days: number;
@@ -274,11 +281,31 @@ export function quoteDivergence(
  *
  * The median is asserted and the maximum is not, and that split is the whole
  * design. A median this far from the band cannot be moved by one bad quote —
- * it takes a systematic fault: the wrong ticker, an inverted rate, a stale FX
- * tail, a mis-joined date. Those are bugs, and the build should stop. A single
- * day at 3% is the spread between two real markets on a day sterling moved,
- * and failing the build on it would make the site hostage to Yahoo's quote
- * quality on its worst afternoon. The worst day is reported instead, every
- * run, so a drift upward is visible before it becomes systematic.
+ * it takes a fault that affects most of the record. A single day at 3% is the
+ * spread between two real markets on a day sterling moved, and failing the
+ * build on it would make the site hostage to Yahoo's quote quality on its worst
+ * afternoon. The worst day is reported instead, every run, so a drift upward is
+ * visible before it becomes systematic.
+ *
+ * What that buys, measured rather than asserted — the first version of this
+ * comment listed "a stale FX tail" among the faults this catches, and review
+ * showed it does not:
+ *
+ *   inverted rate (multiply, not divide)   median 44.6%   caught
+ *   wrong ticker                           median 96.8%   caught
+ *   one-day mis-join                       median  1.70%  caught
+ *   FX frozen for 90 days                  median  0.20%  MISSED
+ *   FX frozen for 180 days                 median  0.28%  MISSED
+ *
+ * A median is the wrong instrument for a fault confined to the recent tail: a
+ * stale tail is a minority of a ~3,100-day sample by construction, so it cannot
+ * move the middle of the distribution however wrong it is. That case belongs to
+ * `fxLagDays`/`MAX_FX_LAG_DAYS`, which checks the tail directly — and warns
+ * rather than throwing, which is a deliberate weaker guarantee and now the only
+ * one covering it.
+ *
+ * The mis-join margin is also thinner than it looks: 1.70% against a 1% band is
+ * ETH's own median absolute daily return, so in a quiet ETH regime a full
+ * one-day misalignment could sit under the band and pass.
  */
 export const MAX_MEDIAN_QUOTE_DIVERGENCE_PCT = 1;

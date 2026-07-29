@@ -73,10 +73,51 @@ describe('toDominanceSnapshot', () => {
     expect('volume24hUsd' in result).toBe(false);
   });
 
-  it('sums only the stablecoins present, so a dropped key does not deflate the share', () => {
-    expect(snap({ btc: 50, usdt: 4.2 }).stablecoinSharePct).toBe(4.2);
-    expect(snap({ btc: 50, usdc: 1.3 }).stablecoinSharePct).toBe(1.3);
+  it('needs both stablecoins, so a partial sum never poses as a total', () => {
+    // A day USDC leaves CoinGecko's leaderboard would otherwise record USDT
+    // alone — about 7.5% against a real 11.25% — under a name that says total,
+    // in a file that is never rewritten. A permanent 3.7pp cliff in a market
+    // share line reads as a market event.
     expect(snap({ btc: 50, usdt: 4.2, usdc: 1.3 }).stablecoinSharePct).toBe(5.5);
+    expect(snap({ btc: 50, usdt: 4.2 }).stablecoinSharePct).toBeUndefined();
+    expect(snap({ btc: 50, usdc: 1.3 }).stablecoinSharePct).toBeUndefined();
+    expect(snap({ btc: 50, usdt: 0, usdc: 0 }).stablecoinSharePct).toBe(0);
+  });
+
+  it('drops an impossible sum rather than letting it abort the whole run', () => {
+    // Each component clears the read schema's 0-100 on its own, so a corrupt
+    // response can put the sum past the write schema's bound — and that parse
+    // is top-level, uncaught, and the first write of the run, so it would cost
+    // every dataset including the accreted day it was writing.
+    expect(snap({ btc: 50, usdt: 60, usdc: 45 }).stablecoinSharePct).toBeUndefined();
+    expect(snap({ btc: 50, usdt: 60, usdc: 40 }).stablecoinSharePct).toBe(100);
+  });
+
+  it('survives a malformed optional field instead of losing the day', () => {
+    // Optional means absent OR unusable. These all parsed on main, which never
+    // read these fields; requiring them to be well-formed would have made a
+    // widening of what we read a narrowing of what we survive, and the day is
+    // unrecoverable.
+    const bad = (data: Record<string, unknown>): unknown => ({
+      data: {
+        total_market_cap: { usd: 2e12 },
+        market_cap_percentage: { btc: 56 },
+        ...data,
+      },
+    });
+    for (const payload of [
+      bad({ total_volume: { usd: null } }),
+      bad({ total_volume: { eur: 1 } }),
+      bad({ total_volume: 'nope' }),
+      bad({ market_cap_percentage: { btc: 56, usdt: null, usdc: 1 } }),
+      bad({ market_cap_percentage: { btc: 56, eth: '10.1' } }),
+      bad({ market_cap_percentage: { btc: 56, eth: 101 } }),
+    ]) {
+      const parsed = coingeckoGlobalSchema.parse(payload);
+      const result = toDominanceSnapshot(parsed, '2026-07-29');
+      expect(result.btcDominancePct).toBe(56);
+      expect(result.totalMcapUsd).toBe(2e12);
+    }
   });
 
   it('records a genuine zero volume as zero, which is not the same as absent', () => {
@@ -87,8 +128,14 @@ describe('toDominanceSnapshot', () => {
     expect(() => coingeckoGlobalSchema.parse(payload({ eth: 12 }))).toThrow();
   });
 
-  it('rejects a share outside 0-100 instead of committing it', () => {
-    expect(() => coingeckoGlobalSchema.parse(payload({ btc: 50, eth: 101 }))).toThrow();
+  it('drops an out-of-range optional share, but still rejects a bad btc', () => {
+    // The bound still holds — an out-of-range eth is never committed — but it
+    // costs the field rather than the day. btc is different: a /global with no
+    // usable BTC share is a broken response, and failing is the right outcome.
+    expect(coingeckoGlobalSchema.parse(payload({ btc: 50, eth: 101 })).data
+      .market_cap_percentage.eth).toBeUndefined();
+    expect(() => coingeckoGlobalSchema.parse(payload({ btc: 101 }))).toThrow();
+    expect(() => coingeckoGlobalSchema.parse(payload({ eth: 12 }))).toThrow();
   });
 });
 

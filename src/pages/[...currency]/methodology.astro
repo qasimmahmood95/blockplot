@@ -153,6 +153,7 @@ const t = signals.thresholds;
     </p>
   </section>
 
+  {ethBenchmark && (
   <section class="chart-section">
     <h2>Ether in {meta.label}</h2>
     <p class="method-note">
@@ -180,10 +181,12 @@ const t = signals.thresholds;
       )
     }
     <p class="method-note">
-      The ticker that actually served this file is <code>{ethBenchmark?.sourceSeries ?? '—'}</code>,
-      read from the committed data rather than asserted here.
+      The ticker that actually served this file is <code>{ethBenchmark.sourceSeries}</code>, read
+      from the committed data rather than asserted here. This whole section is absent when no ETH
+      source answered, rather than describing a series the file does not carry.
     </p>
   </section>
+  )}
 
   <section class="chart-section">
     <h2>Signals</h2>

@@ -193,11 +193,29 @@ export const benchmarkDatasetSchema = z.object({
         series: z.array(benchmarkDaySchema).min(2),
       }),
     )
-    // The file is whole-or-nothing: all four assets, each exactly once.
-    .length(4)
+    /**
+     * The three original benchmarks are whole-or-nothing; ETH is allowed to be
+     * missing.
+     *
+     * It was briefly `.length(4)`, which made a Yahoo ETH outage cost this
+     * entire file — and `correlations.json` with it — while `risk-metrics.json`
+     * was still rewritten without its ETH row. The site would then have shown
+     * ETH in the benchmark sources and the correlation matrix, from yesterday's
+     * files, and not in the risk table, with nothing anywhere saying why. Two
+     * files silently a day older than the third is worse than one file with a
+     * column missing, because only the second is visible.
+     */
+    .min(3)
+    .max(4)
     .superRefine((benchmarks, ctx) => {
-      if (new Set(benchmarks.map((b) => b.asset)).size !== benchmarks.length) {
+      const assets = new Set(benchmarks.map((b) => b.asset));
+      if (assets.size !== benchmarks.length) {
         ctx.addIssue({ code: 'custom', message: 'duplicate benchmark asset' });
+      }
+      for (const required of ['sp500', 'gold', 'dxy'] as const) {
+        if (!assets.has(required)) {
+          ctx.addIssue({ code: 'custom', message: `missing benchmark asset ${required}` });
+        }
       }
     }),
 });
@@ -258,16 +276,31 @@ export type RiskAssetStats = z.infer<typeof riskAssetStatsSchema>;
  *
  * `btc` stays required: it has been the largest holding since the endpoint
  * existed, and if it ever vanished the failure would be the correct outcome.
+ *
+ * Optional here means "absent OR unusable", not merely "absent" — hence the
+ * `.catch(undefined)` on each. The first version of this reasoned carefully
+ * about a *dropped key* and not at all about a *malformed value*, which is a
+ * distinction only zod cares about and the accreted file pays for: review
+ * demonstrated that `total_volume: {usd: null}`, a non-numeric share, or a
+ * `total_volume` object carrying other currencies but not `usd` each failed
+ * the whole parse, threw out of the flows fetch, and cost that UTC day
+ * permanently — where the pre-M17 schema, which never looked at those fields,
+ * kept the day. Widening what we read must not narrow what we can survive.
  */
+const optionalShare = z.number().min(0).max(100).optional().catch(undefined);
+
 export const coingeckoGlobalSchema = z.object({
   data: z.object({
     total_market_cap: z.object({ usd: z.number().positive() }),
-    total_volume: z.object({ usd: z.number().nonnegative() }).optional(),
+    total_volume: z
+      .object({ usd: z.number().nonnegative().optional().catch(undefined) })
+      .optional()
+      .catch(undefined),
     market_cap_percentage: z.object({
       btc: z.number().min(0).max(100),
-      eth: z.number().min(0).max(100).optional(),
-      usdt: z.number().min(0).max(100).optional(),
-      usdc: z.number().min(0).max(100).optional(),
+      eth: optionalShare,
+      usdt: optionalShare,
+      usdc: optionalShare,
     }),
   }),
 });

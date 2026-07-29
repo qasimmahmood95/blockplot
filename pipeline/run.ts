@@ -249,7 +249,13 @@ for (const currency of CURRENCIES) {
   // The obligation attached to quoting natively: show that the two routes
   // agree. The median is asserted; the worst day is reported. See
   // MAX_MEDIAN_QUOTE_DIVERGENCE_PCT for why that split and not the other.
-  if (ethNative && ethConverted) {
+  // Only when the USD leg is spot. `ETH=F` is a sanctioned fallback, and
+  // against it this would be comparing a sterling spot quote with a converted
+  // dollar *future* — a basis, not a quote spread. Review measured that a
+  // routine 1.5% front-month basis trips the throw, which would take out every
+  // GBP dataset and network.json for a reason that is not a fault.
+  const ethSpotUsd = ethFetch?.ticker === 'ETH-USD';
+  if (ethNative && ethConverted && ethSpotUsd) {
     const divergence = quoteDivergence(ethNative, ethConverted);
     if (!divergence) {
       console.warn(`warning: ${currency} eth native and converted share no dates`);
@@ -271,6 +277,12 @@ for (const currency of CURRENCIES) {
   const sp = spAll ? recentWindow(spAll) : null;
   const au = auAll ? recentWindow(auAll) : null;
   const dxy = dxyAll ? recentWindow(dxyAll) : null;
+  if (ethNative && ethConverted && !ethSpotUsd) {
+    console.warn(
+      `warning: ${currency} eth divergence check skipped — the USD leg came from ` +
+        `${ethFetch?.ticker}, whose basis against spot is not a quote spread`,
+    );
+  }
   const eth = ethAll ? recentWindow(ethAll) : null;
   // A benchmark reaching further back than the FX record would silently
   // shorten the GBP view. It cannot happen while Yahoo caps daily history at
@@ -308,7 +320,12 @@ for (const currency of CURRENCIES) {
     );
   }
 
-  if (sp && au && dxy && eth && goldFetch && dxyFetch && ethTicker) {
+  if (sp && au && dxy && goldFetch && dxyFetch) {
+    if (!eth) {
+      console.warn(
+        `warning: ${currency} benchmarks written without ETH — every ETH source failed`,
+      );
+    }
     const benchmarks = benchmarkDatasetSchema.parse({
       schemaVersion: 1,
       currency,
@@ -321,13 +338,21 @@ for (const currency of CURRENCIES) {
         // The ticker recorded is the one that served the data, so a GBP file
         // built by conversion says ETH-USD and one quoted natively says
         // ETH-GBP. The methodology page reads this rather than asserting it.
-        { asset: 'eth', source: 'yahoo', sourceSeries: ethTicker, series: eth },
+        //
+        // Omitted entirely when no ETH source answered, rather than costing the
+        // file: the three original benchmarks are what this file has always
+        // guaranteed, and dropping all of them because Yahoo was down would
+        // leave the risk page a day fresher than the correlation page with
+        // nothing saying so.
+        ...(eth && ethTicker
+          ? [{ asset: 'eth', source: 'yahoo', sourceSeries: ethTicker, series: eth }]
+          : []),
       ],
     });
     await writeJson(`${dir}/benchmarks-daily.json`, benchmarks);
     console.log(
       `${dir}/benchmarks-daily.json: sp500 ${sp.length}, gold ${au.length}, dxy ${dxy.length}, ` +
-        `eth ${eth.length} days (${ethTicker}, ${ethSource})`,
+        (eth ? `eth ${eth.length} days (${ethTicker}, ${ethSource})` : 'eth absent'),
     );
   }
 
@@ -379,7 +404,7 @@ for (const currency of CURRENCIES) {
     await writeJson(`${dir}/risk-metrics.json`, risk);
     console.log(`${dir}/risk-metrics.json: as of ${risk.asOf}, max drawdown ${risk.drawdown.maxDrawdownPct}%`);
 
-    if (spAll && auAll && dxyAll && ethAll && deepSession) {
+    if (spAll && auAll && dxyAll && deepSession) {
       const toPoints = (rows: { date: string; close: number }[]) =>
         rows.map(({ date, close }) => ({ date, value: close }));
       const correlations = correlationDatasetSchema.parse({
@@ -388,8 +413,10 @@ for (const currency of CURRENCIES) {
             btc: deepSession,
             // No session-close shift: a Yahoo crypto bar is already dated on
             // the day it closes, measured against the committed CoinGecko
-            // series. See CORRELATION_ASSETS for the numbers.
-            eth: toPoints(ethAll),
+            // series. See CORRELATION_ASSETS for the numbers. Omitted when no
+            // ETH source answered, which drops its four pairs rather than the
+            // file.
+            ...(ethAll ? { eth: toPoints(ethAll) } : {}),
             sp500: toPoints(spAll),
             gold: toPoints(auAll),
             dxy: toPoints(dxyAll),

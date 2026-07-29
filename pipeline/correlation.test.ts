@@ -106,6 +106,27 @@ describe('buildCorrelationDataset', () => {
     expect(CORRELATION_ASSETS).toEqual(['btc', 'eth', 'sp500', 'gold', 'dxy']);
   });
 
+  it('omits a pair whose leg is missing, rather than emitting it empty', () => {
+    // The schema permits an empty series — a pair whose sources share no
+    // history yet — so an empty one here would be indistinguishable from that,
+    // and a Yahoo outage would read as two assets that have never overlapped.
+    // Dropping four pairs beats the alternative it replaced, which was writing
+    // no correlations file at all while risk-metrics was rewritten without ETH.
+    const without = buildCorrelationDataset(
+      { btc: x, sp500: y, gold: x, dxy: y },
+      { fetchedAt: '2024-01-05T12:00:00.000Z', asOf: '2024-01-05', windowDays: 30, minObs: 3 },
+    );
+    expect(without.pairs.map((p) => p.pair)).toEqual([
+      'btc-sp500',
+      'btc-gold',
+      'btc-dxy',
+      'sp500-gold',
+      'sp500-dxy',
+      'gold-dxy',
+    ]);
+    expect(without.pairs.some((p) => p.pair.includes('eth'))).toBe(false);
+  });
+
   it('keeps btc-eth at full depth and clips eth\'s other pairs', () => {
     // The existing rule, not a new one: a pair containing BTC is deep, and
     // everything else keeps NON_BTC_KEEP_DAYS. Adding ETH beside BTC is what
