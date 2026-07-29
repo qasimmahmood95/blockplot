@@ -1,6 +1,8 @@
 import {
   BENCHMARK_KEEP_DAYS,
   fetchDxy,
+  fetchEth,
+  fetchEthGbp,
   fetchGold,
   fetchSp500,
   recentWindow,
@@ -23,6 +25,8 @@ import {
   FX_HISTORY_FROM,
   fxLagDays,
   MAX_FX_LAG_DAYS,
+  MAX_MEDIAN_QUOTE_DIVERGENCE_PCT,
+  quoteDivergence,
 } from './fx';
 import { buildHalvingDataset } from './halvings';
 import type { DominancePoint, HalvingDataset } from './schema';
@@ -93,6 +97,8 @@ const [
   sp500,
   goldFetch,
   dxyFetch,
+  ethFetch,
+  ethGbpFetch,
   history,
   dominanceSnapshot,
   stablecoins,
@@ -105,6 +111,11 @@ const [
   attempt('fred sp500', fetchSp500()),
   attempt('yahoo gold', fetchGold()),
   attempt('yahoo dxy', fetchDxy()),
+  attempt('yahoo eth', fetchEth()),
+  // Its own request rather than a conversion, per the M17 decision. Optional
+  // like every other source: if it fails, the GBP tree converts instead, which
+  // the log below says explicitly rather than leaving to be inferred.
+  attempt('yahoo eth-gbp', fetchEthGbp()),
   attempt('blockchain.com history', fetchBtcHistory()),
   attempt('coingecko global', fetchDominanceSnapshot(now)),
   attempt('defillama stablecoins', fetchStablecoins()),
@@ -225,9 +236,42 @@ for (const currency of CURRENCIES) {
   // DXY is a dollar index by construction, so it is never converted; the
   // correlation page notes that its pairs stay dollar-denominated.
   const dxyAll = dxyFetch?.series ?? null;
+  // ETH is the one series in the GBP tree taken from its own market rather
+  // than re-denominated (M17). `ethSource` records which route was actually
+  // used, because the methodology page states it and a silent fallback would
+  // make that page wrong — the failure this project keeps repeating.
+  const ethConverted = ethFetch ? convertBenchmark(ethFetch.series, rates, currency) : null;
+  const ethNative = currency === 'gbp' ? (ethGbpFetch?.series ?? null) : null;
+  const ethAll = ethNative ?? ethConverted;
+  const ethSource: 'native' | 'converted' | null =
+    ethAll === null ? null : ethNative ? 'native' : 'converted';
+  const ethTicker = ethNative ? ethGbpFetch?.ticker : ethFetch?.ticker;
+  // The obligation attached to quoting natively: show that the two routes
+  // agree. The median is asserted; the worst day is reported. See
+  // MAX_MEDIAN_QUOTE_DIVERGENCE_PCT for why that split and not the other.
+  if (ethNative && ethConverted) {
+    const divergence = quoteDivergence(ethNative, ethConverted);
+    if (!divergence) {
+      console.warn(`warning: ${currency} eth native and converted share no dates`);
+    } else {
+      console.log(
+        `${currency} eth native vs converted: ${divergence.days} shared days, ` +
+          `median ${divergence.medianPct}%, worst ${divergence.maxPct}% on ${divergence.maxDate}, ` +
+          `${divergence.beyond1Pct} days beyond 1%`,
+      );
+      if (divergence.medianPct > MAX_MEDIAN_QUOTE_DIVERGENCE_PCT) {
+        throw new Error(
+          `${currency} eth: median native-vs-converted divergence ${divergence.medianPct}% ` +
+            `exceeds ${MAX_MEDIAN_QUOTE_DIVERGENCE_PCT}% — a gap this wide in the median is a ` +
+            `systematic fault (wrong ticker, inverted or stale rate, mis-joined dates), not a spread`,
+        );
+      }
+    }
+  }
   const sp = spAll ? recentWindow(spAll) : null;
   const au = auAll ? recentWindow(auAll) : null;
   const dxy = dxyAll ? recentWindow(dxyAll) : null;
+  const eth = ethAll ? recentWindow(ethAll) : null;
   // A benchmark reaching further back than the FX record would silently
   // shorten the GBP view. It cannot happen while Yahoo caps daily history at
   // ten years — both routes currently start in 2016 — so this is a tripwire
@@ -264,7 +308,7 @@ for (const currency of CURRENCIES) {
     );
   }
 
-  if (sp && au && dxy && goldFetch && dxyFetch) {
+  if (sp && au && dxy && eth && goldFetch && dxyFetch && ethTicker) {
     const benchmarks = benchmarkDatasetSchema.parse({
       schemaVersion: 1,
       currency,
@@ -274,10 +318,17 @@ for (const currency of CURRENCIES) {
         { asset: 'sp500', source: 'fred', sourceSeries: SP500_FRED_SERIES, series: sp },
         { asset: 'gold', source: 'yahoo', sourceSeries: goldFetch.ticker, series: au },
         { asset: 'dxy', source: 'yahoo', sourceSeries: dxyFetch.ticker, series: dxy },
+        // The ticker recorded is the one that served the data, so a GBP file
+        // built by conversion says ETH-USD and one quoted natively says
+        // ETH-GBP. The methodology page reads this rather than asserting it.
+        { asset: 'eth', source: 'yahoo', sourceSeries: ethTicker, series: eth },
       ],
     });
     await writeJson(`${dir}/benchmarks-daily.json`, benchmarks);
-    console.log(`${dir}/benchmarks-daily.json: sp500 ${sp.length}, gold ${au.length}, dxy ${dxy.length} days`);
+    console.log(
+      `${dir}/benchmarks-daily.json: sp500 ${sp.length}, gold ${au.length}, dxy ${dxy.length}, ` +
+        `eth ${eth.length} days (${ethTicker}, ${ethSource})`,
+    );
   }
 
   if (deep) {
@@ -318,19 +369,27 @@ for (const currency of CURRENCIES) {
       console.warn(`warning: ${currency} history ends ${historyEnd}, before spot ${spotEnd}`);
     }
     const risk = riskDatasetSchema.parse({
-      ...buildRiskDataset(spot, { sp500: sp, gold: au }, { fetchedAt, history: deep }),
+      ...buildRiskDataset(
+        spot,
+        { sp500: sp, gold: au, ...(eth ? { eth } : {}) },
+        { fetchedAt, history: deep },
+      ),
       currency,
     });
     await writeJson(`${dir}/risk-metrics.json`, risk);
     console.log(`${dir}/risk-metrics.json: as of ${risk.asOf}, max drawdown ${risk.drawdown.maxDrawdownPct}%`);
 
-    if (spAll && auAll && dxyAll && deepSession) {
+    if (spAll && auAll && dxyAll && ethAll && deepSession) {
       const toPoints = (rows: { date: string; close: number }[]) =>
         rows.map(({ date, close }) => ({ date, value: close }));
       const correlations = correlationDatasetSchema.parse({
         ...buildCorrelationDataset(
           {
             btc: deepSession,
+            // No session-close shift: a Yahoo crypto bar is already dated on
+            // the day it closes, measured against the committed CoinGecko
+            // series. See CORRELATION_ASSETS for the numbers.
+            eth: toPoints(ethAll),
             sp500: toPoints(spAll),
             gold: toPoints(auAll),
             dxy: toPoints(dxyAll),

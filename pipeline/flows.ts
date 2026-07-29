@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { z } from 'zod';
 import { getJson } from './http';
 import { trimToLastDays } from './series';
 import {
@@ -28,15 +29,47 @@ export interface DominanceSnapshot {
   date: string;
   btcDominancePct: number;
   totalMcapUsd: number;
+  ethDominancePct?: number;
+  stablecoinSharePct?: number;
+  volume24hUsd?: number;
+}
+
+/**
+ * Reduce a `/global` payload to the snapshot committed for one day.
+ *
+ * Pure and separately tested, because the interesting behaviour is what it
+ * does with fields that are absent rather than what it does with fields that
+ * are present. Every optional share is omitted from the result rather than
+ * defaulted, so a day CoinGecko did not report one is distinguishable from a
+ * day it reported zero. A `?? 0` here would write a real-looking figure into an
+ * accreted file that can never be corrected — the same shape of bug as the
+ * keyless row that once invented an index in the series codec.
+ */
+export function toDominanceSnapshot(
+  global: z.infer<typeof coingeckoGlobalSchema>,
+  date: string,
+): DominanceSnapshot {
+  const pct = global.data.market_cap_percentage;
+  // Summed only over the keys actually present: with usdc missing, the honest
+  // answer is USDT's share alone, not a total that silently omits a component
+  // while looking like one. Absent entirely when neither is reported.
+  const stables = [pct.usdt, pct.usdc].filter((v): v is number => v !== undefined);
+  const volume = global.data.total_volume?.usd;
+  return {
+    date,
+    btcDominancePct: round2(pct.btc),
+    totalMcapUsd: Math.round(global.data.total_market_cap.usd),
+    ...(pct.eth !== undefined ? { ethDominancePct: round2(pct.eth) } : {}),
+    ...(stables.length > 0
+      ? { stablecoinSharePct: round2(stables.reduce((a, b) => a + b, 0)) }
+      : {}),
+    ...(volume !== undefined ? { volume24hUsd: Math.round(volume) } : {}),
+  };
 }
 
 export async function fetchDominanceSnapshot(now: Date): Promise<DominanceSnapshot> {
   const global = coingeckoGlobalSchema.parse(await getJson(COINGECKO_GLOBAL_URL));
-  return {
-    date: now.toISOString().slice(0, 10),
-    btcDominancePct: round2(global.data.market_cap_percentage.btc),
-    totalMcapUsd: Math.round(global.data.total_market_cap.usd),
-  };
+  return toDominanceSnapshot(global, now.toISOString().slice(0, 10));
 }
 
 /**

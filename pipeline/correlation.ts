@@ -5,8 +5,27 @@ import { trimToLastDays } from './series';
 import type { CorrelationDataset, CorrPoint, PairId } from './schema';
 import type { SeriesPoint } from './risk';
 
-/** Fixed asset order for pair enumeration and the matrix display. */
-export const CORRELATION_ASSETS = ['btc', 'sp500', 'gold', 'dxy'] as const;
+/**
+ * Fixed asset order for pair enumeration and the matrix display.
+ *
+ * ETH sits next to BTC (M17) because that is the pair worth reading, and
+ * because the position decides the matrix's reading order. It changes no
+ * existing pair id: ids are built from the ordered index, and every previous
+ * pair keeps the same two members in the same order.
+ *
+ * ETH takes NO session-close shift, unlike BTC — measured, not assumed. Yahoo
+ * dates a crypto bar by the day it covers, where CoinGecko's snapshot dated d
+ * is the price at 00:00 UTC and therefore the close of d−1. Compared against
+ * the committed CoinGecko series over 365 overlapping days, Yahoo BTC-USD
+ * dated d matched CoinGecko dated d+1 to a median 0.019% (p95 0.114%), against
+ * 1.285% at lag 0 and 1.946% at lag −1. So a Yahoo crypto bar is already dated
+ * on the session it closes, which is exactly what `toSessionClose` converts the
+ * CoinGecko series *into*. Shifting ETH as well would reintroduce the one-day
+ * offset that the shift exists to remove, and it would show up as BTC and ETH
+ * looking less alike than they are — a plausible wrong number, which is the
+ * failure mode worth spending a probe on.
+ */
+export const CORRELATION_ASSETS = ['btc', 'eth', 'sp500', 'gold', 'dxy'] as const;
 
 /** Rolling correlation window (calendar days) and the minimum aligned returns it must hold. */
 export const CORRELATION_WINDOW_DAYS = 90;

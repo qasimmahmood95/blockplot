@@ -213,3 +213,72 @@ export async function fetchGbpUsd(): Promise<FxFetch> {
   }
   return { sources, series };
 }
+
+/**
+ * How far a natively-quoted series sits from the same asset converted through
+ * the committed rate.
+ *
+ * Exists because M17 takes ETH in GBP from its own market (`ETH-GBP`) rather
+ * than re-denominating `ETH-USD`, which makes it the only series in that tree
+ * whose sterling value does not come from the one USD source everything else
+ * shares. That was a deliberate call — a GBP holder's ether really does trade
+ * in GBP — and it came with an obligation: the two figures must be shown to
+ * stay close, so a divergence surfaces as a data-quality signal instead of as
+ * two numbers that quietly disagree.
+ *
+ * Compared only on dates both series carry. Rates carry forward over weekends,
+ * so a converted figure exists every day, but comparing a weekend against a
+ * Friday rate would measure the carry-forward convention rather than the
+ * quotes.
+ */
+export interface QuoteDivergence {
+  days: number;
+  medianPct: number;
+  maxPct: number;
+  maxDate: string;
+  beyond1Pct: number;
+}
+
+export function quoteDivergence(
+  native: BenchmarkDay[],
+  converted: BenchmarkDay[],
+): QuoteDivergence | null {
+  const convertedBy = new Map(converted.map((d) => [d.date, d.close]));
+  const diffs: { date: string; pct: number }[] = [];
+  for (const { date, close } of native) {
+    const other = convertedBy.get(date);
+    if (other === undefined || !(other > 0)) continue;
+    diffs.push({ date, pct: Math.abs(close / other - 1) * 100 });
+  }
+  if (diffs.length === 0) return null;
+  const sorted = [...diffs].sort((a, b) => a.pct - b.pct);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  const worst = sorted.at(-1);
+  if (!median || !worst) return null;
+  return {
+    days: diffs.length,
+    medianPct: Math.round(median.pct * 1000) / 1000,
+    maxPct: Math.round(worst.pct * 1000) / 1000,
+    maxDate: worst.date,
+    beyond1Pct: diffs.filter((d) => d.pct > 1).length,
+  };
+}
+
+/**
+ * The band the median divergence must stay inside.
+ *
+ * Set from measurement, not from taste. Over 2,531 overlapping days the median
+ * came out at 0.174%, p95 at 0.711% and the single worst day at 2.910%
+ * (2022-09-29, during the sterling crisis). So 1% leaves roughly a six-fold
+ * margin on the statistic being asserted.
+ *
+ * The median is asserted and the maximum is not, and that split is the whole
+ * design. A median this far from the band cannot be moved by one bad quote —
+ * it takes a systematic fault: the wrong ticker, an inverted rate, a stale FX
+ * tail, a mis-joined date. Those are bugs, and the build should stop. A single
+ * day at 3% is the spread between two real markets on a day sterling moved,
+ * and failing the build on it would make the site hostage to Yahoo's quote
+ * quality on its worst afternoon. The worst day is reported instead, every
+ * run, so a drift upward is visible before it becomes systematic.
+ */
+export const MAX_MEDIAN_QUOTE_DIVERGENCE_PCT = 1;

@@ -88,6 +88,15 @@ describe('benchmarkDatasetSchema', () => {
           { date: '2024-03-04', close: 104.5 },
         ],
       },
+      {
+        asset: 'eth',
+        source: 'yahoo',
+        sourceSeries: 'ETH-USD',
+        series: [
+          { date: '2024-03-01', close: 3400 },
+          { date: '2024-03-04', close: 3500 },
+        ],
+      },
     ],
   };
 
@@ -95,14 +104,19 @@ describe('benchmarkDatasetSchema', () => {
     expect(benchmarkDatasetSchema.parse(valid)).toEqual(valid);
   });
 
-  it('requires exactly the three distinct assets', () => {
+  it('requires exactly the four distinct assets', () => {
     expect(() =>
-      benchmarkDatasetSchema.parse({ ...valid, benchmarks: valid.benchmarks.slice(0, 2) }),
+      benchmarkDatasetSchema.parse({ ...valid, benchmarks: valid.benchmarks.slice(0, 3) }),
     ).toThrow();
     expect(() =>
       benchmarkDatasetSchema.parse({
         ...valid,
-        benchmarks: [valid.benchmarks[0], valid.benchmarks[1], valid.benchmarks[0]],
+        benchmarks: [
+          valid.benchmarks[0],
+          valid.benchmarks[1],
+          valid.benchmarks[2],
+          valid.benchmarks[0],
+        ],
       }),
     ).toThrow('duplicate benchmark asset');
   });

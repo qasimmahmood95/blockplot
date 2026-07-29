@@ -179,7 +179,7 @@ const toPoint = ({ date, close }: BenchmarkDay): SeriesPoint => ({ date, value: 
  */
 export function buildRiskDataset(
   btc: DailyPrice[],
-  benchmarks: { sp500: BenchmarkDay[]; gold: BenchmarkDay[] },
+  benchmarks: { sp500: BenchmarkDay[]; gold: BenchmarkDay[]; eth?: BenchmarkDay[] },
   opts: { fetchedAt: string; rollingWindows?: number[]; history?: DailyPrice[] },
 ): Omit<RiskDataset, 'currency'> {
   const points = btc.map(({ date, price }) => ({ date, value: price }));
@@ -193,6 +193,14 @@ export function buildRiskDataset(
     : points;
   const sp500 = clampToRange(benchmarks.sp500.map(toPoint), first.date, last.date);
   const gold = clampToRange(benchmarks.gold.map(toPoint), first.date, last.date);
+  // Optional so a Yahoo outage costs the ETH row rather than the whole file,
+  // which is the same posture the run takes for every other benchmark. The
+  // row is dropped entirely rather than emitted empty: `assetRiskStats`
+  // needs three observations, and a table cell reading "—" against a column
+  // of real figures invites the reading that ETH did nothing.
+  const eth = benchmarks.eth
+    ? clampToRange(benchmarks.eth.map(toPoint), first.date, last.date)
+    : [];
   return {
     schemaVersion: 2,
     fetchedAt: opts.fetchedAt,
@@ -208,6 +216,10 @@ export function buildRiskDataset(
     drawdown: drawdownCurve(points),
     comparison: [
       assetRiskStats('btc', points, CRYPTO_PERIODS_PER_YEAR),
+      // ETH annualizes on 365 like BTC, not 252 like the market-hours assets:
+      // it trades every day, and using the market base would overstate its
+      // volatility by about 20% while still looking like a plausible number.
+      ...(eth.length >= 3 ? [assetRiskStats('eth', eth, CRYPTO_PERIODS_PER_YEAR)] : []),
       assetRiskStats('sp500', sp500, MARKET_PERIODS_PER_YEAR),
       assetRiskStats('gold', gold, MARKET_PERIODS_PER_YEAR),
     ],
