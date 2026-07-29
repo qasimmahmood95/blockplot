@@ -192,12 +192,19 @@ milestones, one PR each, in order. The ordering is deliberate — M17 exists
 partly to start clocks that cannot be started retroactively, and M18 depends on
 what M17 ingests.
 
-**A probe runs before any of it.** Outbound network is blocked in the dev
-environment, so the field names and chart slugs below come from documentation
-and memory, not measurement. Given how often this project has shipped confident
-prose that the data contradicted, none of them enters a milestone until a
-throwaway CI job has printed the live response shapes. If the probe disagrees
-with what is written here, this section is wrong and gets rewritten.
+**A probe ran before any of it** (`scripts/probe.ts`, since deleted; runs
+30442380383 and 30442577892). Outbound network is blocked in the dev
+environment, so every field name and chart slug below started as memory rather
+than measurement, and this project has shipped confident prose the data
+contradicted often enough that memory is not good enough to plan on. What
+follows is what the endpoints actually returned on 2026-07-29.
+
+It earned its place twice. The first run reported ETH coarsened to weekly bars
+— but it asked with `range=max`, which `benchmarks.ts:193` documents as
+deliberately never used precisely because Yahoo serves coarser bars for it.
+That measured the parameter, not the ticker. And blockchain.com's own `period`
+field turned out to be unreliable, which is only visible if you measure the
+spacing instead of reading it.
 
 #### M17 — widen what we ingest
 
@@ -211,11 +218,28 @@ them costs no new request.
   (`usdt + usdc`), which pairs with the stablecoin supply chart already on
   `/flows`.
 - **Aggregate 24h volume**, and volume over market cap as a turnover ratio.
+**Measured:** all four wanted keys are present — `btc`, `eth`, `usdt`, `usdc`
+(alongside `xrp`, `sol`, `trx`, `steth` and others), plus `total_volume.usd`
+and `market_cap_change_percentage_24h_usd`. The premise holds.
+
 - **ETH as a benchmark asset** — `ETH-USD` through the existing
   `fetchYahooDaily(tickers)` helper, the same path gold and DXY already take.
   This is option A of the ETH question: ETH becomes a fifth benchmark, not a
   second asset tree. It then appears in the correlation matrix and the
   risk-adjusted comparison table without either page changing.
+
+  **Measured at the repo's own parameters** (`range=10y&interval=1d`):
+  `ETH-USD` 3,185 daily points from 2017-11-09, `ETH=F` 1,380 from 2021-02-05.
+  Daily, not coarsened.
+
+  **And a decision the probe surfaced:** `ETH-GBP` also exists and is daily
+  (3,183 points from 2017-11-11). The GBP tree could take ETH natively instead
+  of converting USD through the committed FX series. Tempting and probably
+  wrong — every other series in that tree is a re-denomination of one USD
+  source, so a natively-quoted ETH would be the only figure whose GBP value
+  came from somewhere else, and would disagree with the rest by the spread
+  between Yahoo's two quotes. M17 should convert like everything else and say
+  so.
 
 **Why first, and why not deferred:** dominance history is pro-only on the
 keyless tier, so `data/dominance.json` accretes one snapshot per UTC day — it
@@ -251,14 +275,36 @@ page where a reader can see today's number and nothing to judge it against.
 `fetchChart(slug)` on blockchain.com is already generic over slug, with the
 same response shape, parser and validation, so each series is one argument:
 
-- `transaction-fees` or `miners-revenue` — fee history under the live tiers.
-- `mempool-size` — congestion, which is what explains the tiers beside it.
-- `difficulty` — pairs with the hash rate already charted.
+**Measured — and the response's own `period` field cannot be trusted.** Daily
+at 1,091-1,095 points over three years, so they drop straight into the existing
+`fetchChart` path:
+
+- `transaction-fees` (unit BTC) and `transaction-fees-usd` (unit USD) — fee
+  history under the live tiers. Two variants; the USD one is directly
+  comparable to what a reader pays, the BTC one is not currency-dependent.
+- `miners-revenue` (USD), `difficulty`, `n-unique-addresses`, `avg-block-size`.
+
+Two are **not** daily and need aggregating in the pipeline before they could be
+committed, which is exactly the kind of thing that is unpleasant to discover
+mid-milestone:
+
+- `mempool-size` — reports `period=minute`, measured **15-minute** spacing,
+  105,029 points.
+- `total-bitcoins` — reports `period=day` and is measured at **6 minutes**,
+  144,506 points. The metadata is simply wrong, so any consumer must measure.
+
+M19 should take the daily four and treat mempool size as a separate decision
+with a stated downsampling rule, not fold it in silently.
 
 #### M20 — real returns
 
 `parseFredCsv(text, id)` is generic over FRED series id, so `CPIAUCSL` (US CPI)
-is one more id through tested code. That buys inflation-adjusted BTC returns —
+is one more id through tested code. **Measured:** header
+`observation_date,CPIAUCSL`, 954 rows, 1947-01-01 to 2026-06-01 — **monthly**,
+and lagging the present by a month or two. Joining a monthly, revised, lagging
+index to a daily price series needs a documented rule, the same class of
+decision as M9's FX carry-forward, and the deflator's base period has to be
+stated on the page or the figures mean nothing. That buys inflation-adjusted BTC returns —
 a figure most Bitcoin dashboards do not show, on a site that already holds the
 full price history and the risk machinery to compute it. Nominal and real side
 by side, with the deflator and base period stated.
