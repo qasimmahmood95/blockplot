@@ -178,12 +178,20 @@ export function legendSwatch(entry: DcaLegendEntry): string {
 }
 
 /**
- * Escape a value for HTML text or an attribute value.
+ * Escape a value for HTML text or a double-quoted attribute value.
  *
  * Nothing here is reader-supplied — the figures come from `Intl` and the only
- * variable label quotes a BTC amount out of `localStorage`, which is a number
- * by the time it arrives. Escaped anyway, because the alternative is a builder
- * whose safety depends on every future caller knowing that.
+ * variable label quotes a BTC amount out of `localStorage`, which `parseHoldings`
+ * has already narrowed to a bounded number. Escaped anyway, so the builders do
+ * not depend on every future caller knowing that.
+ *
+ * What it does not do, stated rather than implied: single quotes are left
+ * alone, which is safe only because every attribute below is double-quoted;
+ * and HTML-escaping a value into a `style` attribute is not CSS escaping. It
+ * stops a value breaking out of the attribute, not a value that is valid CSS
+ * and unwanted — `url(https://…)` inside a colour would be a runtime fetch,
+ * and CLAUDE.md sanctions exactly two. Unreachable today: all three swatch
+ * colours are literals in this file.
  */
 const esc = (value: string): string =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

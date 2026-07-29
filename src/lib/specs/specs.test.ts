@@ -234,13 +234,23 @@ describe('dcaLegendHtml', () => {
     // `element.style` would re-serialize it as `background: var(--accent);`,
     // which never compares equal to the markup the build emits — the reason
     // the skip-if-unchanged guard was inert on this element.
+    //
+    // Both entries written out in full rather than composed from
+    // `legendSwatch`: an expectation that calls the code under test agrees
+    // with it by construction, which is not what this is meant to pin.
     expect(dcaLegendHtml(DCA_LEGEND_BASE)).toBe(
-      '<span class="legend-item"><span class="legend-swatch" style="background:var(--accent)">' +
-        '</span>DCA</span>' +
+      '<span class="legend-item">' +
+        '<span class="legend-swatch" style="background:var(--accent)"></span>DCA</span>' +
         '<span class="legend-item"><span class="legend-swatch" style="background:' +
-        legendSwatch(DCA_LEGEND_BASE[1] as never) +
-        '"></span>lump sum</span>',
+        'repeating-linear-gradient(90deg, var(--ink-muted) 0 3px, transparent 3px 6px)">' +
+        '</span>lump sum</span>',
     );
+  });
+
+  it('escapes the label and the swatch alike, so neither can leave its context', () => {
+    const html = dcaLegendHtml([{ label: '<i>&x', color: '"url(x)', dash: '' }]);
+    expect(html).toContain('style="background:&quot;url(x)"');
+    expect(html).toContain('>&lt;i&gt;&amp;x</span>');
   });
 
   it('renders nothing for no entries, which is how the notice state clears it', () => {
