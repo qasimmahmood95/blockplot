@@ -139,8 +139,7 @@ const svg = active
 
       const pair = pairs.find((p) => p.pair === active) ?? pairs[0];
       if (!pair) return;
-      const width = container.clientWidth || 720;
-      drawChart(container, correlationSpec(pair, threshold, width, true));
+      drawChart(container, (w) => correlationSpec(pair, threshold, w, true));
     });
 
     const show = (pair: string): void => {

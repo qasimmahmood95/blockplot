@@ -2,6 +2,7 @@
 import { CURRENCY_META, type Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
+import { encodeDaily } from '../lib/series-codec';
 
 interface Props {
   currency: Currency;
@@ -37,7 +38,7 @@ const payload = {
   },
   ratesAligned,
   latestDate: btcDaily.stats.latestDate,
-  series: btcHistory.series,
+  series: encodeDaily(btcHistory.series, 'price'),
 };
 ---
 
@@ -91,6 +92,7 @@ const payload = {
   } from '../../pipeline/holdings';
   import type { Currency } from '../../pipeline/currencies';
   import { chartData, responsiveChart } from '../lib/charts';
+  import { decodeDaily } from '../lib/series-codec';
   import { compactMoney } from '../lib/chart-format';
   import {
     clearHoldings,
@@ -105,7 +107,7 @@ const payload = {
     latest: Record<Currency, number>;
     ratesAligned: boolean;
     latestDate: string;
-    series: { date: string; price: number }[];
+    series: Parameters<typeof decodeDaily>[0];
   }>('holdings-data');
 
   const form = document.getElementById('holdings-form') as HTMLFormElement | null;
@@ -291,7 +293,10 @@ const payload = {
       chartSection.hidden = true;
       return;
     }
-    const points = holdingsSeries(data.series, btc)
+    // Decoded here rather than at module init: the series is only ever needed
+    // to draw this chart, which does not exist until an amount is entered.
+    const history = decodeDaily(data.series, 'price') as { date: string; price: number }[];
+    const points = holdingsSeries(history, btc)
       // A log axis cannot plot a non-positive value; at very small stacks the
       // early days underflow to zero. Dropping them here lets the note say how
       // many survived instead of rendering an empty frame.
@@ -311,8 +316,7 @@ const payload = {
       import('../lib/specs/holdings'),
     ]);
 
-    const width = container.clientWidth || 720;
-    drawChart(container, holdingsSpec(points, width, axisMoney, tipMoney));
+      drawChart(container, (w) => holdingsSpec(points, w, axisMoney, tipMoney));
   }
 
   /**

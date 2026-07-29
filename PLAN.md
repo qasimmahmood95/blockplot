@@ -93,6 +93,98 @@ into M14 because it was found by the gate M14 shipped, which is the outcome
 that gate was for: the milestone that adds the measurement is not the
 milestone that gets to act on it.
 
+### M16 — plan (revised after review)
+
+M15 halved what a chart page costs and left three things measured but not
+fixed. The first version of this plan led with moving each chart's inline JSON
+to a fetched route. Review rejected that, and was right to; what follows is the
+revised plan, with the original kept visible below because the reasoning is the
+useful part.
+
+**Order matters, and it changed.** Diagnosing the Lighthouse ceiling now runs
+*first*, because its evidence decides whether the biggest item exists at all.
+
+**A. Encode the payloads columnarly.** Every payload is an array of
+`{date, price}` objects; the dates are strictly daily-contiguous (checked: all
+5,824 rows of `btc-price-history.json`, and all four cycles). A start date plus
+a values array is lossless and roughly halves it:
+
+| payload | today | columnar | saving |
+| --- | --- | --- | --- |
+| `btcHistory.series` (`/dca`, `/holdings`) | 38.0 KB gz | **19.7 KB gz** | 49% |
+| `halvingCycles` (`/cycles`) | 28.4 KB gz | **14.6 KB gz** | 49% |
+
+No new fetch, no rule amendment, no new failure mode, and it composes with the
+fetched-payload idea if that is ever justified. Pure encode/decode pair with
+fixtures, asserted round-trip-exact against the committed data.
+
+**B. Zero the upgrade layout shift** — measured CLS 0.0346 at 360px, 0.0085 at
+1280px, against 0 before M15. The first plan said to measure the static chart's
+displayed height and render the live one into it. That is wrong: the static SVG
+is *scaled* by CSS, so its margins and type scale with it, while a live chart
+rendered at the container's pixel width would have unscaled 48px margins and
+11px text — an 11% narrower plot area and a third larger axis type, appearing
+at the instant of hover. Zero CLS, visible shape change.
+
+Instead: render the live chart at the **nominal width of whichever variant CSS
+is showing** (400 or 760), and insert it inside a wrapper carrying that same
+`.chart-at-*` class. CSS then scales it by exactly the factor it was already
+scaling the static one by, so the box and the shape both stay put, and no
+height is measured anywhere.
+
+**C. Downsample the served SVG** — min/max per x-pixel bucket, build-time only;
+the live chart keeps every point so a hovered figure is never an approximation.
+Committed already as a pure function. Three invariants the wiring must respect,
+none of them optional:
+- Bucket **per series**, not across the flattened array — `CyclesChart` flattens
+  four cycles into one array and Plot re-groups by `stroke`; bucketing the flat
+  array would interleave four lines into one.
+- Pin each series' first and last point: `lineEnds` drives the year labels, and
+  a dropped last point floats a label off the end of its line.
+- Emit each bucket's min and max in original x order, or the polyline doubles
+  back inside the bucket — invisible at 1px, not once CSS scales 400 up to 608
+  at the breakpoint.
+
+Worth 21.8 → 18.0 KB gz on the narrow variant only (measured after coordinate
+trimming, which already collapses some of the same redundancy); the wide
+variant is already under two points per pixel. Less than A, so it goes after it.
+
+**D. A failed upgrade is currently permanent.** `upgradeChart`'s `promote`
+removes all three listeners before running and never re-adds them, so a
+rejected render kills the crosshair for the rest of the page view. Today that
+needs a cache-first hashed chunk to fail, which is close to impossible; it is
+still wrong, and every other item here widens the window.
+
+**E. Give B a gate.** `lighthouserc.json` audits no chart page except
+`/holdings`, asserts no CLS, and never hovers — so the shift B fixes is
+invisible to CI by construction. Add a scripted drive of `dist/` that hovers
+each chart and records `layout-shift` entries, and run it in CI.
+
+**Deferred, deliberately.**
+
+*Fetching the payloads instead of inlining them* is not in this milestone. The
+saving is real — the payload is 90% of `/holdings` and 61% of `/dca` — but it
+splits the chart from its data: the page is network-first and the payload would
+be cached independently, so after a pipeline commit a reader can hold a chart
+drawn from one snapshot and a crosshair reporting another. That is "the chart
+changing shape under the reader's cursor" arriving by a different door. If it
+is revived it needs content-hashed URLs (which also puts it in the worker's
+cache-first branch), the URL emitted as a build-time attribute rather than
+derived in the client — deriving it is how a GBP reader gets USD figures under
+a GBP-labelled chart — scalars kept inline on the two pages that read them
+synchronously, a single shared asset for the history series `/dca` and
+`/holdings` both embed, and the small pages excluded, since a round-trip costs
+more than the 4.4 KB it would save on `/flows`. It also puts a request behind
+the reader typing into the holdings form, which the privacy note would have to
+be rewritten to admit. Its own PR, on its own evidence.
+
+*Prefetching Plot at idle to restore the offline crosshair* is also deferred,
+and the shape of the answer has changed: not a blanket idle prefetch — that
+returns 88 KB to every first visit for the majority who never hover, and
+`navigator.connection.saveData` cannot gate it because it does not exist in
+Safari or Firefox. Gate it on the app being *installed* instead. Someone who
+installed the PWA has opted into offline use; someone who opened a tab has not.
+
 ## Testing
 
 - Every metric calculation (volatility, drawdown, Sharpe/Sortino, correlation,

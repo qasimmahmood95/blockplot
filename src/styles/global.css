@@ -132,6 +132,43 @@ code {
   color: var(--pos);
 }
 
+/*
+ * Reserve the ticker's two slots at their widest, so the live update cannot
+ * move the page.
+ *
+ * This is the single largest thing wrong with the site's Lighthouse score, and
+ * it was hiding behind the charts. When the CoinGecko fetch lands, the label
+ * goes from "close 2026-07-28" to "live" — 16 characters to 4. The header row
+ * narrows by about 98px, `.header-side` un-wraps from two rows to one, and the
+ * whole document jumps up 36px. Measured CLS 0.1886, identical to the digit on
+ * pages with nothing else in common, which is what gave it away: it is the
+ * shared header, not the content.
+ *
+ * On Lighthouse's mobile weighting that is 91% of every point those pages lose
+ * — CLS scores 0.65 and costs 0.0875 of a possible 1.0, against 0.006 for FCP
+ * and nothing at all for TBT. The chart pages read 0.90 and the chartless
+ * methodology page read 0.99 only because its fetch happened to fail inside
+ * the trace; the one CI run where /holdings/ also failed to reach CoinGecko
+ * scored 0.99 too, on identical bytes. The gate was measuring an API's uptime.
+ *
+ * Scoped by id, not by `.tick-date`: that class is also on the holdings P&L in
+ * the same header, and a class-scoped rule would pad that too.
+ *
+ * `ch` is exact here because both spans are IBM Plex Mono with tabular
+ * numerals, so the reserved box is the real width of the longest string each
+ * can hold — "close YYYY-MM-DD" is 16, and the price gets 9 so it still fits
+ * when BTC next gains a digit.
+ */
+#tick-label {
+  display: inline-block;
+  min-width: 16ch;
+}
+
+#tick-price {
+  display: inline-block;
+  min-width: 9ch;
+}
+
 .currency-switch {
   display: flex;
   border: 1px solid var(--line);

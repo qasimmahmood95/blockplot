@@ -56,8 +56,7 @@ const svg = renderResponsiveChart((w) =>
         isoDay,
       );
 
-      const width = container.clientWidth || 720;
-      drawChart(container, drawdownSpec(points, width, anchors));
+      drawChart(container, (w) => drawdownSpec(points, w, anchors));
     });
   }
 </script>

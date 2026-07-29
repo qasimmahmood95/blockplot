@@ -2,6 +2,7 @@
 import { CURRENCY_META, type Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
+import { encodeDaily } from '../lib/series-codec';
 import { renderResponsiveChart } from '../lib/plot-ssr';
 import { priceSpec } from '../lib/specs/price';
 
@@ -12,7 +13,7 @@ interface Props {
 const { currency } = Astro.props;
 const { btcDaily } = dataFor(currency);
 const code = CURRENCY_META[currency].code;
-const payload = { code, series: btcDaily.series };
+const payload = { code, series: encodeDaily(btcDaily.series, 'price') };
 
 // Drawn here, once, at the width the viewBox scales from. The reader gets a
 // finished chart in the HTML; Plot is fetched only if they hover it.
@@ -48,25 +49,28 @@ const svg = renderResponsiveChart((w) =>
         { drawChart },
         { priceSpec, priceFormat },
         { crosshairAnchors, isoDay },
+        { decodeDaily },
       ] = await Promise.all([
         import('../lib/plot-client'),
         import('../lib/specs/price'),
         import('../lib/crosshair'),
+        import('../lib/series-codec'),
       ]);
-
       const { code, series } = chartData<{
         code: string;
-        series: { date: string; price: number }[];
+        series: Parameters<typeof decodeDaily>[0];
       }>('price-chart-data');
-      const points = series.map((d) => ({ date: new Date(d.date), price: d.price }));
+      const points = decodeDaily(series, 'price').map((d) => ({
+        date: new Date(d.date as string),
+        price: d.price as number,
+      }));
       const money = priceFormat(code);
       const anchors = crosshairAnchors(
         points.map((d) => ({ x: d.date, y: d.price, label: money.format(d.price) })),
         isoDay,
       );
 
-      const width = container.clientWidth || 720;
-      drawChart(container, priceSpec(points, code, width, anchors));
+      drawChart(container, (w) => priceSpec(points, code, w, anchors));
     });
   }
 </script>

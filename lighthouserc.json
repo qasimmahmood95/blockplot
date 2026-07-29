@@ -5,7 +5,8 @@
       "url": [
         "http://localhost/blockplot/index.html",
         "http://localhost/blockplot/methodology/index.html",
-        "http://localhost/blockplot/holdings/index.html"
+        "http://localhost/blockplot/holdings/index.html",
+        "http://localhost/blockplot/cycles/index.html"
       ],
       "numberOfRuns": 5,
       "settings": {
@@ -37,6 +38,13 @@
           "error",
           {
             "minScore": 0.9
+          }
+        ],
+        "cumulative-layout-shift": [
+          "error",
+          {
+            "maxNumericValue": 0.02,
+            "aggregationMethod": "median"
           }
         ]
       }

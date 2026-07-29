@@ -2,6 +2,7 @@
 import type { Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
+import { encodeIndexed } from '../lib/series-codec';
 import { renderResponsiveChart } from '../lib/plot-ssr';
 import { cycleColor, cyclesSpec } from '../lib/specs/cycles';
 
@@ -11,19 +12,25 @@ interface Props {
 
 const { currency } = Astro.props;
 const { halvingCycles } = dataFor(currency);
-const payload = halvingCycles.cycles.map((c) => ({
+// The build draws from the full series; the page carries the compact form,
+// which is what the island decodes if it ever needs to go live.
+const cycles = halvingCycles.cycles.map((c) => ({
   label: c.halvingDate.slice(0, 4),
   series: c.series,
 }));
+const payload = cycles.map((c) => ({
+  label: c.label,
+  series: encodeIndexed(c.series, 'day', 'multiple'),
+}));
 
-const points = payload.flatMap((c) =>
+const points = cycles.flatMap((c) =>
   c.series.map((p) => ({ cycle: c.label, day: p.day, multiple: p.multiple })),
 );
-const lineEnds = payload.flatMap((c) => {
+const lineEnds = cycles.flatMap((c) => {
   const last = c.series[c.series.length - 1];
   return last ? [{ cycle: c.label, day: last.day, multiple: last.multiple }] : [];
 });
-const domain = payload.map((c) => c.label);
+const domain = cycles.map((c) => c.label);
 
 // Log is the pressed default, so that is the state the build draws.
 const svg = renderResponsiveChart((w) => cyclesSpec(points, lineEnds, domain, 'log', w));
@@ -71,16 +78,20 @@ const svg = renderResponsiveChart((w) => cyclesSpec(points, lineEnds, domain, 'l
     let scale: CycleScale = 'log';
 
     const upgrade = upgradeChart(container, async () => {
-      const [{ drawChart }, { cyclesSpec }, { crosshairAnchors }] =
+      const [{ drawChart }, { cyclesSpec }, { crosshairAnchors }, { decodeIndexed }] =
         await Promise.all([
           import('../lib/plot-client'),
           import('../lib/specs/cycles'),
           import('../lib/crosshair'),
+          import('../lib/series-codec'),
         ]);
-
-      const cyclesData = chartData<{ label: string; series: { day: number; multiple: number }[] }[]>(
-        'cycles-chart-data',
-      );
+      const encoded = chartData<
+        { label: string; series: Parameters<typeof decodeIndexed>[0] }[]
+      >('cycles-chart-data');
+      const cyclesData = encoded.map((c) => ({
+        label: c.label,
+        series: decodeIndexed(c.series, 'day', 'multiple') as { day: number; multiple: number }[],
+      }));
       const points = cyclesData.flatMap((c) =>
         c.series.map((p) => ({ cycle: c.label, day: p.day, multiple: p.multiple })),
       );
@@ -101,8 +112,7 @@ const svg = renderResponsiveChart((w) => cyclesSpec(points, lineEnds, domain, 'l
         (day: number) => `day ${day}`,
       );
 
-      const width = container.clientWidth || 720;
-      drawChart(container, cyclesSpec(points, lineEnds, domain, scale, width, anchors));
+      drawChart(container, (w) => cyclesSpec(points, lineEnds, domain, scale, w, anchors));
     });
 
     const show = (next: CycleScale): void => {
