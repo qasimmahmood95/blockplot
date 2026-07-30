@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-07-30T16:19:26.816Z",
+  "fetchedAt": "2026-07-30T23:16:02.022Z",
   "asOf": "2026-07-30",
   "minAnnualiseDays": 365,
   "years": [
@@ -1195,9 +1195,9 @@
       "annualPct": -69.38
     },
     "longestLosing": {
-      "buyYear": 2014,
-      "sellYear": 2015,
-      "totalPct": -41.86,
+      "buyYear": 2018,
+      "sellYear": 2019,
+      "totalPct": -42.76,
       "days": 730
     },
     "safeYears": 3
