@@ -316,7 +316,29 @@ trading-day-based. M17 must decide pair depth explicitly rather than let the
 file grow — most likely by extending M11's existing rule that pairs without BTC
 keep the shorter window.
 
-#### M18 — rebased performance comparison
+#### M18 — rebased performance comparison — **shipped**
+
+`/performance`, with the measured facts recorded rather than the intentions:
+
+- **A second data file, not a widening of the first.** `benchmarks-daily.json` is
+  a 460-day window, about fifteen months short of a comparison worth drawing, and
+  the risk table must never accidentally read a decade where it expects a window.
+- **The resolution rule was measured.** Ten years of five daily series is 11,480
+  points and 92 KB gz, all of which must be embedded because the start date is
+  chosen in the browser. Entirely weekly is 19 KB but gives a three-month view
+  thirteen points. Daily for 730 days and one point per ISO week before that is
+  34 KB and 3,972 points.
+- **Rounded to 6 significant figures.** The first build was 81.9 KB gz in USD and
+  101.7 in GBP; the whole difference was seventeen-digit conversion residue. Both
+  trees are now 76.7 / 77.9.
+- **It is the heaviest page on the site**, 10 KB above `/correlation`, and is
+  audited: 0.98 performance, 0.0000 CLS, 0 ms TBT. The split is ~40 KB payload
+  and ~34 KB SVG, and the SSR already rounds coordinates to 1 dp — so the
+  downsampler below is the next lever, and this page is its best justification.
+
+Original plan:
+
+
 
 The site commits daily S&P 500, gold and DXY series and never plots them:
 `benchmarks-daily.json` is read for one footnote about gold's source and for
@@ -398,8 +420,10 @@ Three items from M15/M16 that are real and unscheduled:
   mechanism was never text reflow, and `local()` only ever helps a reader who has
   that exact font installed.
 - `downsample.ts` ships tested and **unwired**. Wiring needs per-series
-  bucketing and pinned series endpoints. `/correlation` is now the page that
-  would gain most: `btc-eth` carries 3,144 readings drawn at 760px, four per
+  bucketing and pinned series endpoints. `/performance` (M18) is now the best
+  case: five lines at up to ~1,800 points each, drawn at 400px and 760px, is
+  ~34 KB gz of SVG for a shape that would be identical at half the points. The
+  obstacle is the same one `/correlation` has — `btc-eth` carries 3,144 readings drawn at 760px, four per
   pixel. The obstacle is the crosshair, which reads its anchors from the same
   array, so downsampling the payload coarsens the readout.
 - **Offset dates in the series codec**, measured during M17 and deliberately not
