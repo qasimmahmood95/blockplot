@@ -1,0 +1,88 @@
+---
+import PerformanceChart from '../../components/PerformanceChart.astro';
+import Base from '../../layouts/Base.astro';
+import { ethNote, fxNote, type Currency } from '../../lib/currency';
+import { dataFor } from '../../lib/data';
+import { currencyPaths } from '../../lib/routes';
+import { rebaseCovering, totalReturnPct } from '../../../pipeline/rebase';
+import { PERF_LABELS_CLIENT, perfStartOptions, toAssetSeries } from '../../lib/perf-shared';
+
+export const getStaticPaths = currencyPaths;
+
+const { currency } = Astro.props as { currency: Currency };
+const { benchmarksHistory } = dataFor(currency);
+
+const assets = toAssetSeries(benchmarksHistory);
+const options = perfStartOptions(assets);
+const initial = options.find((o) => o.selected) ?? options[0];
+// The tiles describe the same window the build drew, from the same function, so
+// a figure here and the height of a line cannot disagree.
+const rebased = initial ? rebaseCovering(assets, initial.start) : null;
+const ranked = [...(rebased?.series ?? [])].sort(
+  (a, b) => totalReturnPct(b) - totalReturnPct(a),
+);
+const ethSeries = benchmarksHistory.series.find((s) => s.asset === 'eth')?.sourceSeries;
+---
+
+<Base
+  currency={currency}
+  title="blockplot · performance"
+  description="BTC against ether, the S&P 500, gold and the dollar index, every series indexed to 100 at a shared start date."
+>
+  <h1 class="visually-hidden">Performance</h1>
+
+  <dl class="stat-grid">
+    {
+      ranked.map((s) => (
+        <div class="stat">
+          <dt>{PERF_LABELS_CLIENT[s.asset] ?? s.asset}</dt>
+          <dd class={`num ${totalReturnPct(s) < 0 ? 'down' : 'up'}`}>
+            {totalReturnPct(s) >= 0 ? '+' : ''}
+            {totalReturnPct(s).toFixed(1)}%
+          </dd>
+          <dd class="sub num">index {s.finalIndex.toFixed(0)}</dd>
+        </div>
+      ))
+    }
+  </dl>
+
+  <section class="chart-section">
+    <h2>Indexed to 100 · {initial?.label ?? ''} · log scale</h2>
+    <PerformanceChart currency={currency} />
+    <p class="method-note">
+      Every series is divided by its own close on the shared base date and multiplied by 100, so
+      the lines are directly comparable whatever their units — an index, an ounce price, a dollar
+      index and two coins. The base is the first day on which <em>every</em> drawn series has a
+      price, not the day the button names: BTC and ether trade every day where the S&amp;P 500 and
+      gold do not, so a Saturday start would otherwise index BTC two days before the S&amp;P and
+      bake that difference into every later point. The caption under the chart states the base
+      date it actually used.
+    </p>
+    <p class="method-note">
+      A series whose own history begins after the chosen start is excluded and named, rather than
+      drawn from partway across or silently dropped. BTC's history reaches
+      {assets.find((a) => a.asset === 'btc')?.rows[0]?.date}, the benchmarks
+      {assets.find((a) => a.asset === 'sp500')?.rows[0]?.date} — FRED publishes the S&amp;P 500 as
+      a rolling decade — and ether {assets.find((a) => a.asset === 'eth')?.rows[0]?.date}. "max" is
+      therefore the earliest start at which all of them exist, not the earliest date in the file,
+      because a chart carrying one line for seven years and then five is not the comparison this
+      page is for.
+    </p>
+    <p class="method-note">
+      Log is the default, which is a claim about the data rather than a preference: over a decade
+      BTC's index reaches five figures while the benchmarks stay near 200, and on a linear scale
+      every benchmark is a flat line along the bottom. Log makes equal vertical distances equal
+      <em>ratios</em>, so the benchmarks keep their shape. Linear is the honest view for a short
+      window, where ratios and differences agree.
+    </p>
+    <p class="method-note">
+      Resolution: the last {benchmarksHistory.dailyDays} days of every series are daily, and
+      everything older is one point per ISO week — its last close, never an average, since an
+      average is a number no market printed. A decade of five daily series is 92 KB gzipped and all
+      of it has to be embedded, because the start date is chosen in the browser and this site makes
+      no request to fetch more; this rule is a third of that for a difference invisible at any
+      screen width. Total returns are price returns: no dividends on the S&amp;P, no yield, no
+      fees, no taxes.{fxNote(currency)}{ethNote(currency, Boolean(ethSeries))}
+    </p>
+  </section>
+</Base>

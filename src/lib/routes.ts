@@ -3,6 +3,7 @@ import { CURRENCIES, CURRENCY_META, type Currency } from './currency';
 /** Site sections, in header order. The overview is the empty page slug. */
 export const PAGES = [
   { page: '', label: 'overview' },
+  { page: 'performance', label: 'performance' },
   { page: 'volatility', label: 'volatility & risk' },
   { page: 'cycles', label: 'halving cycles' },
   { page: 'correlation', label: 'correlation' },
