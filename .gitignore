@@ -17,3 +17,8 @@ npm-debug.log*
 Thumbs.db
 .lighthouseci/
 .lhci-root/
+
+# Scratch analysis scripts. Investigations write these at the repo root so they
+# can import from it; they are working notes, not repo content.
+.census-tmp*
+*.scratch.mjs
