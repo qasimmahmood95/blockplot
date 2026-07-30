@@ -248,6 +248,52 @@ export const benchmarkDatasetSchema = z.object({
 
 export type BenchmarkDataset = z.infer<typeof benchmarkDatasetSchema>;
 
+/**
+ * Versioned on-disk format of data/benchmarks-history.json.
+ *
+ * Separate from benchmarks-daily.json rather than an extension of it, because
+ * the two answer different questions and are read by different pages. The daily
+ * file is a 460-day window at full resolution, which is what the risk table
+ * needs; this one reaches back a decade at mixed resolution, which is what a
+ * rebased performance chart needs and what the risk table must never
+ * accidentally read.
+ *
+ * The resolution rule is recorded in the file rather than left implicit in the
+ * code that wrote it: a reader — or a later page — can tell that the early part
+ * of a series is weekly without knowing which pipeline version produced it.
+ */
+export const benchmarkHistoryDatasetSchema = z.object({
+  schemaVersion: z.literal(1),
+  currency: currencySchema,
+  fetchedAt: z.string(),
+  /** Calendar days at the end of each series kept at daily resolution. */
+  dailyDays: z.number().int().positive(),
+  /** How everything older than that is stored. */
+  olderResolution: z.literal('weekly-last'),
+  series: z
+    .array(
+      z.object({
+        asset: z.enum(['btc', 'eth', 'sp500', 'gold', 'dxy']),
+        /** Identifier at the source, or 'derived' for BTC's own history file. */
+        sourceSeries: z.string().min(1),
+        rows: z.array(benchmarkDaySchema).min(2).superRefine(refineAscendingDates),
+      }),
+    )
+    .min(2)
+    .superRefine((series, ctx) => {
+      if (new Set(series.map((s) => s.asset)).size !== series.length) {
+        ctx.addIssue({ code: 'custom', message: 'duplicate history asset' });
+      }
+      // BTC is the one series this file cannot be useful without: every other
+      // line exists to be compared against it.
+      if (!series.some((s) => s.asset === 'btc')) {
+        ctx.addIssue({ code: 'custom', message: 'missing history asset btc' });
+      }
+    }),
+});
+
+export type BenchmarkHistoryDataset = z.infer<typeof benchmarkHistoryDatasetSchema>;
+
 const volPointSchema = z.object({
   date: isoDate,
   /** Annualized realized volatility over the trailing window, %, 2 dp. */

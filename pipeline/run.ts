@@ -56,9 +56,11 @@ import {
   trailingAverage,
 } from './network';
 import { computeStats, toDailySeries } from './prices';
+import { HISTORY_DAILY_DAYS, thinOlderToWeekly } from './series';
 import { buildRiskDataset } from './risk';
 import {
   benchmarkDatasetSchema,
+  benchmarkHistoryDatasetSchema,
   correlationDatasetSchema,
   CURRENCIES,
   dominanceDatasetSchema,
@@ -357,6 +359,46 @@ for (const currency of CURRENCIES) {
     console.log(
       `${dir}/benchmarks-daily.json: sp500 ${sp.length}, gold ${au.length}, dxy ${dxy.length}, ` +
         (eth ? `eth ${eth.length} days (${ethTicker}, ${ethSource})` : 'eth absent'),
+    );
+  }
+
+  // The deep history the rebased comparison reads. Written from the same
+  // untrimmed series the correlation dataset uses, so /performance and
+  // /correlation cannot disagree about what a benchmark did — and thinned by one
+  // stated rule, because a decade of five daily series is 92 KB gzipped and all
+  // of it would have to be embedded (the reader picks the start date, and no
+  // runtime fetch is sanctioned to go and fetch more).
+  if (deep && spAll && auAll && dxyAll) {
+    const rows = (series: { date: string; close: number }[]) =>
+      thinOlderToWeekly(series, HISTORY_DAILY_DAYS);
+    const history = benchmarkHistoryDatasetSchema.parse({
+      schemaVersion: 1,
+      currency,
+      fetchedAt,
+      dailyDays: HISTORY_DAILY_DAYS,
+      olderResolution: 'weekly-last',
+      series: [
+        // BTC carries the same rule as the rest rather than being read from
+        // btc-price-history.json at full resolution: one file, one rule, and a
+        // chart whose lines are all sampled the same way.
+        {
+          asset: 'btc',
+          sourceSeries: 'blockchain.info market-price',
+          rows: rows(deep.map(({ date, price }) => ({ date, close: price }))),
+        },
+        { asset: 'sp500', sourceSeries: SP500_FRED_SERIES, rows: rows(spAll) },
+        { asset: 'gold', sourceSeries: goldFetch?.ticker ?? 'yahoo', rows: rows(auAll) },
+        { asset: 'dxy', sourceSeries: dxyFetch?.ticker ?? 'yahoo', rows: rows(dxyAll) },
+        ...(ethAll && ethTicker
+          ? [{ asset: 'eth', sourceSeries: ethTicker, rows: rows(ethAll) }]
+          : []),
+      ],
+    });
+    await writeJson(`${dir}/benchmarks-history.json`, history);
+    console.log(
+      `${dir}/benchmarks-history.json: ` +
+        history.series.map((x) => `${x.asset} ${x.rows.length}`).join(', ') +
+        ` (daily ${HISTORY_DAILY_DAYS}d, older weekly)`,
     );
   }
 
