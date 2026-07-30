@@ -15,6 +15,7 @@ import {
   deflate,
   fetchCpi,
   MAX_CPI_LAG_MONTHS,
+  MIN_ANNUALISE_DAYS,
   monthOf,
   realWindows,
   type CpiFetch,
@@ -160,7 +161,7 @@ const cpiByCurrency = new Map<Currency, CpiFetch | null>(
     ? await Promise.all(
         CURRENCIES.map(
           async (currency) =>
-            [currency, await attempt(`fred cpi ${currency}`, fetchCpi(currency, cpiThrough))] as const,
+            [currency, await attempt(`cpi ${currency}`, fetchCpi(currency, cpiThrough))] as const,
         ),
       )
     : [],
@@ -527,11 +528,13 @@ for (const currency of CURRENCIES) {
       const full = deflate(deep, cpi, baseMonth);
       // Thin first, measure second, and the order matters. Measuring on the full
       // daily series and committing the thinned one put the max window's start
-      // five days before the first row of the file — caught by the schema, which
-      // is the layer that checks the file's claims about itself. The deeper
-      // problem it exposed is not the schema's: a tile anchored on a day the file
-      // does not contain quotes a price the chart cannot draw, so the tiles and
-      // the chart would disagree by a few days at every preset beyond two years.
+      // four days before the first row of the file (2010-08-18 against the
+      // thinned 2010-08-22), which the schema refused. The deeper problem it
+      // exposed is not the schema's, and the schema only caught the loudest case:
+      // review re-ran the pre-fix behaviour and the 3y, 5y and 10y anchors sit
+      // inside the committed range while matching no row in it, so a range check
+      // saw nothing. A tile anchored on a day the file does not contain quotes a
+      // price the chart cannot draw. The refinement is a set-membership test now.
       //
       // Measuring on the committed rows costs a weekly-section anchor up to six
       // days of precision against its own target date. That is the same
@@ -573,6 +576,7 @@ for (const currency of CURRENCIES) {
           },
           dailyDays: HISTORY_DAILY_DAYS,
           olderResolution: 'weekly-last',
+          minAnnualiseDays: MIN_ANNUALISE_DAYS,
           windows,
           series: realSeries,
         });

@@ -881,6 +881,15 @@ export const realReturnsDatasetSchema = z
     dailyDays: z.number().int().positive(),
     /** How everything older than that is stored. */
     olderResolution: z.literal('weekly-last'),
+    /**
+     * The shortest span the run was willing to annualise.
+     *
+     * Recorded rather than left in the code the page imports: a committed file
+     * may have been produced under a different rule than the build that renders
+     * it, and stating today's threshold over yesterday's figures is the inverse
+     * of what this dataset exists for.
+     */
+    minAnnualiseDays: z.number().int().positive(),
     windows: z
       .array(
         z.object({
@@ -921,11 +930,22 @@ export const realReturnsDatasetSchema = z
     // The base month is what "real" means here, and it has to be a month the
     // deflator actually published — otherwise every real figure is scaled by a
     // number that does not exist.
+    //
+    // The range checks are the weak half and were once the whole of it: the writer
+    // sets `baseMonth` and `lastMonth` from the same expression, so neither can
+    // fire, and neither establishes what the sentence above claims. A month inside
+    // `missingMonths` sits comfortably in range and has no observation at all.
     if (doc.deflator.baseMonth > doc.deflator.lastMonth) {
       ctx.addIssue({ code: 'custom', message: 'baseMonth is beyond the last published month' });
     }
     if (doc.deflator.baseMonth < doc.deflator.firstMonth) {
       ctx.addIssue({ code: 'custom', message: 'baseMonth is before the first published month' });
+    }
+    if (doc.deflator.missingMonths.includes(doc.deflator.baseMonth)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `baseMonth ${doc.deflator.baseMonth} is one of the unpublished months`,
+      });
     }
     // The last day of the series must fall inside the last published month:
     // a later day would mean it was deflated by an index that does not cover it,
@@ -942,8 +962,17 @@ export const realReturnsDatasetSchema = z
         message: `deflator lags by ${doc.deflator.lagMonths} months, beyond ${doc.deflator.maxLagMonths}`,
       });
     }
-    // Every window has to start inside the series it is measured on, and end
-    // before the series does.
+    // Every window has to be anchored on a row this file actually contains, and
+    // end before the series does.
+    //
+    // Membership, not range. `window.start >= series[0].date` was the first
+    // version and it is far weaker than it looks: it caught the max window when
+    // the pipeline measured on the full daily series and committed the thinned
+    // one, and it would have missed 3y, 5y and 10y in the same run, because their
+    // targets sit comfortably inside the range while matching no row. The
+    // property the tiles depend on is that every figure above the chart is
+    // measured on a point the chart draws.
+    const dates = new Set(doc.series.map((row) => row.date));
     for (const window of doc.windows) {
       if (window.start >= doc.asOf) {
         ctx.addIssue({
@@ -951,10 +980,10 @@ export const realReturnsDatasetSchema = z
           message: `window ${window.label} starts ${window.start}, not before asOf ${doc.asOf}`,
         });
       }
-      if (window.start < (doc.series[0]?.date ?? '')) {
+      if (!dates.has(window.start)) {
         ctx.addIssue({
           code: 'custom',
-          message: `window ${window.label} starts before the series does`,
+          message: `window ${window.label} starts ${window.start}, which is not a row in the series`,
         });
       }
     }

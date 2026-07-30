@@ -14,6 +14,7 @@ import {
   MAX_CPI_LAG_MONTHS,
   MAX_CPI_MISSING_SHARE,
   MIN_ANNUALISE_DAYS,
+  RECENT_CPI_MONTHS,
   monthOf,
   monthsBetween,
   onsMonthKey,
@@ -21,7 +22,7 @@ import {
   REAL_WINDOWS,
   toMonthlyCpi,
   toMonthlyOns,
-  WINDOW_START_TOLERANCE_DAYS,
+  windowToleranceDays,
   type CpiPoint,
 } from './cpi';
 import { CURRENCIES } from './currencies';
@@ -137,10 +138,34 @@ describe('toMonthlyCpi', () => {
     );
   });
 
+  it('catches a frequency change confined to the recent tail', () => {
+    // The whole-series rule alone is nearly useless against this: measured, 930
+    // good months followed by two years published quarterly is 1.47% missing
+    // overall and passes, while two thirds of the last two years of prices
+    // vanish from both lines.
+    const rows: [string, string][] = [];
+    for (let i = 0; i < 930; i++) rows.push([`${addMonths('1947-01', i)}-01`, '100']);
+    for (let i = 0; i < 8; i++) rows.push([`${addMonths('2024-07', i * 3)}-01`, '100']);
+    expect(() => toMonthlyCpi(csv('X', rows), 'X')).toThrow(
+      new RegExp(`in the ${RECENT_CPI_MONTHS} months`),
+    );
+  });
+
+  it('leaves room for more than one cancelled release in the recent window', () => {
+    // The recent rule is much looser than the overall one on purpose: a monthly
+    // series with two cancelled releases is 3% of five years, where quarterly is
+    // 67%. Reusing 2% here would delete the whole dataset on the second
+    // cancellation, which is a thing agencies do rather than a corruption.
+    const skip = ['2025-10', '2026-02'];
+    expect(() => toMonthlyCpi(risingCsv('X', '1990-01', 438, skip), 'X')).not.toThrow();
+  });
+
   it('tolerates one hole in a long series but not a spray of them', () => {
     expect(() => toMonthlyCpi(risingCsv('X', '2020-01', 60, ['2022-06']), 'X')).not.toThrow();
     const many = ['2021-02', '2021-08', '2022-03', '2022-09'];
-    expect(() => toMonthlyCpi(risingCsv('X', '2020-01', 60, many), 'X')).toThrow(/thinned response/);
+    expect(() => toMonthlyCpi(risingCsv('X', '2020-01', 60, many), 'X')).toThrow(
+      /coarser frequency/,
+    );
   });
 
   it('rejects an empty series', () => {
@@ -153,6 +178,13 @@ describe('toMonthlyCpi', () => {
     expect(() => toMonthlyCpi(csv('SP500', [['2024-01-01', '100']]), 'CPIAUCSL')).toThrow(
       /unexpected header/,
     );
+  });
+
+  it('lists a multi-month gap in ascending order', () => {
+    // Every other gap fixture here is one month long, so the ordering inside a
+    // longer one was unpinned — and the page prints this list.
+    const out = toMonthlyCpi(risingCsv('X', '2000-01', 300, ['2022-05', '2022-06']), 'X');
+    expect(out.missingMonths).toEqual(['2022-05', '2022-06']);
   });
 
   it('counts the "." FRED writes for a missing observation as an unpublished month', () => {
@@ -278,6 +310,22 @@ describe('isFreshEnough', () => {
     // Measured: GBRCPIALLMINMEI parses perfectly and last publishes 2025-03,
     // sixteen months behind. Only this check distinguishes it from a late one.
     expect(isFreshEnough(at('2025-03'), '2026-07-30')).toBe(false);
+  });
+
+  it('puts the boundary between 3 and 4, not merely near it', () => {
+    // The gate was only ever exercised at 1, 2 and 16, so both `<= 6` and
+    // `< MAX_CPI_LAG_MONTHS` passed the suite while meaning different things.
+    // A release that slips a month reaches 3; nothing routine reaches 4.
+    expect(cpiLagMonths(at('2026-04'), '2026-07-30')).toBe(3);
+    expect(isFreshEnough(at('2026-04'), '2026-07-30')).toBe(true);
+    expect(cpiLagMonths(at('2026-03'), '2026-07-30')).toBe(4);
+    expect(isFreshEnough(at('2026-03'), '2026-07-30')).toBe(false);
+  });
+
+  it('treats an empty series as infinitely stale, not perfectly fresh', () => {
+    // The fallback used to be the price month itself, giving a lag of 0 — the one
+    // check whose job is to fail closed, failing open on the emptiest input.
+    expect(isFreshEnough([], '2026-07-30')).toBe(false);
   });
 });
 
@@ -464,14 +512,48 @@ describe('realWindows', () => {
   it('keeps a window whose anchor row lands a little late', () => {
     const cpi = rising('2020-01', 78);
     const all = daily('2020-01-01', '2026-06-30', 100);
-    // Drop the fortnight around the 5y target so the anchor row is late but
-    // within tolerance.
+    // Drop a few days after the 5y target so the anchor row is late but within
+    // that window's tolerance.
     const target = '2021-06-30';
+    const slack = windowToleranceDays(5);
     const gapped = all.filter(
-      (r) => !(r.date >= target && daysBetween(target, r.date) < WINDOW_START_TOLERANCE_DAYS - 10),
+      (r) => !(r.date >= target && daysBetween(target, r.date) < slack - 2),
     );
     const series = deflate(gapped, cpi, '2026-06');
     expect(realWindows(series, cpi).map((w) => w.label)).toContain('5y');
+  });
+
+  it('drops a 1y window that an unpublished month has shortened to 11 months', () => {
+    // Reachable, not hypothetical: a hole removes every day of that month, so if
+    // the 1y target lands inside one the anchor is a month late. Under a flat
+    // 31-day tolerance this was kept and emitted a "1y" tile measuring 336 days
+    // with nothing anywhere saying so.
+    const cpi = rising('2014-01', 150).filter((p) => p.month !== '2025-06');
+    const series = deflate(daily('2014-01-01', '2026-06-02', 100), cpi, '2026-06');
+    const one = realWindows(series, cpi).find((w) => w.label === '1y');
+    expect(one).toBeUndefined();
+  });
+
+  it('scales the tolerance with the window, and ties it to the annualising floor', () => {
+    expect(windowToleranceDays(1)).toBe(5);
+    expect(windowToleranceDays(3)).toBe(11);
+    expect(windowToleranceDays(10)).toBe(37);
+    // The two rules have to agree about how much slack a year may have: a kept 1y
+    // window must always be long enough to annualise. They disagreed by 26 days,
+    // which left a band where a tile kept its percentages and silently lost both
+    // annualised figures.
+    expect(365 - windowToleranceDays(1)).toBe(MIN_ANNUALISE_DAYS);
+  });
+
+  it('anchors on the target row itself when the series has one', () => {
+    // The "at" half of "at or after": changing `>= target` to `> target` silently
+    // shortens every window by a day and nothing else in this file notices.
+    const cpi = rising('2014-01', 150);
+    const series = deflate(daily('2014-01-01', '2026-06-30', 100), cpi, '2026-06');
+    const five = realWindows(series, cpi).find((w) => w.label === '5y');
+    // 5 × 365.2425 rounds to 1826 days before 2026-06-30.
+    expect(five?.start).toBe('2021-06-30');
+    expect(daysBetween(five?.start ?? '', '2026-06-30')).toBe(1826);
   });
 
   it('anchors on the first row at or after the target, never before it', () => {

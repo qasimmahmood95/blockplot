@@ -87,3 +87,15 @@ export function isoWeekStart(date: string): string {
   d.setUTCDate(d.getUTCDate() - (day - 1));
   return d.toISOString().slice(0, 10);
 }
+
+/**
+ * Whole days between two ISO dates.
+ *
+ * Lives here rather than in `cpi.ts` because both the pipeline and a client
+ * island need it, and `cpi.ts` imports zod — pulling that into an eager island
+ * bundle to obtain a subtraction is the mistake `currencies.ts` was split out to
+ * avoid. It was briefly declared in both places, which is the drift class
+ * CLAUDE.md names.
+ */
+export const daysBetween = (from: string, to: string): number =>
+  Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);

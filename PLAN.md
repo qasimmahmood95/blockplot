@@ -441,9 +441,11 @@ holes. An earlier draft of the method note claimed a gap the chart did not have.
 Three other things measured rather than assumed:
 
 - **Thin first, measure second.** Windows computed on the full daily series and
-  committed beside a weekly-thinned one put the max window's start five days
-  before the file's own first row. The schema caught it; the real defect was that
-  a tile would quote a price the chart cannot draw.
+  committed beside a weekly-thinned one put the max window's start four days
+  before the file's own first row. The schema caught that one and would have
+  missed the 3y, 5y and 10y anchors, which sit inside the committed range while
+  matching no row in it — the refinement is a set-membership test now. The real
+  defect either way was that a tile would quote a price the chart cannot draw.
 - **`Intl` is not portable for compact currency.** `style:'currency'` with
   `notation:'compact'` gives `$20.0K`/`$105.0`/`$0.0` in Node 22 and
   `$20K`/`$105`/`$0` in Chromium, so the axis changed under the cursor between
@@ -456,7 +458,7 @@ Three other things measured rather than assumed:
   The real line is dashed, and a test fails if the pair contrast drops under 3:1
   without the dashes differing.
 
-The page is 35 KB gzipped against `/gbp/dca`'s 75 KB, so no columnar encoding was
+The page is 37.3 KB gzipped against `/gbp/dca`'s 76.9 KB, so no columnar encoding was
 added for it. `real-returns.json` is loaded by glob rather than by name — it is
 the one dataset that may legitimately not exist, and a static import would turn
 the pipeline's refusal to publish stale money into a broken build for the whole

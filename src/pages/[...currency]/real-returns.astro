@@ -4,8 +4,7 @@ import Base from '../../layouts/Base.astro';
 import { fxNote, type Currency } from '../../lib/currency';
 import { realReturnsFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
-import { monthLabel, realTiles } from '../../lib/real-shared';
-import { CPI_CANDIDATES, MAX_CPI_LAG_MONTHS } from '../../../pipeline/cpi';
+import { daysBetween, monthLabel, realTiles, sourceNameOf } from '../../lib/real-shared';
 
 export const getStaticPaths = currencyPaths;
 
@@ -19,22 +18,19 @@ const deflator = dataset?.deflator;
 const baseLabel = deflator ? monthLabel(deflator.baseMonth) : '';
 const holes = deflator?.missingMonths ?? [];
 const holeList = holes.map(monthLabel).join(', ');
-const behindDays = dataset
-  ? Math.round(
-      (Date.parse(`${dataset.pricesThrough}T00:00:00Z`) - Date.parse(`${dataset.asOf}T00:00:00Z`)) /
-        86_400_000,
-    )
-  : 0;
-const candidateCount = CPI_CANDIDATES[currency].length;
+const behindDays = dataset ? daysBetween(dataset.asOf, dataset.pricesThrough) : 0;
 const adjustment =
   deflator?.seasonalAdjustment === 'seasonally-adjusted'
     ? 'seasonally adjusted'
     : 'not seasonally adjusted';
-// Read from the file, not written down. The GBP tree's deflator comes from ONS
-// and the USD one from FRED, and which body served is exactly the kind of fact a
-// literal here would get wrong the first time either list changes.
-const SOURCE_NAMES: Record<string, string> = { fred: 'FRED', ons: 'the ONS' };
-const sourceName = deflator ? (SOURCE_NAMES[deflator.source] ?? deflator.source) : '';
+// Every one of these is read from the file rather than from the code that wrote
+// it, including the staleness threshold. The page describes a *committed*
+// dataset, which may have been produced under a different threshold than the one
+// this build happens to compile — importing the constant would state today's rule
+// over yesterday's figures, which is the inverse of the discipline this page is
+// built on.
+const sourceName = deflator ? sourceNameOf(deflator.source) : '';
+const maxLag = deflator?.maxLagMonths ?? 0;
 ---
 
 <Base
@@ -70,7 +66,7 @@ const sourceName = deflator ? (SOURCE_NAMES[deflator.source] ?? deflator.source)
             difference that {deflator.sourceSeries} is published on one base and another country's
             index on another, and no rescaling is done or needed. The tiles above lead with the real
             figure and carry the nominal one underneath, which is the opposite of the usual order
-            and the point of the page: four other pages here will give you the nominal number.
+            and the point of the page: every other page here quotes nominal figures.
           </p>
           <p class="method-note">
             The deflator is {deflator.sourceSeries} from {sourceName}, {adjustment}, published
@@ -97,17 +93,19 @@ const sourceName = deflator ? (SOURCE_NAMES[deflator.source] ?? deflator.source)
                 and every window above end there.
               </>
             )}
-            {' '}A deflator more than {MAX_CPI_LAG_MONTHS} months behind is treated as retired
-            rather than late and this page is not built at all — statistical agencies do retire
-            series, and FRED goes on serving a retired one's history under the same id with no
-            error, so the alternative is a confident chart of stale money. {candidateCount} candidate
-            {candidateCount === 1 ? '' : 's'} {candidateCount === 1 ? 'is' : 'are'} tried in order
-            and the one above is what answered.
+            {' '}A deflator more than {maxLag} months behind is treated as retired rather than
+            late, and the pipeline then writes no dataset at all rather than deflate by an index
+            that has stopped moving — statistical agencies do retire series, and a retired one goes
+            on being served under the same id with no error, so the alternative is a confident
+            chart of stale money. The deflator is chosen from a short list in order of preference
+            and the first that is both readable and current wins, so the series named above is what
+            actually answered rather than what was intended.
           </p>
           {holes.length > 0 && (
             <p class="method-note">
-              {holes.length === 1 ? 'One month in' : `${holes.length} months in`} the drawn range
-              {holes.length === 1 ? ' has' : ' have'} no observation: {holeList}. Days in
+              {holes.length === 1 ? 'One month in' : `${holes.length} months in`} the period this
+              file covers {holes.length === 1 ? 'has' : 'have'} no observation: {holeList}. A short
+              enough range may not reach back to {holes.length === 1 ? 'it' : 'them'}. Days in
               {holes.length === 1 ? ' it' : ' them'} are dropped rather than deflated by a
               neighbouring month, and both lines are broken there rather than drawn straight across
               — a line joined over the hole would show a deflated price for every day of a month
@@ -118,8 +116,9 @@ const sourceName = deflator ? (SOURCE_NAMES[deflator.source] ?? deflator.source)
             </p>
           )}
           <p class="method-note">
-            Annualised rates appear only on windows of a year or more; below that an annualised
-            figure is an extrapolation rather than a measurement. Returns are price returns: no
+            Annualised rates appear only on windows of at least {dataset.minAnnualiseDays} days — a
+            calendar year, less the few days a window may be anchored late by. Below that an
+            annualised figure is an extrapolation rather than a measurement. Returns are price returns: no
             dividends, no yield, no fees, no taxes. Resolution matches the other history charts —
             the last {dataset.dailyDays} days daily, everything older one point per ISO week, its
             last close rather than an average. CPI is revised after first publication and this page
@@ -133,9 +132,10 @@ const sourceName = deflator ? (SOURCE_NAMES[deflator.source] ?? deflator.source)
         <h2>Real returns are not available</h2>
         <p class="method-note">
           This page needs a consumer price index for {currency.toUpperCase()} that is still being
-          published. None of the {candidateCount} candidate series answered with data inside{' '}
-          {MAX_CPI_LAG_MONTHS} months of the latest price, so the pipeline wrote no dataset rather
-          than deflate by an index that has stopped moving. Nominal figures are unaffected and are
+          published. No candidate series produced one on the last pipeline run — either none could
+          be reached and read, or what could be read had stopped publishing — so no dataset was
+          written rather than deflate by an index that is not moving. The pipeline log names which
+          candidates were tried and why each was rejected. Nominal figures are unaffected and are
           on every other page.
         </p>
       </section>

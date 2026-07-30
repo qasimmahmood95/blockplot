@@ -7,6 +7,10 @@
  * import of the spec module would put Plot back on the critical path.
  */
 import { CURRENCY_META, type Currency } from './currency';
+// The tested definition, not a second copy: this feeds the day count the caption
+// displays, and `pipeline/series.ts` is zod-free so it costs the island nothing.
+import { daysBetween } from '../../pipeline/series';
+export { daysBetween };
 import type { RealReturnsDataset } from '../../pipeline/schema';
 
 /** Draw order, which is also the legend order and the colour assignment. */
@@ -57,11 +61,20 @@ export const realColor = (line: string): string =>
  */
 export const realDash = (line: string): string => (line === 'real' ? '5,3' : '');
 
-/** The legend swatch for a line: a solid bar, or a dashed one for real. */
+/**
+ * The legend swatch for a line: a solid bar, or a dashed one for real.
+ *
+ * The gradient stops are derived from `realDash` rather than written out, so a
+ * change to the pattern moves the swatch with the line. They were three separate
+ * literals — here, in the spec, and in the dash function — which is the drift
+ * class CLAUDE.md names, in miniature.
+ */
 export function realSwatch(line: string): string {
   const color = realColor(line);
-  if (!realDash(line)) return color;
-  return `repeating-linear-gradient(90deg, ${color} 0 4px, transparent 4px 7px)`;
+  const dash = realDash(line);
+  if (!dash) return color;
+  const [on = 5, off = 3] = dash.split(',').map(Number);
+  return `repeating-linear-gradient(90deg, ${color} 0 ${on}px, transparent ${on}px ${on + off}px)`;
 }
 
 /** `2026-06` as `June 2026`, for prose and the caption. */
@@ -111,8 +124,8 @@ export function realFormatters(currency: Currency): {
   const symbol =
     exact.formatToParts(0).find((part) => part.type === 'currency')?.value ?? '';
   // For the early history, where a whole-unit format is not a rounding choice
-  // but an error: BTC's first committed close is $0.0451, and "$0" states that
-  // it was worthless.
+  // but an error: the GBP file's first committed close is £0.0451, and "£0"
+  // states that it was worthless.
   const sub = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: code,
@@ -138,7 +151,7 @@ export function realFormatters(currency: Currency): {
  * is why `/network`'s axis is unaffected; it was checked rather than assumed.)
  *
  * Chromium's version is also wrong for the early history: it renders BTC's first
- * committed close, 0.0451, as `$0`. Two significant figures below the unit keeps
+ * committed GBP close, 0.0451, as `£0`. Two significant figures below the unit keeps
  * the bottom of a log axis meaning something.
  */
 export function compactDigits(value: number): string {
@@ -152,6 +165,18 @@ export function compactDigits(value: number): string {
   if (abs === 0) return '0';
   return Number(value.toPrecision(2)).toString();
 }
+
+/**
+ * The body behind each deflator source, for prose.
+ *
+ * One definition, because the page and the methodology table both name it and
+ * they had a map and a ternary between them — introduced in the same change,
+ * which is how two spellings of one field start.
+ */
+export const SOURCE_NAMES: Record<string, string> = { fred: 'FRED', ons: 'the ONS' };
+
+/** The publishing body for a dataset's deflator, or the raw key if unknown. */
+export const sourceNameOf = (source: string): string => SOURCE_NAMES[source] ?? source;
 
 export interface RangeOption {
   label: string;
@@ -181,14 +206,19 @@ export function realRangeOptions(dataset: RealReturnsDataset): RangeOption[] {
     start: window.start,
     selected: false,
   }));
-  const preferred = options.find((o) => o.label === '5y') ?? options.at(-1);
+  // The deepest window by its start date, not the last one in the file. They
+  // agree today only because `REAL_WINDOWS` happens to be listed shortest-first,
+  // so `at(-1)` was a fact about the declaration order rather than about the data
+  // — and a test claiming to check "the deepest window" passed either way.
+  const deepest = options.reduce<RangeOption | undefined>(
+    (best, o) => (best === undefined || o.start < best.start ? o : best),
+    undefined,
+  );
+  const preferred = options.find((o) => o.label === '5y') ?? deepest;
   if (preferred) preferred.selected = true;
   return options;
 }
 
-/** Whole days between two ISO dates. */
-const daysBetween = (from: string, to: string): number =>
-  Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 
 /**
  * The line under the chart: what "real" is measured in, and where both lines stop.
@@ -235,28 +265,48 @@ export interface RealTile {
  * Above this, a return is stated as a multiple instead of a percentage.
  *
  * Not a style preference. The max window's real return is +56,293,498.9%, which is
- * twelve digits a reader has to count to place the decimal point, and the tile
- * beside it says +85,908,757.1% — two figures nobody can compare at a glance. As
- * multiples they are ×562,936 and ×859,088, which is also how anyone actually
+ * twelve digits a reader has to count to place the decimal point, and the nominal
+ * figure on the same tile says +85,908,757.1% — two figures nobody can compare at a glance. As
+ * multiples they are ×562,936 and ×859,089, which is also how anyone actually
  * talks about a return that size. The threshold sits above the deepest window that
- * still reads naturally as a percentage: 10y is +6,089.8% and stays one.
+ * still reads naturally as a percentage: 10y is +6,089.8% and stays one — printed
+ * with the same grouping as the multiple, so one tile row does not read +8473.6%
+ * over a neighbour reading ×859,089.
  */
 export const MULTIPLE_ABOVE_PCT = 10_000;
 
 const multiple = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+// Grouped, like the multiple beside it. Ungrouped, one tile row read "+8473.6%"
+// over a neighbour reading "×859,089" — two conventions for the same quantity,
+// one row apart.
+const percent = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
 
 const pct = (value: number | null): string => {
   if (value === null) return '—';
   if (value >= MULTIPLE_ABOVE_PCT) return `×${multiple.format(1 + value / 100)}`;
-  return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+  return `${value >= 0 ? '+' : ''}${percent.format(value)}%`;
 };
+
+/**
+ * The annualised rate, always a percentage.
+ *
+ * Never a multiple, whatever its size: a rate is the readable half of a deep
+ * window, and "×101/yr" is not a thing anyone says. It went through the shared
+ * formatter for one commit, where only the fixture's modest CAGR kept a test
+ * green that claimed this rule already existed.
+ */
+const ratePct = (value: number | null): string =>
+  value === null ? '—' : `${value >= 0 ? '+' : ''}${percent.format(value)}%`;
 
 /**
  * One tile per window, real first.
  *
  * The real figure leads and the nominal one is the subtitle, which is the
  * opposite of how a return tile usually reads and is the point of the page: a
- * reader who wants the nominal number has it on four other pages. The inflation
+ * reader who wants the nominal number has it on every other page. The inflation
  * figure sits beside the nominal one so the gap between the two headline numbers
  * can be checked rather than taken — they are the same quantity twice, and the
  * third number is exactly what separates them.
@@ -267,7 +317,7 @@ const pct = (value: number | null): string => {
  */
 export function realTiles(dataset: RealReturnsDataset): RealTile[] {
   return dataset.windows.map((window) => {
-    const cagr = window.realCagrPct === null ? '' : ` · ${pct(window.realCagrPct)}/yr real`;
+    const cagr = window.realCagrPct === null ? '' : ` · ${ratePct(window.realCagrPct)}/yr real`;
     return {
       label: `${window.label} real`,
       value: pct(window.realPct),

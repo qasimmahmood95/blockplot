@@ -19,17 +19,27 @@ export type RealScale = 'log' | 'linear';
  * performance labels in both places.
  */
 export { REAL_LABELS, REAL_LINES, realColor, realDash } from '../real-shared';
-import { REAL_LABELS, realColor, realDash, REAL_LINES } from '../real-shared';
+import { realColor, realDash, REAL_LINES } from '../real-shared';
 
+/**
+ * No end-of-line labels, unlike `/performance`, and not for room.
+ *
+ * The two lines meet *exactly* at the right-hand edge, by construction: the base
+ * month is the deflator's last published month and both series end inside it, so
+ * `real(asOf) === nominal(asOf)` to the last digit — the committed files' final
+ * rows are `60136.2 / 60136.2` and `45485.4 / 45485.4`. Two labels at identical
+ * coordinates are one illegible smudge, at every range and both scales, and the
+ * first version shipped exactly that with a comment claiming they only overlapped
+ * when narrow. The legend names both lines and the crosshair reads both values,
+ * so nothing is lost by dropping them.
+ */
 export function realReturnsSpec(
   points: readonly RealChartPoint[],
-  lineEnds: readonly RealChartPoint[],
   tickFormat: (value: number) => string,
   scale: RealScale,
   width: number,
   anchors?: readonly CrosshairAnchor<Date>[],
 ): Parameters<typeof Plot.plot>[0] {
-  const narrow = width < 500;
   const lines = REAL_LINES.filter((line) => points.some((p) => p.line === line));
   return {
     width,
@@ -37,9 +47,7 @@ export function realReturnsSpec(
     // Wider than the other charts' 52: these ticks are money, and at max range
     // they read $100k where an index reads 100.
     marginLeft: 66,
-    // Room for the end-of-line labels, dropped when narrow — at 400px they take
-    // a quarter of the plot area and overlap each other.
-    marginRight: narrow ? 16 : 62,
+    marginRight: 16,
     x: { label: null },
     y: { label: null, grid: true, type: scale, tickFormat },
     color: { domain: [...lines], range: lines.map(realColor) },
@@ -53,22 +61,16 @@ export function realReturnsSpec(
       ),
       Plot.lineY(
         points.filter((d) => realDash(d.line)),
-        { x: 'date', y: 'value', stroke: 'line', strokeWidth: 1.5, strokeDasharray: '5,3' },
+        {
+          x: 'date',
+          y: 'value',
+          stroke: 'line',
+          strokeWidth: 1.5,
+          // The one definition of the pattern, so the chart, the legend swatch
+          // and the contrast argument that justifies it cannot drift apart.
+          strokeDasharray: realDash('real'),
+        },
       ),
-      ...(narrow
-        ? []
-        : [
-            Plot.text(lineEnds, {
-              x: 'date',
-              y: 'value',
-              text: (d: RealChartPoint) => REAL_LABELS[d.line] ?? d.line,
-              fill: 'line',
-              textAnchor: 'start',
-              dx: 6,
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10,
-            }),
-          ]),
       ...(anchors ? crosshairMarksFrom(anchors, width) : []),
     ],
     style: PLOT_STYLE,

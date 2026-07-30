@@ -14,6 +14,7 @@ import {
   realSwatch,
   realTiles,
 } from './real-shared';
+import { contrast, readTokens, resolveToken, type Theme } from './tokens.test-helper';
 import type { RealReturnsDataset } from '../../pipeline/schema';
 
 const dataset = (over: Partial<RealReturnsDataset> = {}): RealReturnsDataset =>
@@ -36,6 +37,7 @@ const dataset = (over: Partial<RealReturnsDataset> = {}): RealReturnsDataset =>
     },
     dailyDays: 730,
     olderResolution: 'weekly-last',
+    minAnnualiseDays: 360,
     windows: [
       {
         label: '1y',
@@ -81,6 +83,14 @@ describe('realRangeOptions', () => {
     const options = realRangeOptions(dataset());
     expect(options.map((o) => o.label)).toEqual(['1y', 'max']);
     expect(options.map((o) => o.start)).toEqual(['2025-06-30', '2010-08-22']);
+  });
+
+  it('falls back to the deepest window, not the last one listed', () => {
+    // `at(-1)` agreed with "deepest" only because REAL_WINDOWS is listed
+    // shortest-first; reversed, it selected the shortest window and the test that
+    // named this behaviour still passed.
+    const reversed = dataset({ windows: [...dataset().windows].reverse() });
+    expect(realRangeOptions(reversed).find((o) => o.selected)?.label).toBe('max');
   });
 
   it('prefers 5y when it exists and falls back to the deepest window', () => {
@@ -131,6 +141,10 @@ describe('realTiles', () => {
     expect(one?.label).toBe('1y real');
     expect(one?.value).toBe('+17.5%');
     expect(one?.sub).toBe('nominal +20.0% · CPI +2.1% · +17.5%/yr real');
+    // Grouped on both sides of the threshold, so a tile row does not read
+    // "+8473.6%" over a neighbour reading "×859,089".
+    expect(realTiles(dataset({ windows: [{ ...dataset().windows[0]!, realPct: 8473.6 }] }))[0]
+      ?.value).toBe('+8,473.6%');
     expect(one?.tone).toBe('up');
     // A max-window return is stated as a multiple: "+700000.0%" is six digits to
     // count before the decimal point means anything.
@@ -138,11 +152,20 @@ describe('realTiles', () => {
     expect(max?.sub).toContain('nominal ×10,001');
   });
 
-  it('keeps the annualised rate a percentage even when the total is a multiple', () => {
-    // The rate is the readable half of a max window — 130%/yr is a figure, where
-    // the total it compounds to is a phone number.
-    const [, max] = realTiles(dataset());
-    expect(max?.sub).toContain('+110.0%/yr real');
+  it('keeps the annualised rate a percentage even when the rate itself is huge', () => {
+    // The rate is the readable half of a deep window — 130%/yr is a figure where
+    // the total it compounds to is a phone number. This passed for one commit on
+    // the strength of a modest fixture: the rate went through the same formatter
+    // as the total, so a large enough CAGR rendered "×101/yr real".
+    expect(realTiles(dataset())[1]?.sub).toContain('+110.0%/yr real');
+    const huge = dataset({
+      windows: [{ ...dataset().windows[1]!, realCagrPct: MULTIPLE_ABOVE_PCT + 1 }],
+    });
+    // The nominal total on the same tile is still a multiple; it is only the rate
+    // clause that must stay a percentage.
+    const sub = realTiles(huge)[0]?.sub ?? '';
+    expect(sub).toContain('+10,001.0%/yr real');
+    expect(sub.split('·').at(-1)).not.toContain('×');
   });
 
   it('switches to a multiple only above the threshold', () => {
@@ -152,7 +175,7 @@ describe('realTiles', () => {
           windows: [{ ...dataset().windows[0]!, nominalPct: value, realPct: value }],
         }),
       )[0]?.value;
-    expect(near(MULTIPLE_ABOVE_PCT - 0.1)).toBe('+9999.9%');
+    expect(near(MULTIPLE_ABOVE_PCT - 0.1)).toBe('+9,999.9%');
     expect(near(MULTIPLE_ABOVE_PCT)).toBe('×101');
   });
 
@@ -252,31 +275,28 @@ describe('realPoints', () => {
 });
 
 describe('realColor', () => {
-  // Straight out of tokens.css, duplicated for the same reason
-  // perf-shared.test.ts duplicates it: a change there must fail here rather
-  // than quietly drop a line below the contrast floor.
-  const TOKENS: Record<string, { light: string; dark: string }> = {
-    '--accent': { light: '#bf4a08', dark: '#e97328' },
-    '--ink': { light: '#221d19', dark: '#eae4dc' },
-    '--surface': { light: '#fcfaf7', dark: '#1e1a15' },
-  };
-  const lum = (hex: string): number => {
-    const f = [1, 3, 5]
-      .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
-      .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-    return 0.2126 * (f[0] ?? 0) + 0.7152 * (f[1] ?? 0) + 0.0722 * (f[2] ?? 0);
-  };
-  const contrast = (a: string, b: string): number => {
-    const pair = [lum(a), lum(b)].sort((x, y) => y - x);
-    return ((pair[0] ?? 0) + 0.05) / ((pair[1] ?? 0) + 0.05);
-  };
-  const resolve = (value: string, theme: 'light' | 'dark'): string =>
-    TOKENS[/var\((--[a-z0-9-]+)\)/.exec(value)?.[1] ?? '']?.[theme] ?? '';
+  // Read from tokens.css, not copied from it. The copied table was justified by a
+  // comment saying a change to the stylesheet had to fail here — it did not,
+  // because nothing in the repo read the stylesheet.
+  const TOKENS = readTokens();
+  const resolve = (value: string, theme: Theme): string => resolveToken(value, theme, TOKENS);
+  const surface = (theme: Theme): string => TOKENS['--surface']?.[theme] ?? '';
+
+  it('reads the tokens it measures from the stylesheet', () => {
+    // Guards the guard: a rename or a restructure of tokens.css must fail loudly
+    // here rather than silently resolve every colour to an empty string, which
+    // would make every contrast assertion below vacuous.
+    for (const theme of ['light', 'dark'] as const) {
+      expect(surface(theme), theme).toMatch(/^#[0-9a-f]{6}$/i);
+      for (const line of REAL_LINES) expect(resolve(realColor(line), theme)).toMatch(/^#[0-9a-f]{6}$/i);
+    }
+    expect(resolve('var(--accent)', 'light')).not.toBe(resolve('var(--accent)', 'dark'));
+  });
 
   it('keeps both lines at 3:1 or better against the surface in both themes', () => {
     for (const theme of ['light', 'dark'] as const) {
       for (const line of REAL_LINES) {
-        const c = contrast(resolve(realColor(line), theme), TOKENS['--surface']?.[theme] ?? '');
+        const c = contrast(resolve(realColor(line), theme), surface(theme));
         expect(c, `${line} in ${theme} is ${c.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
       }
     }
@@ -304,10 +324,13 @@ describe('realColor', () => {
     expect(contrast(dark[0] ?? '', dark[1] ?? '')).toBeCloseTo(2.39, 1);
   });
 
-  it('draws the dashed line’s swatch dashed too', () => {
+  it('draws the dashed line’s swatch dashed too, from the same pattern', () => {
     expect(realSwatch('nominal')).toBe(realColor('nominal'));
-    expect(realSwatch('real')).toContain('repeating-linear-gradient');
-    expect(realSwatch('real')).toContain(realColor('real'));
+    expect(realSwatch('real')).toBe(
+      'repeating-linear-gradient(90deg, var(--ink) 0 5px, transparent 5px 8px)',
+    );
+    // Derived, not written twice: changing the dash moves the swatch with it.
+    expect(realSwatch('real')).toContain(`0 ${realDash('real').split(',')[0]}px`);
   });
 });
 

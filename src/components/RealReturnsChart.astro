@@ -25,21 +25,22 @@ const options = realRangeOptions(dataset);
 const initial = options.find((o) => o.selected) ?? options[0];
 const { tick } = realFormatters(currency);
 
-// The whole dataset goes over the wire, not a projection of it. The series is
-// the bulk either way, and handing the island the same object the build read
-// means `captionOf` is called on identical input by both halves — where a
-// hand-built payload is a second, silently divergent description of the file.
+// Only what the island draws with. The whole dataset went over the wire for one
+// commit, justified by a claim that `captionOf` would then be called on identical
+// input by both halves — which was simply false: the caption states nothing that
+// depends on the pressed range, so the island never recomputes it and imports
+// nothing to do so. The windows, the ten other deflator fields, `fetchedAt` and
+// `schemaVersion` were 78 KB of dead payload.
+const payload = {
+  series: dataset.series,
+  missingMonths: dataset.deflator.missingMonths,
+};
+
 const points = realPoints(dataset.series, initial?.start ?? '', dataset.deflator.missingMonths);
-// The last *finite* point of each line: a break inserted at a missing month is
-// not a place to put an end-of-line label.
-const lineEnds = ['nominal', 'real'].flatMap((line) => {
-  const last = [...points].reverse().find((p) => p.line === line && Number.isFinite(p.value));
-  return last ? [last] : [];
-});
 
 // Log is the pressed default, so log is what the build draws.
 const svg = points.length
-  ? renderResponsiveChart((w) => realReturnsSpec(points, lineEnds, tick, 'log', w))
+  ? renderResponsiveChart((w) => realReturnsSpec(points, tick, 'log', w))
   : '';
 ---
 
@@ -73,7 +74,7 @@ const svg = points.length
     is:inline
     type="application/json"
     id="real-chart-data"
-    set:html={toJsonScript({ currency, dataset })}
+    set:html={toJsonScript({ currency, ...payload })}
   />
   <div
     id="real-chart"
@@ -89,7 +90,7 @@ const svg = points.length
 
 <script>
   import { chartData, upgradeChart } from '../lib/charts';
-  import { chartLabel, realFormatters, realPoints } from '../lib/real-shared';
+  import { chartLabel, REAL_LABELS, realFormatters, realPoints } from '../lib/real-shared';
   import type { Currency } from '../lib/currency';
   import type { RealReturnsDataset } from '../../pipeline/schema';
   import type { RealScale } from '../lib/specs/real-returns';
@@ -99,9 +100,10 @@ const svg = points.length
   const scaleToggle = document.getElementById('real-scale');
 
   if (container) {
-    const { currency, dataset } = chartData<{
+    const { currency, series, missingMonths } = chartData<{
       currency: Currency;
-      dataset: RealReturnsDataset;
+      series: RealReturnsDataset['series'];
+      missingMonths: string[];
     }>('real-chart-data');
     const { tick, tip } = realFormatters(currency);
 
@@ -111,21 +113,16 @@ const svg = points.length
         ?.dataset.start ?? '';
 
     const upgrade = upgradeChart(container, async () => {
-      const [{ drawChart }, { realReturnsSpec }, { crosshairAnchors, isoDay }, { REAL_LABELS }] =
-        await Promise.all([
-          import('../lib/plot-client'),
-          import('../lib/specs/real-returns'),
-          import('../lib/crosshair'),
-          import('../lib/real-shared'),
-        ]);
-      const points = realPoints(dataset.series, start, dataset.deflator.missingMonths);
+      // `real-shared` is imported statically above — it is Plot-free and the eager
+      // path needs it. Re-importing it here bought nothing and produced a new
+      // INEFFECTIVE_DYNAMIC_IMPORT warning at every build.
+      const [{ drawChart }, { realReturnsSpec }, { crosshairAnchors, isoDay }] = await Promise.all([
+        import('../lib/plot-client'),
+        import('../lib/specs/real-returns'),
+        import('../lib/crosshair'),
+      ]);
+      const points = realPoints(series, start, missingMonths);
       if (points.length === 0) return;
-      const lineEnds = ['nominal', 'real'].flatMap((line) => {
-        const last = [...points]
-          .reverse()
-          .find((p) => p.line === line && Number.isFinite(p.value));
-        return last ? [last] : [];
-      });
       // The caption does not follow the chart, unlike /performance's: nothing it
       // states depends on the range. The base month, the deflator and where both
       // lines stop are properties of the file, not of the button pressed.
@@ -149,7 +146,7 @@ const svg = points.length
           })),
         isoDay,
       );
-      drawChart(container, (w) => realReturnsSpec(points, lineEnds, tick, scale, w, anchors));
+      drawChart(container, (w) => realReturnsSpec(points, tick, scale, w, anchors));
     });
 
     const press = (group: HTMLElement | null, attr: string, value: string): void => {

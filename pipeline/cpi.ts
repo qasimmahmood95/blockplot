@@ -11,7 +11,11 @@
 import { z } from 'zod';
 import { parseFredCsv } from './benchmarks';
 import { getJson, getText } from './http';
+import { daysBetween } from './series';
 import type { Currency } from './currencies';
+
+/** Re-exported so callers of this module get the one definition. */
+export { daysBetween };
 
 export type SeasonalAdjustment = 'seasonally-adjusted' | 'not-adjusted';
 
@@ -59,11 +63,19 @@ export interface CpiCandidate {
  * The UK deflator comes from ONS rather than FRED, which was not the plan and is
  * what the data forced. FRED serves no live monthly UK CPI: measured, four
  * plausible OECD ids (`GBRCPALTT01IXOBSAM`, `GBRCPALTT01IXOBM`, `CPALTT01GBM661S`,
- * `CPALTT01GBM661N`) all 404, and the one that does exist stops in March 2025.
- * OECD retired the MEI dataset those came from. ONS is the body that publishes UK
- * CPI in the first place, so going there is not a workaround — `D7BT` is the
- * headline all-items index, and the extra host buys the GBP tree the only deflator
- * that describes its reader.
+ * `CPALTT01GBM661N`) all 404, and `GBRCPIALLMINMEI`, which does exist and parses
+ * perfectly, stops in March 2025 — OECD retired the MEI dataset they came from.
+ * ONS is the body that publishes UK CPI in the first place, so going there is not
+ * a workaround: `D7BT` is the headline all-items index, and the extra host buys
+ * the GBP tree the only deflator that describes its reader.
+ *
+ * `GBRCPIALLMINMEI` is deliberately *not* kept here as a trailing fallback. It was
+ * for one commit, with a comment claiming its rejection line would stand as a
+ * record of the above — which was false twice over: the loop returns on the first
+ * candidate that passes, so with `D7BT` healthy the fallback is never fetched,
+ * never rejected and never logged, and being ranked below a working series it
+ * could not be picked up again either. A dead entry that documents nothing and
+ * cannot fire is worse than this paragraph.
  *
  * The two are not the same construction: US CPI-U is seasonally adjusted on a
  * 1982-84=100 base, ONS `D7BT` is unadjusted on 2015=100. Neither difference needs
@@ -76,14 +88,7 @@ export const CPI_CANDIDATES: Record<Currency, readonly CpiCandidate[]> = {
     { id: 'CPIAUCSL', source: 'fred', seasonalAdjustment: 'seasonally-adjusted' },
     { id: 'CPIAUCNS', source: 'fred', seasonalAdjustment: 'not-adjusted' },
   ],
-  gbp: [
-    { id: 'D7BT', source: 'ons', seasonalAdjustment: 'not-adjusted' },
-    // Kept last and expected to fail the freshness gate, which is the point: if
-    // OECD ever resumes it the list picks it up without a code change, and until
-    // then its rejection line in the log is a standing record of why the UK
-    // deflator does not come from the same place as the US one.
-    { id: 'GBRCPIALLMINMEI', source: 'fred', seasonalAdjustment: 'not-adjusted' },
-  ],
+  gbp: [{ id: 'D7BT', source: 'ons', seasonalAdjustment: 'not-adjusted' }],
 };
 
 const fredCsvUrl = (id: string): string =>
@@ -143,14 +148,43 @@ export const monthsBetween = (from: string, to: string): number =>
 /**
  * The longest run of unpublished months a series may have and still be monthly.
  *
- * A quarterly series read as monthly leaves two-month gaps forever, an annual one
- * eleven. Three admits a real interruption and refuses a different frequency
- * wearing a monthly id.
+ * Three admits a real interruption — the October 2025 US release was cancelled,
+ * and a second cancelled month is not unimaginable — and refuses anything as
+ * coarse as a semi-annual series. It does *not* on its own refuse a quarterly
+ * one, whose two-month holes fit inside it; an earlier version of this comment
+ * claimed otherwise while the test one file over asserted the opposite. The share
+ * rule below is what catches a frequency change.
  */
 export const MAX_CPI_GAP_MONTHS = 3;
 
-/** The share of months in the covered span that may be unpublished. */
+/**
+ * The share of months in the covered span that may be unpublished.
+ *
+ * Applied twice: over the whole series, and over `RECENT_CPI_MONTHS` at the end
+ * of it. The whole-series test alone is nearly useless against the case that
+ * matters, because eighty years of monthly observations drown anything recent —
+ * measured: 930 good months followed by two years published quarterly comes to
+ * 1.47% missing and passes, while two thirds of the last two years of prices
+ * silently vanish from both lines. A deflator is used most heavily where it is
+ * newest, so the newest part is where the frequency has to hold.
+ */
 export const MAX_CPI_MISSING_SHARE = 0.02;
+
+/** The window the share rule is applied over a second time. */
+export const RECENT_CPI_MONTHS = 60;
+
+/**
+ * The share of the recent window that may be unpublished.
+ *
+ * Much looser than the whole-series figure, on purpose. Over five years the two
+ * things this rule must tell apart are far apart: a monthly series with two
+ * cancelled releases is 3% missing, while quarterly is 67%, semi-annual 83% and
+ * annual 92%. Reusing the 2% threshold here would allow exactly one hole in five
+ * years and delete the entire dataset on the second — and a second cancelled
+ * release is a thing statistical agencies do, not a corruption. 20% separates the
+ * two cases with room on both sides.
+ */
+export const MAX_RECENT_MISSING_SHARE = 0.2;
 
 export interface MonthlyCpi {
   series: CpiPoint[];
@@ -231,12 +265,31 @@ export function monthlyFromPoints(points: readonly CpiPoint[], seriesId: string)
     series.push({ month, index: close });
   }
   if (series.length === 0) throw new Error(`monthlyCpi(${seriesId}): no observations`);
-  const span = series.length + missingMonths.length;
-  if (missingMonths.length > span * MAX_CPI_MISSING_SHARE) {
-    throw new Error(
-      `monthlyCpi(${seriesId}): ${missingMonths.length} of ${span} months unpublished — ` +
-        `beyond ${MAX_CPI_MISSING_SHARE * 100}%, which is a thinned response rather than a ` +
-        `series with holes`,
+  const last = series[series.length - 1]?.month ?? '';
+  const checkShare = (label: string, months: number, missing: number, share: number): void => {
+    if (missing > months * share) {
+      throw new Error(
+        `monthlyCpi(${seriesId}): ${missing} of ${months} months unpublished ${label} — ` +
+          `beyond ${share * 100}%, which is a coarser frequency rather than a series with holes`,
+      );
+    }
+  };
+  checkShare(
+    'overall',
+    series.length + missingMonths.length,
+    missingMonths.length,
+    MAX_CPI_MISSING_SHARE,
+  );
+  // Again over the recent tail, where a frequency change would otherwise be
+  // diluted to nothing by decades of good history behind it. Only once the series
+  // is long enough for the window to mean something.
+  const from = addMonths(last, -(RECENT_CPI_MONTHS - 1));
+  if (monthsBetween(series[0]?.month ?? last, last) >= RECENT_CPI_MONTHS) {
+    checkShare(
+      `in the ${RECENT_CPI_MONTHS} months to ${last}`,
+      RECENT_CPI_MONTHS,
+      missingMonths.filter((month) => month >= from).length,
+      MAX_RECENT_MISSING_SHARE,
     );
   }
   return { series, missingMonths };
@@ -271,10 +324,35 @@ const ONS_MONTHS = [
   'DEC',
 ];
 
-/** `2026 JUN` as `2026-06`, or a throw. */
+const ONS_MONTH_NAMES = [
+  'JANUARY',
+  'FEBRUARY',
+  'MARCH',
+  'APRIL',
+  'MAY',
+  'JUNE',
+  'JULY',
+  'AUGUST',
+  'SEPTEMBER',
+  'OCTOBER',
+  'NOVEMBER',
+  'DECEMBER',
+];
+
+/**
+ * `2026 JUN` as `2026-06`, or a throw.
+ *
+ * The month token has to match a name *exactly*, in its three-letter or full
+ * form. Prefix-matching was the first version, and it silently keyed
+ * `2026 JAN-MAR` — the shape ONS uses for rolling three-month labels elsewhere in
+ * its estate — to January, which would deflate a month of prices by a quarterly
+ * average. Also `2026 JUNK`. The parse is the only place that can tell a month
+ * from a period, so it refuses everything that is not one.
+ */
 export function onsMonthKey(date: string): string {
   const [year, name] = date.trim().split(/\s+/);
-  const index = ONS_MONTHS.indexOf((name ?? '').slice(0, 3).toUpperCase());
+  const token = (name ?? '').toUpperCase();
+  const index = token.length === 3 ? ONS_MONTHS.indexOf(token) : ONS_MONTH_NAMES.indexOf(token);
   if (!/^\d{4}$/.test(year ?? '') || index < 0) {
     throw new Error(`onsMonthKey: cannot read "${date}"`);
   }
@@ -300,15 +378,28 @@ export function toMonthlyOns(payload: unknown, seriesId: string): MonthlyCpi {
  *
  * The number the page states, and the number the freshness check reads.
  */
-export const cpiLagMonths = (cpi: readonly CpiPoint[], through: string): number =>
-  monthsBetween(cpi.at(-1)?.month ?? monthOf(through), monthOf(through));
+export function cpiLagMonths(cpi: readonly CpiPoint[], through: string): number {
+  const last = cpi.at(-1)?.month;
+  // An empty series is infinitely stale, not perfectly fresh. It cannot arrive
+  // from `monthlyFromPoints`, which throws first — but the previous fallback here
+  // was `?? monthOf(through)`, yielding a lag of 0, so the one check whose entire
+  // job is to fail closed would have failed open on the emptiest possible input.
+  if (last === undefined) return Number.MAX_SAFE_INTEGER;
+  return monthsBetween(last, monthOf(through));
+}
 
 /**
- * The lag beyond which a deflator is treated as broken rather than late.
+ * The largest lag a deflator may have and still be treated as late rather than
+ * retired. The comparison is `<=`, so a lag of exactly this is accepted.
  *
  * CPI is published two to three weeks after the month it covers, so a run on any
- * day of month M sees M-1 at best and M-2 when the release has not landed yet.
- * Three months is the first value that cannot be reached by ordinary lateness.
+ * day of month M sees M-1 at best, M-2 routinely, and M-3 when a release slips a
+ * month — which is not hypothetical: the October 2025 US release was cancelled
+ * outright. An earlier version of this comment called 3 "the first value that
+ * cannot be reached by ordinary lateness" while the gate went on accepting it,
+ * which is the comment being wrong rather than the constant: three months of
+ * silence is a bad month at a statistical agency, and sixteen is a retirement.
+ * The boundary is pinned by tests at 3 and 4 rather than left to this paragraph.
  *
  * This check exists because of a specific failure mode, not as decoration.
  * Statistical agencies retire series, and FRED keeps serving a retired series'
@@ -467,6 +558,30 @@ export function changePct(from: number, to: number): number | null {
 }
 
 /**
+ * How late a window's anchor row may be, as a share of the window itself.
+ *
+ * It was a flat 31 days, which is 0.85% of ten years and 8.5% of one — so a "1y"
+ * tile could measure 336 days with nothing anywhere saying so. That is reachable
+ * today, not hypothetical: an unpublished CPI month removes every day of that
+ * month from the series, and if the 1y target lands inside one, the anchor is a
+ * month late and the window is kept under a label it no longer deserves.
+ *
+ * One percent, floored at five days. The floor is what the weekly section needs —
+ * an anchor out there can be up to six days from its target purely from the
+ * resolution — and 1% covers that from three years out (11 days) while keeping 1y
+ * to five.
+ */
+export const WINDOW_START_TOLERANCE_SHARE = 0.01;
+export const WINDOW_START_TOLERANCE_FLOOR_DAYS = 5;
+
+/** Days of slack allowed on a window of `years`. */
+export const windowToleranceDays = (years: number): number =>
+  Math.max(
+    WINDOW_START_TOLERANCE_FLOOR_DAYS,
+    Math.round(years * 365.2425 * WINDOW_START_TOLERANCE_SHARE),
+  );
+
+/**
  * The shortest span that may be annualised.
  *
  * Below a year the annualised figure is an extrapolation rather than a
@@ -474,10 +589,17 @@ export function changePct(from: number, to: number): number | null {
  * a future that has not happened. So the floor is a year — but not 365 days
  * exactly. A window is anchored on the first row at or after its target date, so
  * a "1y" window whose target lands on a day the series does not have measures
- * 364 days, and a floor of 365 would blank the tile for that reason alone. 360
- * absorbs that without admitting anything a reader would not call a year.
+ * fewer than 365 days, and a floor of 365 would blank the tile for that reason
+ * alone.
+ *
+ * The value is not chosen independently: it is exactly what a 1y window can
+ * shrink to before `realWindows` drops it, so the two rules cannot disagree about
+ * how much slack a year may have. They did — a 31-day anchor tolerance against a
+ * 360-day floor left a five-week band where a window kept its percentages under a
+ * "1y" label and lost both annualised figures, so the only signal that the span
+ * was not a year was a *missing* number. A test pins the relationship.
  */
-export const MIN_ANNUALISE_DAYS = 360;
+export const MIN_ANNUALISE_DAYS = 365 - windowToleranceDays(1);
 
 /** Annualised (compound) rate over a span of days, or null under `MIN_ANNUALISE_DAYS`. */
 export function annualisedPct(from: number, to: number, days: number): number | null {
@@ -485,9 +607,6 @@ export function annualisedPct(from: number, to: number, days: number): number | 
   return round2((Math.pow(to / from, 365.2425 / days) - 1) * 100);
 }
 
-/** Whole days between two ISO dates. */
-export const daysBetween = (from: string, to: string): number =>
-  Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 
 /**
  * Cumulative inflation between the months two dates fall in, or null when
@@ -527,9 +646,6 @@ export const REAL_WINDOWS: readonly { label: string; years: number | null }[] = 
   { label: 'max', years: null },
 ];
 
-/** How late a window's anchor row may be before the window is dropped. */
-export const WINDOW_START_TOLERANCE_DAYS = 31;
-
 const DAY_MS = 86_400_000;
 const backFrom = (date: string, years: number): string =>
   new Date(Date.parse(`${date}T00:00:00Z`) - Math.round(years * 365.2425) * DAY_MS)
@@ -559,12 +675,11 @@ export function realWindows(series: readonly RealPoint[], cpi: readonly CpiPoint
     const start = years === null ? first : series.find((row) => row.date >= target);
     // A window the data does not reach back to is dropped rather than shown
     // under a name it does not deserve: a "10y" tile measuring eight years is
-    // worse than no tile, because nothing on the page would say so. The
-    // tolerance is a month — enough for the anchor row to land a few days late
-    // on a thinned or gapped series, far short of anything that would change
-    // what the label means.
+    // worse than no tile, because nothing on the page would say so. The same
+    // applies to a "1y" tile measuring eleven months — see
+    // `windowToleranceDays` for why the slack is proportional rather than flat.
     if (!start) continue;
-    if (years !== null && daysBetween(target, start.date) > WINDOW_START_TOLERANCE_DAYS) continue;
+    if (years !== null && daysBetween(target, start.date) > windowToleranceDays(years)) continue;
     const days = daysBetween(start.date, last.date);
     out.push({
       label,
