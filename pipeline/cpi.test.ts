@@ -5,17 +5,19 @@ import {
   changePct,
   cpiFor,
   cpiLagMonths,
-  CPI_SERIES,
+  CPI_CANDIDATES,
   daysBetween,
   deflate,
   inflationPct,
+  isFreshEnough,
+  MAX_CPI_GAP_MONTHS,
   MAX_CPI_LAG_MONTHS,
+  MAX_CPI_MISSING_SHARE,
   MIN_ANNUALISE_DAYS,
   monthOf,
   monthsBetween,
   realWindows,
   REAL_WINDOWS,
-  SEASONAL_ADJUSTMENT,
   toMonthlyCpi,
   WINDOW_START_TOLERANCE_DAYS,
   type CpiPoint,
@@ -61,6 +63,16 @@ describe('month arithmetic', () => {
   });
 });
 
+/** `months` consecutive monthly rows from `from`, rising 1% a month from 100. */
+const risingCsv = (id: string, from: string, months: number, skip: string[] = []): string =>
+  csv(
+    id,
+    Array.from({ length: months }, (_, i) => {
+      const month = addMonths(from, i);
+      return [`${month}-01`, String(100 * Math.pow(1.01, i))] as [string, string];
+    }).filter(([date]) => !skip.includes(date.slice(0, 7))),
+  );
+
 describe('toMonthlyCpi', () => {
   it('keys observations by month', () => {
     const out = toMonthlyCpi(
@@ -70,10 +82,11 @@ describe('toMonthlyCpi', () => {
       ]),
       'CPIAUCSL',
     );
-    expect(out).toEqual([
+    expect(out.series).toEqual([
       { month: '2024-01', index: 308.417 },
       { month: '2024-02', index: 310.326 },
     ]);
+    expect(out.missingMonths).toEqual([]);
   });
 
   it('rejects observations not dated on the first of the month', () => {
@@ -88,16 +101,43 @@ describe('toMonthlyCpi', () => {
     ).toThrow(/expected monthly data/);
   });
 
-  it('rejects a gap in the series', () => {
+  it('records a short gap rather than rejecting it', () => {
+    // The real case: no CPIAUCSL observation for 2025-10, because that release
+    // was cancelled rather than delayed. A rule forbidding gaps forbids the data.
+    const out = toMonthlyCpi(risingCsv('CPIAUCSL', '2024-01', 60, ['2025-10']), 'CPIAUCSL');
+    expect(out.missingMonths).toEqual(['2025-10']);
+    expect(out.series.some((p) => p.month === '2025-10')).toBe(false);
+    expect(out.series).toHaveLength(59);
+  });
+
+  it('rejects a gap long enough to be a coarser frequency', () => {
     expect(() =>
       toMonthlyCpi(
         csv('CPIAUCSL', [
           ['2024-01-01', '100'],
-          ['2024-03-01', '101'],
+          ['2024-06-01', '101'],
         ]),
         'CPIAUCSL',
       ),
-    ).toThrow(/has a gap/);
+    ).toThrow(new RegExp(`beyond ${MAX_CPI_GAP_MONTHS}`));
+  });
+
+  it('rejects a quarterly series wearing a monthly id', () => {
+    const quarterly = csv(
+      'CPIAUCSL',
+      Array.from({ length: 40 }, (_, i) => [`${addMonths('2016-01', i * 3)}-01`, '100'] as [string, string]),
+    );
+    // Each two-month hole is inside the run-length limit, so the share rule is
+    // what catches it: two thirds of the covered span is unpublished.
+    expect(() => toMonthlyCpi(quarterly, 'CPIAUCSL')).toThrow(
+      new RegExp(`beyond ${MAX_CPI_MISSING_SHARE * 100}%`),
+    );
+  });
+
+  it('tolerates one hole in a long series but not a spray of them', () => {
+    expect(() => toMonthlyCpi(risingCsv('X', '2020-01', 60, ['2022-06']), 'X')).not.toThrow();
+    const many = ['2021-02', '2021-08', '2022-03', '2022-09'];
+    expect(() => toMonthlyCpi(risingCsv('X', '2020-01', 60, many), 'X')).toThrow(/thinned response/);
   });
 
   it('rejects an empty series', () => {
@@ -112,19 +152,46 @@ describe('toMonthlyCpi', () => {
     );
   });
 
-  it('skips the "." FRED writes for a missing observation without calling it a gap', () => {
-    // parseFredCsv drops "." rows, so the month is absent from the output — and
-    // that absence has to read as a gap, because it is one for a step deflator.
+  it('counts the "." FRED writes for a missing observation as an unpublished month', () => {
+    // parseFredCsv drops "." rows, so the month is simply absent from the output.
+    // For a step deflator that is a hole, and it has to be reported as one.
+    // Long enough that one hole is inside the share limit — the same shape the
+    // real series has, where a single cancelled release sits in eighty years of
+    // observations.
+    const rows = Array.from({ length: 60 }, (_, i) => {
+      const month = addMonths('2020-01', i);
+      return [`${month}-01`, month === '2022-06' ? '.' : '100'] as [string, string];
+    });
+    const out = toMonthlyCpi(csv('CPIAUCSL', rows), 'CPIAUCSL');
+    expect(out.missingMonths).toEqual(['2022-06']);
+    expect(out.series).toHaveLength(59);
+  });
+
+  it('rejects a descending or repeated month', () => {
     expect(() =>
       toMonthlyCpi(
         csv('CPIAUCSL', [
-          ['2024-01-01', '100'],
-          ['2024-02-01', '.'],
-          ['2024-03-01', '101'],
+          ['2024-02-01', '100'],
+          ['2024-02-01', '101'],
         ]),
         'CPIAUCSL',
       ),
-    ).toThrow(/has a gap/);
+    ).toThrow();
+  });
+});
+
+describe('isFreshEnough', () => {
+  const at = (month: string): CpiPoint[] => [{ month, index: 100 }];
+
+  it('accepts an ordinary publication lag', () => {
+    expect(isFreshEnough(at('2026-06'), '2026-07-30')).toBe(true);
+    expect(isFreshEnough(at('2026-05'), '2026-07-30')).toBe(true);
+  });
+
+  it('rejects a retired series, which is what a 16-month lag is', () => {
+    // Measured: GBRCPIALLMINMEI parses perfectly and last publishes 2025-03,
+    // sixteen months behind. Only this check distinguishes it from a late one.
+    expect(isFreshEnough(at('2025-03'), '2026-07-30')).toBe(false);
   });
 });
 
@@ -350,17 +417,24 @@ describe('realWindows', () => {
 });
 
 describe('deflator configuration', () => {
-  it('names one series and one adjustment per currency', () => {
+  it('offers at least one candidate per currency, each with an adjustment', () => {
     for (const currency of CURRENCIES) {
-      expect(CPI_SERIES[currency]).toMatch(/^[A-Z0-9]+$/);
-      expect(SEASONAL_ADJUSTMENT[currency]).toMatch(/^(seasonally-adjusted|not-adjusted)$/);
+      const candidates = CPI_CANDIDATES[currency];
+      expect(candidates.length).toBeGreaterThan(0);
+      for (const candidate of candidates) {
+        expect(candidate.id).toMatch(/^[A-Z0-9]+$/);
+        expect(candidate.seasonalAdjustment).toMatch(/^(seasonally-adjusted|not-adjusted)$/);
+      }
+      expect(new Set(candidates.map((c) => c.id)).size).toBe(candidates.length);
     }
   });
 
   it('does not deflate two currencies by the same index', () => {
     // The premise of the GBP tree is that a sterling reader sees their own
-    // experience; one shared deflator would contradict it.
-    const ids = CURRENCIES.map((c) => CPI_SERIES[c]);
+    // experience; one shared deflator would contradict it. Checked across every
+    // candidate, not just the preferred one, because a fallback that crossed the
+    // trees would be the same error arriving later and quieter.
+    const ids = CURRENCIES.flatMap((c) => CPI_CANDIDATES[c].map((x) => x.id));
     expect(new Set(ids).size).toBe(ids.length);
   });
 });

@@ -12,38 +12,57 @@ import { parseFredCsv } from './benchmarks';
 import { getText } from './http';
 import type { Currency } from './currencies';
 
-/**
- * The deflator series, one per currency.
- *
- * Both come from FRED, so they go through `parseFredCsv` — already tested, and
- * one less host than fetching UK figures from ONS directly. They are not the
- * same construction, and the difference is recorded rather than smoothed over:
- * `CPIAUCSL` is US CPI-U for all items, seasonally adjusted, published on a
- * 1982-84=100 base; the UK series is an all-items index on a 2015=100 base.
- *
- * The bases do not need reconciling, which is worth stating because it looks
- * like they would. Every figure this module produces is a *ratio* of two
- * observations of the same series, so the base cancels exactly. What does not
- * cancel is seasonal adjustment, and it is asymmetric here: see
- * `SEASONAL_ADJUSTMENT` below.
- */
-export const CPI_SERIES: Record<Currency, string> = {
-  usd: 'CPIAUCSL',
-  gbp: 'GBRCPIALLMINMEI',
-};
+export type SeasonalAdjustment = 'seasonally-adjusted' | 'not-adjusted';
+
+export interface CpiCandidate {
+  id: string;
+  /**
+   * Whether the series is seasonally adjusted, for the methodology note.
+   *
+   * Not cosmetic, and per candidate rather than per currency because the two
+   * treatments are published under different ids. Over a window of a year or
+   * more they agree to a few hundredths of a percent — seasonal factors sum to
+   * roughly nothing across twelve months — and over a shorter one they do not.
+   * This page's shortest window is a year, so either is defensible and the page
+   * states which one it got.
+   */
+  seasonalAdjustment: SeasonalAdjustment;
+}
 
 /**
- * Whether each deflator is seasonally adjusted, for the methodology note.
+ * The deflator candidates per currency, in order of preference.
  *
- * Not cosmetic. Over a window of a year or more the two treatments agree to a
- * few hundredths of a percent, because seasonal factors sum to roughly nothing
- * across twelve months. Over a shorter window they do not, and this page's
- * shortest window is a year — so the choice is defensible either way and the
- * page says which one it used rather than leaving a reader to assume.
+ * A list rather than one id, and the reason is measured rather than defensive.
+ * Statistical agencies retire series, and FRED goes on serving a retired series'
+ * historical CSV forever — same id, same header, same parser, no error. The first
+ * version of this file named `GBRCPIALLMINMEI` alone; it is a discontinued OECD
+ * MEI series whose last observation is 2025-03, and it parsed perfectly. Only the
+ * freshness gate caught it. A single id is therefore a design that fails silently
+ * on a schedule nobody controls, where an ordered list with a freshness gate
+ * repairs itself and says what it did.
+ *
+ * Which id actually served is recorded in the dataset and read by the page, the
+ * same arrangement `ethSource` has in `run.ts` — a silent fallback would make the
+ * methodology note wrong, which is this project's most-repeated failure.
+ *
+ * All of them come from FRED so all of them go through `parseFredCsv`, already
+ * tested, and no new host. They are not the same construction — US CPI-U is
+ * published on a 1982-84=100 base and the OECD UK indices on 2015=100 — and that
+ * needs no reconciling: every figure here is a ratio of two observations of one
+ * series, so the base cancels exactly. There is a test asserting it.
  */
-export const SEASONAL_ADJUSTMENT: Record<Currency, 'seasonally-adjusted' | 'not-adjusted'> = {
-  usd: 'seasonally-adjusted',
-  gbp: 'not-adjusted',
+export const CPI_CANDIDATES: Record<Currency, readonly CpiCandidate[]> = {
+  usd: [
+    { id: 'CPIAUCSL', seasonalAdjustment: 'seasonally-adjusted' },
+    { id: 'CPIAUCNS', seasonalAdjustment: 'not-adjusted' },
+  ],
+  gbp: [
+    { id: 'GBRCPALTT01IXOBSAM', seasonalAdjustment: 'seasonally-adjusted' },
+    { id: 'GBRCPALTT01IXOBM', seasonalAdjustment: 'not-adjusted' },
+    { id: 'CPALTT01GBM661S', seasonalAdjustment: 'seasonally-adjusted' },
+    { id: 'CPALTT01GBM661N', seasonalAdjustment: 'not-adjusted' },
+    { id: 'GBRCPIALLMINMEI', seasonalAdjustment: 'not-adjusted' },
+  ],
 };
 
 const fredCsvUrl = (id: string): string =>
@@ -74,23 +93,53 @@ export const monthsBetween = (from: string, to: string): number =>
   (Number(to.slice(5, 7)) - Number(from.slice(5, 7)));
 
 /**
+ * The longest run of unpublished months a series may have and still be monthly.
+ *
+ * A quarterly series read as monthly leaves two-month gaps forever, an annual one
+ * eleven. Three admits a real interruption and refuses a different frequency
+ * wearing a monthly id.
+ */
+export const MAX_CPI_GAP_MONTHS = 3;
+
+/** The share of months in the covered span that may be unpublished. */
+export const MAX_CPI_MISSING_SHARE = 0.02;
+
+export interface MonthlyCpi {
+  series: CpiPoint[];
+  /**
+   * Months inside the covered span with no observation.
+   *
+   * Not a fault, and the first version of this treated it as one — a hard throw
+   * on any gap, which took out both real-return datasets on the first pipeline
+   * run. `CPIAUCSL` has no observation for 2025-10, because that release was
+   * cancelled rather than delayed, so a rule that forbids gaps forbids the
+   * actual data.
+   *
+   * They are recorded instead, and the days in them are dropped rather than
+   * deflated by a neighbouring month. The page names them: a hole in the line is
+   * a thing a reader can see, and a caption saying which month the source did not
+   * publish is the difference between an explained hole and a suspicious one.
+   */
+  missingMonths: string[];
+}
+
+/**
  * A FRED monthly export as month-keyed observations, or a throw.
  *
- * Three things are checked, and each of them has a way of being wrong that would
- * otherwise pass silently into the figures:
+ * What is checked, and the way each of these goes wrong if it is not:
  *
  * - **Dated on the first.** A monthly FRED series is. A daily one is not, and
- *   `CPIAUCSL` has a daily sibling in the same shape — running this over the
- *   wrong id would produce twenty deflators for one month and keep the last.
- * - **Contiguous.** Gaps matter because `cpiFor` is a strict month lookup: a
- *   missing month drops those days from the real series rather than deflating
- *   them by a neighbour, so a thinned response would shorten the chart with
- *   nothing saying why.
+ *   `CPIAUCSL` has daily-frequency siblings in the same CSV shape — running this
+ *   over the wrong id would produce twenty deflators for one month and keep the
+ *   last silently.
+ * - **Monthly, not something coarser wearing a monthly id.** Gaps are allowed
+ *   but bounded, by run length and by share; see the two constants above.
  * - **Non-empty.** An index of nothing has no base to deflate to.
  */
-export function toMonthlyCpi(csv: string, seriesId: string): CpiPoint[] {
+export function toMonthlyCpi(csv: string, seriesId: string): MonthlyCpi {
   const rows = parseFredCsv(csv, seriesId);
-  const out: CpiPoint[] = [];
+  const series: CpiPoint[] = [];
+  const missingMonths: string[] = [];
   for (const { date, close } of rows) {
     if (!date.endsWith('-01')) {
       throw new Error(
@@ -99,17 +148,35 @@ export function toMonthlyCpi(csv: string, seriesId: string): CpiPoint[] {
       );
     }
     const month = monthOf(date);
-    const previous = out.at(-1);
-    if (previous && monthsBetween(previous.month, month) !== 1) {
-      throw new Error(
-        `toMonthlyCpi(${seriesId}): ${previous.month} is followed by ${month} — the series ` +
-          `has a gap, and a gap silently shortens the deflated range`,
-      );
+    const previous = series.at(-1);
+    if (previous) {
+      const step = monthsBetween(previous.month, month);
+      if (step < 1) {
+        throw new Error(
+          `toMonthlyCpi(${seriesId}): ${month} follows ${previous.month} — not ascending`,
+        );
+      }
+      if (step - 1 > MAX_CPI_GAP_MONTHS) {
+        throw new Error(
+          `toMonthlyCpi(${seriesId}): ${step - 1} unpublished months between ${previous.month} ` +
+            `and ${month} — beyond ${MAX_CPI_GAP_MONTHS}, which is a coarser frequency rather ` +
+            `than an interrupted release`,
+        );
+      }
+      for (let i = 1; i < step; i++) missingMonths.push(addMonths(previous.month, i));
     }
-    out.push({ month, index: close });
+    series.push({ month, index: close });
   }
-  if (out.length === 0) throw new Error(`toMonthlyCpi(${seriesId}): no observations`);
-  return out;
+  if (series.length === 0) throw new Error(`toMonthlyCpi(${seriesId}): no observations`);
+  const span = series.length + missingMonths.length;
+  if (missingMonths.length > span * MAX_CPI_MISSING_SHARE) {
+    throw new Error(
+      `toMonthlyCpi(${seriesId}): ${missingMonths.length} of ${span} months unpublished — ` +
+        `beyond ${MAX_CPI_MISSING_SHARE * 100}%, which is a thinned response rather than a ` +
+        `series with holes`,
+    );
+  }
+  return { series, missingMonths };
 }
 
 /**
@@ -140,13 +207,64 @@ export const MAX_CPI_LAG_MONTHS = 3;
 export interface CpiFetch {
   currency: Currency;
   sourceSeries: string;
+  seasonalAdjustment: SeasonalAdjustment;
   series: CpiPoint[];
+  missingMonths: string[];
+  /** Candidates tried and rejected before this one, and why. */
+  rejected: string[];
 }
 
-export async function fetchCpi(currency: Currency): Promise<CpiFetch> {
-  const sourceSeries = CPI_SERIES[currency];
-  const series = toMonthlyCpi(await getText(fredCsvUrl(sourceSeries)), sourceSeries);
-  return { currency, sourceSeries, series };
+/**
+ * Whether a candidate is current enough to deflate with, given the last price day.
+ *
+ * Separated out so the rule is one function called by the fetch and by the tests,
+ * rather than an inline comparison in a loop.
+ */
+export const isFreshEnough = (cpi: readonly CpiPoint[], through: string): boolean =>
+  cpiLagMonths(cpi, through) <= MAX_CPI_LAG_MONTHS;
+
+/**
+ * The first candidate that parses as monthly and is not retired.
+ *
+ * `through` is the last day prices exist for, because "retired" is only
+ * measurable against something: a series two months behind is late, and the same
+ * series sixteen months behind is over.
+ *
+ * Every rejection is collected and returned rather than logged here, so the caller
+ * prints them in one place and a run that fell through to the third candidate says
+ * so out loud.
+ */
+export async function fetchCpi(currency: Currency, through: string): Promise<CpiFetch> {
+  const rejected: string[] = [];
+  for (const { id, seasonalAdjustment } of CPI_CANDIDATES[currency]) {
+    let parsed: MonthlyCpi;
+    try {
+      parsed = toMonthlyCpi(await getText(fredCsvUrl(id)), id);
+    } catch (err) {
+      rejected.push(`${id}: ${err instanceof Error ? err.message : String(err)}`);
+      continue;
+    }
+    if (!isFreshEnough(parsed.series, through)) {
+      rejected.push(
+        `${id}: last publishes ${parsed.series.at(-1)?.month}, ` +
+          `${cpiLagMonths(parsed.series, through)} months behind prices through ${through} — ` +
+          `beyond ${MAX_CPI_LAG_MONTHS}, so the series is retired rather than late`,
+      );
+      continue;
+    }
+    return {
+      currency,
+      sourceSeries: id,
+      seasonalAdjustment,
+      series: parsed.series,
+      missingMonths: parsed.missingMonths,
+      rejected,
+    };
+  }
+  throw new Error(
+    `fetchCpi(${currency}): no candidate deflator is both parseable and current — ` +
+      rejected.join('; '),
+  );
 }
 
 /**

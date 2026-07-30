@@ -15,8 +15,8 @@ import {
   deflate,
   fetchCpi,
   MAX_CPI_LAG_MONTHS,
+  monthOf,
   realWindows,
-  SEASONAL_ADJUSTMENT,
   type CpiFetch,
 } from './cpi';
 import {
@@ -123,7 +123,6 @@ const [
   totalFeesBtc,
   feeTiers,
   fxFetch,
-  cpiFetches,
 ] = await Promise.all([
   attempt('coingecko market chart', fetchBtcMarketChart()),
   attempt('fred sp500', fetchSp500()),
@@ -142,21 +141,44 @@ const [
   attempt('blockchain.com transaction-fees', fetchTotalFeesBtc()),
   attempt('mempool.space fees', fetchFeeTiers()),
   attempt('yahoo gbpusd', fetchGbpUsd()),
-  // One deflator per currency, attempted independently. A UK CPI outage must
-  // not cost the USD tree its real-return figures, and vice versa — the same
-  // isolation every other source gets, applied per currency because this is the
-  // first source that genuinely differs between the two trees.
-  Promise.all(
-    CURRENCIES.map(
-      async (currency) =>
-        [currency, await attempt(`fred cpi ${currency}`, fetchCpi(currency))] as const,
-    ),
-  ),
 ]);
 
-const cpiByCurrency = new Map<Currency, CpiFetch | null>(cpiFetches);
-
 const series = raw ? toDailySeries(raw.prices) : null;
+
+/**
+ * The deflators, one per currency and attempted independently.
+ *
+ * Sequenced after the price history rather than fetched alongside it, because
+ * whether a CPI series is *retired* is only measurable against a last price date —
+ * two months behind is late, sixteen is over — and `fetchCpi` needs that date to
+ * choose between its candidates. A UK CPI outage must not cost the USD tree its
+ * figures, hence one attempt each rather than one for both.
+ */
+const cpiThrough = history?.at(-1)?.date ?? series?.at(-1)?.date ?? '';
+const cpiByCurrency = new Map<Currency, CpiFetch | null>(
+  cpiThrough
+    ? await Promise.all(
+        CURRENCIES.map(
+          async (currency) =>
+            [currency, await attempt(`fred cpi ${currency}`, fetchCpi(currency, cpiThrough))] as const,
+        ),
+      )
+    : [],
+);
+if (!cpiThrough) console.warn('warning: no price history — skipping the CPI deflators');
+for (const [currency, fetched] of cpiByCurrency) {
+  if (!fetched) continue;
+  // Which id served, and every candidate that did not. A silent fallback would
+  // make the methodology note wrong, and the note is read from the dataset.
+  console.log(
+    `${currency} cpi: ${fetched.sourceSeries} (${fetched.seasonalAdjustment}), ` +
+      `${fetched.series.length} months to ${fetched.series.at(-1)?.month}` +
+      (fetched.missingMonths.length > 0
+        ? `, unpublished: ${fetched.missingMonths.join(', ')}`
+        : ''),
+  );
+  for (const rejection of fetched.rejected) console.log(`  ${currency} cpi skipped ${rejection}`);
+}
 
 /**
  * The accreted dominance series, carried out for the signals below. Falls back
@@ -496,70 +518,61 @@ for (const currency of CURRENCIES) {
     } else {
       const cpi = cpiFetch.series;
       const pricesThrough = deep.at(-1)?.date ?? '';
-      const lagMonths = cpiLagMonths(cpi, pricesThrough);
-      if (lagMonths > MAX_CPI_LAG_MONTHS) {
-        // Loud, and only this dataset. A retired series keeps serving its
-        // historical CSV forever under the same id with the same header, so
-        // without this the page would state a base month years in the past as
-        // though it were current — a plausible chart of stale money, which is
-        // the failure mode this whole check exists for.
-        console.error(
-          `error: ${currency} CPI (${cpiFetch.sourceSeries}) last publishes ` +
-            `${cpi.at(-1)?.month}, ${lagMonths} months behind prices through ${pricesThrough} — ` +
-            `beyond ${MAX_CPI_LAG_MONTHS}, which no release schedule reaches; treating the ` +
-            `series as retired and skipping ${dir}/real-returns.json`,
-        );
-        failures.push(`${currency} cpi: ${lagMonths} months stale`);
+      // The base is the latest published month, so every real figure is in
+      // today's money — the framing a reader can actually feel ("what that would
+      // be worth now"), where the source's own 1982-84 or 2015 base is an
+      // arbitrary landmark. It moves once a month, and the page names it.
+      const baseMonth = cpi.at(-1)?.month ?? '';
+      const full = deflate(deep, cpi, baseMonth);
+      // Windows on the full daily series, the payload thinned afterwards: a
+      // window measured on weekly points would anchor up to six days from its own
+      // target for no reason, since the maths does not need the payload's size
+      // rule.
+      const windows = realWindows(full, cpi);
+      if (full.length < 2 || windows.length === 0) {
+        console.warn(`warning: ${currency} real returns: too little overlap — skipping`);
       } else {
-        // The base is the latest published month, so every real figure is in
-        // today's money — the framing a reader can actually feel ("what that
-        // would be worth now"), where the source's own 1982-84 or 2015 base is
-        // an arbitrary landmark. It moves once a month, and the page names it.
-        const baseMonth = cpi.at(-1)?.month ?? '';
-        const full = deflate(deep, cpi, baseMonth);
-        // Windows on the full daily series, the payload thinned afterwards: a
-        // window measured on weekly points would anchor up to six days from its
-        // own target for no reason, since the maths does not need the payload's
-        // size rule.
-        const windows = realWindows(full, cpi);
-        if (full.length < 2 || windows.length === 0) {
-          console.warn(`warning: ${currency} real returns: too little overlap — skipping`);
-        } else {
-          if (full[0]?.date !== deep[0]?.date) {
-            console.log(
-              `${currency} real returns: prices start ${deep[0]?.date}, deflator ` +
-                `${cpi[0]?.month} — the real series starts ${full[0]?.date}`,
-            );
-          }
-          const realReturns = realReturnsDatasetSchema.parse({
-            schemaVersion: 1,
-            currency,
-            fetchedAt,
-            asOf: full.at(-1)?.date,
-            pricesThrough,
-            deflator: {
-              source: 'fred',
-              sourceSeries: cpiFetch.sourceSeries,
-              seasonalAdjustment: SEASONAL_ADJUSTMENT[currency],
-              baseMonth,
-              firstMonth: cpi[0]?.month,
-              lastMonth: cpi.at(-1)?.month,
-              lagMonths,
-              maxLagMonths: MAX_CPI_LAG_MONTHS,
-            },
-            dailyDays: HISTORY_DAILY_DAYS,
-            olderResolution: 'weekly-last',
-            windows,
-            series: thinOlderToWeekly(full, HISTORY_DAILY_DAYS),
-          });
-          await writeJson(`${dir}/real-returns.json`, realReturns);
-          const max = windows.at(-1);
+        if (full[0]?.date !== deep[0]?.date) {
           console.log(
-            `${dir}/real-returns.json: ${realReturns.series.length} points to ${realReturns.asOf} ` +
-              `in ${baseMonth} money (${cpiFetch.sourceSeries}, ${lagMonths}m lag), ` +
-              `max window ${max?.label} ${max?.nominalPct}% nominal / ${max?.realPct}% real`,
+            `${currency} real returns: prices start ${deep[0]?.date}, deflator ` +
+              `${cpi[0]?.month} — the real series starts ${full[0]?.date}`,
           );
         }
+        const realReturns = realReturnsDatasetSchema.parse({
+          schemaVersion: 1,
+          currency,
+          fetchedAt,
+          asOf: full.at(-1)?.date,
+          pricesThrough,
+          deflator: {
+            source: 'fred',
+            sourceSeries: cpiFetch.sourceSeries,
+            seasonalAdjustment: cpiFetch.seasonalAdjustment,
+            baseMonth,
+            firstMonth: cpi[0]?.month,
+            lastMonth: baseMonth,
+            lagMonths: cpiLagMonths(cpi, pricesThrough),
+            maxLagMonths: MAX_CPI_LAG_MONTHS,
+            // Only the ones inside the drawn range. The full list reaches back to
+            // 1947 for a series that has been interrupted before, and a caption
+            // naming a hole the chart does not contain explains nothing.
+            missingMonths: cpiFetch.missingMonths.filter(
+              (month) => month >= monthOf(full[0]?.date ?? '') && month <= baseMonth,
+            ),
+          },
+          dailyDays: HISTORY_DAILY_DAYS,
+          olderResolution: 'weekly-last',
+          windows,
+          series: thinOlderToWeekly(full, HISTORY_DAILY_DAYS),
+        });
+        await writeJson(`${dir}/real-returns.json`, realReturns);
+        const max = windows.at(-1);
+        console.log(
+          `${dir}/real-returns.json: ${realReturns.series.length} points to ${realReturns.asOf} ` +
+            `in ${baseMonth} money (${cpiFetch.sourceSeries}, ` +
+            `${realReturns.deflator.lagMonths}m lag), max window ${max?.label} ` +
+            `${max?.nominalPct}% nominal / ${max?.realPct}% real`,
+        );
       }
     }
   }

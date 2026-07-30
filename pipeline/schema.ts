@@ -866,6 +866,12 @@ export const realReturnsDatasetSchema = z
       lagMonths: z.number().int().nonnegative(),
       /** The lag at which the pipeline treats the series as retired, not late. */
       maxLagMonths: z.number().int().positive(),
+      /**
+       * Months inside the drawn range that the source did not publish, so the
+       * page can name the hole in the line instead of leaving it unexplained.
+       * US CPI has one: the October 2025 release was cancelled, not delayed.
+       */
+      missingMonths: z.array(isoMonth),
     }),
     /** Calendar days at the end of the series kept at daily resolution. */
     dailyDays: z.number().int().positive(),
