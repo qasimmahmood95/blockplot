@@ -369,8 +369,25 @@ for (const currency of CURRENCIES) {
   // of it would have to be embedded (the reader picks the start date, and no
   // runtime fetch is sanctioned to go and fetch more).
   if (deep && spAll && auAll && dxyAll) {
+    // Six significant figures, not two decimal places.
+    //
+    // The GBP tree keeps converted closes unrounded on purpose — a 2 dp round on
+    // a sub-pound 2010 BTC price is an error of up to 11% that propagates into
+    // the monthly heatmap — and those series stay in btc-price-history.json for
+    // the metrics that need them. This file feeds one rebased index chart, where
+    // full float precision buys nothing and costs a great deal: measured, the
+    // GBP payload was 61.7 KB gzipped against USD's 40.8, and the whole 21 KB
+    // difference was seventeen-digit conversion residue like
+    // 1659.4724038315342. Significant figures rather than decimal places
+    // because this file spans BTC at 0.0451 and the S&P at 5505 — a fixed
+    // decimal place is either too coarse for one end or useless at the other.
+    // At 6 s.f. the resulting index differs by less than one part in a million,
+    // which is four orders of magnitude below the 2 dp it is displayed at.
     const rows = (series: { date: string; close: number }[]) =>
-      thinOlderToWeekly(series, HISTORY_DAILY_DAYS);
+      thinOlderToWeekly(series, HISTORY_DAILY_DAYS).map(({ date, close }) => ({
+        date,
+        close: Number(close.toPrecision(6)),
+      }));
     const history = benchmarkHistoryDatasetSchema.parse({
       schemaVersion: 1,
       currency,

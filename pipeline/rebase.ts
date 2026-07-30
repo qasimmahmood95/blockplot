@@ -121,3 +121,45 @@ export function rebaseAll(
  * disagree — they are the same number.
  */
 export const totalReturnPct = (series: RebasedSeries): number => round2(series.finalIndex - 100);
+
+/**
+ * Rebase only the series that actually reach back to the chosen start, and name
+ * the ones that do not.
+ *
+ * `rebaseAll` insists on a base every series shares, which is right for
+ * comparability and wrong as the only option here: BTC's history starts in 2010,
+ * the benchmarks in 2016 (FRED publishes the S&P as a rolling decade) and ETH in
+ * 2017. Under a shared base, a reader asking for 2012 would silently get a chart
+ * beginning in November 2017, because ETH exists and has points after 2012 — the
+ * youngest series would decide the question for every other line.
+ *
+ * A series *covers* a start date when its own history begins at or before it.
+ * Those are rebased on a common base as usual; the rest are excluded and
+ * returned by name, so the page can say "ETH and gold begin later and are not
+ * shown" instead of quietly drawing three lines where the legend implies five.
+ * Dropping a line silently is the failure this returns data to avoid.
+ */
+export function rebaseCovering(
+  inputs: readonly AssetSeries[],
+  startDate: string,
+): { baseDate: string; series: RebasedSeries[]; excluded: string[] } | null {
+  const covered: AssetSeries[] = [];
+  const excluded: string[] = [];
+  for (const input of inputs) {
+    const first = input.rows[0];
+    if (first && first.date <= startDate) covered.push(input);
+    else excluded.push(input.asset);
+  }
+  const out = rebaseAll(covered, startDate);
+  return out ? { ...out, excluded } : null;
+}
+
+/** The earliest start at which at least `min` of the series have history. */
+export function earliestStartFor(inputs: readonly AssetSeries[], min: number): string | null {
+  const firsts = inputs
+    .map((i) => i.rows[0]?.date)
+    .filter((d): d is string => d !== undefined)
+    .sort();
+  // The min-th earliest first-date: from that day forward, `min` series exist.
+  return firsts[min - 1] ?? null;
+}

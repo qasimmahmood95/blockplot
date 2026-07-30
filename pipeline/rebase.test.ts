@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { rebase, rebaseAll, totalReturnPct, type AssetSeries } from './rebase';
+import {
+  earliestStartFor,
+  rebase,
+  rebaseAll,
+  rebaseCovering,
+  totalReturnPct,
+  type AssetSeries,
+} from './rebase';
 
 const rows = (...pairs: [string, number][]): AssetSeries['rows'] =>
   pairs.map(([date, value]) => ({ date, value }));
@@ -127,5 +134,56 @@ describe('rebaseAll', () => {
 
   it('is null on an empty input list, which has no common base to find', () => {
     expect(rebaseAll([], '2024-01-04')).toBeNull();
+  });
+});
+
+describe('rebaseCovering', () => {
+  const late: AssetSeries = { asset: 'eth', rows: rows(['2024-01-07', 5], ['2024-01-08', 6]) };
+
+  it('excludes a series whose history starts after the chosen start, by name', () => {
+    // Without this, ETH existing at all would drag a 2012 start to 2017 and
+    // decide the question for every other line.
+    const out = rebaseCovering([btc, sp500, late], '2024-01-04');
+    expect(out?.excluded).toEqual(['eth']);
+    expect(out?.baseDate).toBe('2024-01-04');
+    expect(out?.series.map((s) => s.asset)).toEqual(['btc', 'sp500']);
+  });
+
+  it('includes everything once the start is late enough to cover it', () => {
+    const out = rebaseCovering([btc, sp500, late], '2024-01-07');
+    expect(out?.excluded).toEqual([]);
+    // The S&P has no 7th (weekend), so the shared base is the Monday.
+    expect(out?.baseDate).toBe('2024-01-08');
+    expect(out?.series.map((s) => s.asset)).toEqual(['btc', 'sp500', 'eth']);
+  });
+
+  it('treats a start exactly on a series first day as covered', () => {
+    expect(rebaseCovering([late], '2024-01-07')?.excluded).toEqual([]);
+  });
+
+  it('is null when every series is excluded, which is the same as none covering', () => {
+    // A day before `late` begins excludes it, leaving nothing to compare — so
+    // this is not "one line and a note", it is no chart, same as a start before
+    // any series exists.
+    expect(rebaseCovering([late], '2024-01-06')).toBeNull();
+    expect(rebaseCovering([late], '2020-01-01')).toBeNull();
+    expect(rebaseCovering([], '2024-01-07')).toBeNull();
+  });
+});
+
+describe('earliestStartFor', () => {
+  it('gives the day from which at least N series have history', () => {
+    const a: AssetSeries = { asset: 'a', rows: rows(['2010-01-01', 1]) };
+    const b: AssetSeries = { asset: 'b', rows: rows(['2016-01-01', 1]) };
+    const c: AssetSeries = { asset: 'c', rows: rows(['2017-01-01', 1]) };
+    expect(earliestStartFor([a, b, c], 1)).toBe('2010-01-01');
+    expect(earliestStartFor([a, b, c], 2)).toBe('2016-01-01');
+    expect(earliestStartFor([a, b, c], 3)).toBe('2017-01-01');
+    expect(earliestStartFor([a, b, c], 4)).toBeNull();
+  });
+
+  it('ignores an empty series, which has no first day to offer', () => {
+    const a: AssetSeries = { asset: 'a', rows: rows(['2010-01-01', 1]) };
+    expect(earliestStartFor([a, { asset: 'empty', rows: [] }], 2)).toBeNull();
   });
 });
