@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-07-30T05:33:56.501Z",
+  "fetchedAt": "2026-07-30T08:40:24.319Z",
   "asOf": "2026-07-30",
   "windowDays": 90,
   "minObs": 40,
@@ -42779,10 +42779,6 @@
       "b": "sp500",
       "series": [
         {
-          "date": "2025-07-29",
-          "corr": 0.42
-        },
-        {
           "date": "2025-07-30",
           "corr": 0.42
         },
@@ -43781,6 +43777,10 @@
         {
           "date": "2026-07-28",
           "corr": 0.44
+        },
+        {
+          "date": "2026-07-29",
+          "corr": 0.45
         }
       ],
       "regimes": [
@@ -43788,9 +43788,9 @@
           "regime": "positive",
           "startDate": "2025-03-10",
           "confirmedFrom": "2025-03-10",
-          "endDate": "2026-07-28",
-          "observations": 348,
-          "days": 506,
+          "endDate": "2026-07-29",
+          "observations": 349,
+          "days": 507,
           "meanCorr": 0.45
         }
       ]
@@ -44797,6 +44797,10 @@
           "corr": 0.39
         },
         {
+          "date": "2026-07-29",
+          "corr": 0.39
+        },
+        {
           "date": "2026-07-30",
           "corr": 0.39
         }
@@ -44816,7 +44820,7 @@
           "startDate": "2026-06-05",
           "confirmedFrom": "2026-06-05",
           "endDate": "2026-07-30",
-          "observations": 37,
+          "observations": 38,
           "days": 56,
           "meanCorr": 0.35
         }
@@ -45824,8 +45828,12 @@
           "corr": -0.29
         },
         {
+          "date": "2026-07-29",
+          "corr": -0.3
+        },
+        {
           "date": "2026-07-30",
-          "corr": -0.31
+          "corr": -0.3
         }
       ],
       "regimes": [
@@ -45852,7 +45860,7 @@
           "startDate": "2026-07-14",
           "confirmedFrom": "2026-07-14",
           "endDate": "2026-07-30",
-          "observations": 12,
+          "observations": 13,
           "days": 17,
           "meanCorr": -0.28
         }
@@ -48963,7 +48971,7 @@
         },
         {
           "date": "2026-07-30",
-          "corr": -0.44
+          "corr": -0.43
         }
       ],
       "regimes": [
