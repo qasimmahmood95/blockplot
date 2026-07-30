@@ -535,11 +535,19 @@ for (const currency of CURRENCIES) {
           year: a.year,
           basisDate: a.basisDate,
           closeDate: a.closeDate,
-          // Whole only when anchored on the previous December and closing in its
-          // own: both ends of the history are truncated, the first because it
-          // begins mid-year and the last because it is year-to-date.
+          // Whole only when anchored on the previous December, closing in its own
+          // December, and actually finished. The first two are not enough: a run
+          // on any day from 1 to 30 December would see a December close for the
+          // current year and mark it whole, putting "sold end of 2026" back on
+          // every cell in that column against a mid-December close — which is the
+          // defect this flag was added to fix, surviving in a 30-day window.
+          //
+          // The month test on the basis matters too: a missing December would let
+          // a November anchor pass a year-only check.
           whole:
-            Number(a.basisDate.slice(0, 4)) === a.year - 1 && a.closeDate.slice(5, 7) === '12',
+            a.basisDate.slice(0, 7) === `${a.year - 1}-12` &&
+            a.closeDate.slice(0, 7) === `${a.year}-12` &&
+            a.closeDate === `${a.year}-12-31`,
         })),
         cells,
         summary: {
@@ -572,7 +580,10 @@ for (const currency of CURRENCIES) {
           `${holding.years.length} years (${holding.years.filter((y) => y.whole).length} whole), ` +
           `${holding.summary.positive} positive, ` +
           `worst ${summary.worst.buyYear}->${summary.worst.sellYear} ` +
-          `${summary.worst.annualPct}%/yr, every ${holding.summary.safeYears}y hold up`,
+          `${summary.worst.annualPct}%/yr, ` +
+          (summary.safeYears === null
+            ? 'no hold length was free of losses'
+            : `every ${summary.safeYears}y hold up`),
       );
     }
 

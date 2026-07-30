@@ -3,7 +3,13 @@ import Base from '../../layouts/Base.astro';
 import { fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
-import { cellViews, holdingTiles, HEAT_STEPS, partialYears } from '../../lib/holding-shared';
+import {
+  cellViews,
+  diagonalGapNote as gapNote,
+  holdingTiles,
+  HEAT_STEPS,
+  partialYears,
+} from '../../lib/holding-shared';
 
 export const getStaticPaths = currencyPaths;
 
@@ -18,12 +24,13 @@ const firstYear = years[0];
 const lastYear = years.at(-1);
 const wholeYears = dataset.years.filter((y) => y.whole);
 const partial = partialYears(dataset);
-const partialList = partial.join(' and ');
+const partialList = partial.join(' or ');
 const partialDates = dataset.years
   .filter((y) => !y.whole)
   .map((y) => `${y.year} runs ${y.basisDate} to ${y.closeDate}`)
   .join('; ');
 const losing = summary.count - summary.positive;
+const diagonalGapNote = gapNote(dataset);
 ---
 
 <Base
@@ -61,7 +68,7 @@ const losing = summary.count - summary.positive;
               years.map((year) => (
                 <th scope="col" class="num">
                   {String(year).slice(2)}
-                  {partial.includes(year) && <abbr title="not a whole calendar year">*</abbr>}
+                  {partial.includes(year) && <span class="mark">*</span>}
                 </th>
               ))
             }
@@ -73,20 +80,26 @@ const losing = summary.count - summary.positive;
               <tr>
                 <th scope="row" class="num">
                   {buyYear}
-                  {partial.includes(buyYear) && <abbr title="not a whole calendar year">*</abbr>}
+                  {partial.includes(buyYear) && <span class="mark">*</span>}
                 </th>
                 {years.map((sellYear) => {
                   const cell = cells.get(`${buyYear}-${sellYear}`);
+                  // An empty cell, not a hidden one. `aria-hidden` on the 136
+                  // blanks removed them from the accessibility tree, which leaves
+                  // rows with different column counts in the table model screen
+                  // readers use to track position — so the fix for "don't announce
+                  // a triangle as a hole" broke navigating the grid at all. An
+                  // empty `<td>` announces as "blank", which is the convention and
+                  // what the monthly heatmap already does for missing months.
                   return cell === undefined ? (
-                    // Not a hold, so not a gap in the data — an empty cell with
-                    // no label, since a screen reader announcing "no data" here
-                    // would be describing a triangle as a hole.
-                    <td class="num blank" aria-hidden="true" />
+                    <td class="num blank" />
                   ) : (
-                    <td class={`num ${cell.heat}`} title={cell.title}>
-                      <span class="visually-hidden">{cell.title}</span>
-                      <span aria-hidden="true">{cell.label}</span>
-                    </td>
+                    // The rate is the cell's accessible name, so the grid can be
+                    // skimmed; the sentence is its description, reached on demand.
+                    // Both were present before — the sentence in a visually-hidden
+                    // span *and* in `title` — so a reader with object descriptions
+                    // on heard the same ninety characters twice, 153 times.
+                    <td class={`num ${cell.heat}`} title={cell.title}>{cell.label}</td>
                   );
                 })}
               </tr>
@@ -105,18 +118,26 @@ const losing = summary.count - summary.positive;
     </p>
     <p class="method-note">
       A year is priced from the last close of the previous December to the last close of its own,
-      which is not the obvious choice and is the one that reconciles: the diagonal of this grid is
-      exactly the yearly total the <a href={`${import.meta.env.BASE_URL}${currency === 'usd' ? '' : 'gbp/'}cycles/`}>halving cycles</a> heatmap
-      publishes for the same year. Anchoring on the first close of the buy year instead would put
-      the two pages a few days out from each other, with nothing saying which to believe.
+      which is not the obvious choice and is the one that reconciles: the <em>total return</em> of
+      each hold on the diagonal is exactly the yearly figure the{' '}
+      <a href={`${import.meta.env.BASE_URL}${currency === 'usd' ? '' : 'gbp/'}`}>overview</a>
+      {' '}heatmap publishes for the same year. Anchoring on the first close of the buy year
+      instead would put the two pages a few days out from each other, with nothing saying which to
+      believe. What the diagonal <em>displays</em> is the annualised rate, and for a one-year hold
+      those two differ slightly: a calendar year is 365 days and the annualisation divides by
+      365.2425, so a 365-day hold is priced as marginally less than a year and its rate comes out
+      marginally above its total — {diagonalGapNote}. The reconciliation is on the total, which
+      every cell's description states.
       {partial.length > 0 && (
         <>
-          {' '}Both ends of the history are truncated, and the grid marks them with an asterisk:
-          {' '}{partialDates}. A hold bought or sold in {partialList} is anchored on those dates
-          rather than on a January or a December, and each cell's description names the date rather
-          than saying "end of" a year that has not ended. Their own single-year holds run under
-          {' '}{dataset.minAnnualiseDays} days and carry no annualised rate at all — below a year
-          that figure is an extrapolation, and extrapolating {firstYear}'s gave +7,701% a year.
+          {' '}The history is truncated at {partial.length === 1 ? 'one end' : 'both ends'}, and the
+          grid marks {partial.length === 1 ? 'it' : 'them'} with an asterisk: {partialDates}. A hold
+          bought or sold in {partialList} is anchored on those dates rather than on a January or a
+          December, and each cell's description names the date rather than saying "end of" a year
+          that has not ended. {partial.length === 1 ? 'Its' : 'Their'} own single-year hold
+          {partial.length === 1 ? '' : 's'} run under {dataset.minAnnualiseDays} days and carry no
+          annualised rate at all — below a year that figure is an extrapolation rather than a
+          measurement.
         </>
       )}
     </p>
@@ -128,10 +149,15 @@ const losing = summary.count - summary.positive;
     </p>
     <p class="method-note">
       A hold's length is counted in calendar years: bought at the start of {firstYear + 1} and sold
-      at the end of {firstYear + 2} is two years, because the anchors are a December apart. The two
-      asterisked years are the exception — a hold touching one is shorter than its label by however
-      much of that year is missing, which is why each cell states its own duration in days or
-      years rather than leaving you to infer it from the two headings.
+      at the end of {firstYear + 2} is two years, because the anchors are a December apart.
+      {partial.length > 0 && (
+        <>
+          {' '}The asterisked {partial.length === 1 ? 'year is an' : 'years are the'} exception — a
+          hold touching one is shorter than its label by however much of that year is missing.
+        </>
+      )}
+      {' '}Each cell states its own duration in days or years rather than leaving you to infer it
+      from the two headings.
     </p>
     <p class="method-note">
       What this cannot tell you: it describes {wholeYears.length} whole years of one asset that

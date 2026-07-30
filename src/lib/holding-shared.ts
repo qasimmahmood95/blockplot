@@ -55,9 +55,14 @@ export function formatTotal(value: number): string {
  * the same colour has to mean the same magnitude every refresh. The steps are
  * chosen from the measured distribution of this matrix rather than copied from
  * the monthly one, whose ±5/15/30 are monthly moves — here the quartiles of the
- * 153 committed holds are 49%, 103% and 173% a year, and the range runs from
- * −69% to +5,342%. Steps at 25/60/120 put roughly a quarter of the matrix in
- * each band and leave the top step for the genuinely extraordinary.
+ * 151 rated holds (of 153; two are under a year and carry no rate) are 50%, 103%
+ * and 173% a year, and the range runs from −69% to +5,342%.
+ *
+ * The bands are not equal quarters, and an earlier version of this comment said
+ * they were. Measured at 25/60/120: 15 holds, 27, 47, 62 — 10%, 18%, 31%, 41%.
+ * The matrix leans hard positive because the asset did, and flattening the bands
+ * to quartiles would mean a shade stopped denoting a magnitude, which is the one
+ * thing a fixed scale is for.
  *
  * The negative side reuses the same numbers even though nothing reaches −120: an
  * asymmetric scale would make a −60% and a +60% look like different magnitudes,
@@ -140,6 +145,41 @@ const soldPhrase = (year: number, anchor: YearAnchor | undefined): string =>
 /** Years the matrix covers that are not whole calendar years. */
 export const partialYears = (dataset: HoldingDataset): number[] =>
   dataset.years.filter((y) => !y.whole).map((y) => y.year);
+
+/**
+ * How far the diagonal's displayed rate sits from the total it reconciles on.
+ *
+ * The page claims the diagonal reconciles with the yearly figures the overview
+ * publishes, and that claim is about `totalPct` — but the cell *displays*
+ * `annualPct`, and for a one-year hold the two differ: a calendar year is 365
+ * days and the annualisation divides by 365.2425, so a 365-day hold is priced as
+ * marginally short of a year and its rate lands marginally above its total. On
+ * the committed data that reaches 14.4 points in 2013, where the total is 5,327%.
+ *
+ * Review caught the page asserting the reconciliation about the visible number.
+ * Rather than soften the sentence into vagueness, the size is measured from the
+ * file and stated — the difference is real, small, and explicable, and a reader
+ * comparing the two pages deserves the actual figure rather than "a little".
+ */
+export function diagonalGap(dataset: HoldingDataset): { year: number; points: number } | null {
+  const diagonal = dataset.cells.filter((c) => c.buyYear === c.sellYear && c.annualPct !== null);
+  if (diagonal.length === 0) return null;
+  const widest = diagonal.reduce((a, b) =>
+    Math.abs((b.annualPct ?? 0) - b.totalPct) > Math.abs((a.annualPct ?? 0) - a.totalPct) ? b : a,
+  );
+  return {
+    year: widest.buyYear,
+    points: Math.round(((widest.annualPct ?? 0) - widest.totalPct) * 10) / 10,
+  };
+}
+
+/** That gap as the sentence the page prints, or '' when there is no diagonal. */
+export function diagonalGapNote(dataset: HoldingDataset): string {
+  const gap = diagonalGap(dataset);
+  if (gap === null) return 'the two agree wherever both exist';
+  const size = Math.abs(gap.points).toFixed(1);
+  return `the widest such gap here is ${gap.year}, ${size} points ${gap.points >= 0 ? 'above' : 'below'} its total`;
+}
 
 export interface HoldingTile {
   label: string;

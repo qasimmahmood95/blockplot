@@ -829,3 +829,20 @@ code {
   background: var(--surface);
   z-index: 1;
 }
+
+/* The asterisk marking a year the history does not fully cover. Not an <abbr>:
+   an asterisk is not an abbreviation, and its title is unreachable on touch —
+   the meaning is in the method note below the grid instead. */
+.mark {
+  color: var(--ink-muted);
+}
+
+/* Both axes stay put. Only the row headers were sticky, so scrolling down lost
+   the sell-year row while scrolling right kept the buy-year column — the axis a
+   reader needs most in a triangular grid is the one that vanished. */
+.holding-matrix thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+}

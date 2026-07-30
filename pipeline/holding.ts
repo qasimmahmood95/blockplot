@@ -119,7 +119,8 @@ export interface HoldingCell {
    *
    * Null rather than a number for the one hold that can be shorter than a year:
    * the first year of data is partial, so buying and selling in it is a hold of
-   * 137 days. Annualising that gives **+7,701%**, measured — an extrapolation
+   * 122 days. Annualising that gives **+7,701%** in the USD tree and +7,476% in
+   * the GBP one, measured — an extrapolation
    * that would take the "best hold" tile and the top of the colour scale for a
    * hold nobody could have made. The cell keeps its total and states no rate.
    */
@@ -199,8 +200,15 @@ export function holdingSummary(cells: readonly HoldingCell[]): HoldingSummary | 
   const best = pool.reduce((a, b) => (rate(b) > rate(a) ? b : a));
   const worst = pool.reduce((a, b) => (rate(b) < rate(a) ? b : a));
   const losing = cells.filter((c) => c.totalPct < 0);
+  // Longest, and worst among equals. Four holds tie at 730 days on the committed
+  // data — 2018→2019 at −42.76%, 2021→2022 at −42.48%, 2014→2015 at −41.86% and
+  // 2022→2023 at −10.58% — and a plain `>` kept the first it met, which is the
+  // third of the four. The tile then names one hold as though it were unique, so
+  // the tie-break has to pick the one a reader would mean.
   const longestLosing = losing.length
-    ? losing.reduce((a, b) => (b.days > a.days ? b : a))
+    ? losing.reduce((a, b) =>
+        b.days > a.days || (b.days === a.days && b.totalPct < a.totalPct) ? b : a,
+      )
     : null;
   // Hold length in whole calendar years, counting inclusively: buying in 2015 and
   // selling in 2015 is one year held.

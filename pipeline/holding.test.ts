@@ -5,6 +5,7 @@ import {
   MIN_ANNUALISE_DAYS,
   yearAnchors,
   yearlyReturnsFromCloses,
+  type HoldingCell,
 } from './holding';
 import { monthlyReturns } from './monthly';
 import type { DailyPrice } from './schema';
@@ -144,9 +145,23 @@ describe('holdingMatrix', () => {
     // The partial first year is the only hold that can be this short, and
     // annualising it is where a "+7,701%/yr" headline came from.
     const stub = cells.find((c) => c.buyYear === 2019 && c.sellYear === 2019);
-    expect(stub?.days).toBeLessThan(MIN_ANNUALISE_DAYS);
+    expect(stub?.days).toBe(31);
     expect(stub?.totalPct).toBe(25);
     expect(stub?.annualPct).toBeNull();
+  });
+
+  it('puts the cutoff at a year, tested on both sides of it', () => {
+    // `expect(stub.days).toBeLessThan(MIN_ANNUALISE_DAYS)` compared the constant
+    // with itself, so any cutoff between 32 and 365 passed — and the whole
+    // `annualPct: null` design rests on this boundary being a year.
+    expect(MIN_ANNUALISE_DAYS).toBe(365);
+    const at = (from: string, to: string) =>
+      holdingMatrix(yearAnchors(closes([[from, 100], [to, 200]])))[0];
+    // 2021-01-01 → 2021-12-31 is 364 days: one short, and unrated.
+    expect(at('2020-01-01', '2020-12-30')?.days).toBe(364);
+    expect(at('2020-01-01', '2020-12-30')?.annualPct).toBeNull();
+    expect(at('2020-01-01', '2020-12-31')?.days).toBe(365);
+    expect(at('2020-01-01', '2020-12-31')?.annualPct).not.toBeNull();
   });
 });
 
@@ -170,11 +185,24 @@ describe('holdingSummary', () => {
   });
 
   it('never ranks an un-annualised hold as best', () => {
-    // 2019→2019 gained 25% in 31 days: extrapolated that is over +1,700%/yr,
-    // which would take the tile. It has no rate, so it cannot. This is the
-    // assertion that keeps the tile honest.
-    const summary = holdingSummary(cells);
+    // The guard only bites when the unrated hold would otherwise win, so the
+    // fixture has to make it win: a 31-day hold that trebles beats every annual
+    // rate in the grid on `totalPct`, which is what the fallback would rank it by.
+    const loaded = holdingMatrix(
+      yearAnchors(closes([
+        ['2019-11-30', 100],
+        ['2019-12-31', 600],
+        ['2020-12-31', 200],
+      ])),
+    );
+    const stub = loaded.find((c) => c.buyYear === 2019 && c.sellYear === 2019);
+    expect(stub?.annualPct).toBeNull();
+    expect(stub?.totalPct).toBe(500);
+    const summary = holdingSummary(loaded);
     expect(summary?.best.annualPct).not.toBeNull();
+    // The stub's raw total beats every annual rate in the grid, so ranking on the
+    // fallback would hand it the tile. It does not have a rate, so it cannot.
+    expect(stub?.totalPct).toBeGreaterThan(summary?.best.annualPct ?? 0);
     expect(summary?.best.days).toBeGreaterThanOrEqual(MIN_ANNUALISE_DAYS);
   });
 
@@ -182,6 +210,43 @@ describe('holdingSummary', () => {
     const summary = holdingSummary(cells);
     expect(summary?.longestLosing?.buyYear).toBe(2021);
     expect(summary?.longestLosing?.sellYear).toBe(2021);
+  });
+
+  it('picks the longest loss, not the first one it meets', () => {
+    // The fixture above has exactly one losing hold, so the reduce never compares
+    // two elements and reversing the comparison passed the whole suite. This one
+    // falls three years running, so length actually decides.
+    const falling = holdingMatrix(
+      yearAnchors(closes([
+        ['2018-12-31', 100],
+        ['2019-12-31', 90],
+        ['2020-12-31', 80],
+        ['2021-12-31', 70],
+      ])),
+    );
+    const cells = falling.filter((c) => c.totalPct < 0);
+    const longest = holdingSummary(falling)?.longestLosing;
+    expect(cells.length).toBeGreaterThan(2);
+    expect(longest?.days).toBe(Math.max(...cells.map((c) => c.days)));
+  });
+
+  it('breaks a tie on length by taking the worse loss', () => {
+    // Built directly rather than derived from prices, because the tie is the whole
+    // point and a price fixture keeps producing near-ties instead. On the
+    // committed data four holds sit at exactly 730 days — −42.76%, −42.48%,
+    // −41.86% and −10.58% — and a plain `>` kept the first it met, which is the
+    // third of the four, while the tile named it as though it were unique.
+    const tied: HoldingCell[] = [
+      { buyYear: 2018, sellYear: 2019, totalPct: -42.76, annualPct: -24.3, days: 730 },
+      { buyYear: 2021, sellYear: 2022, totalPct: -42.48, annualPct: -24.1, days: 730 },
+      { buyYear: 2014, sellYear: 2015, totalPct: -41.86, annualPct: -23.7, days: 730 },
+      { buyYear: 2022, sellYear: 2023, totalPct: -10.58, annualPct: -5.4, days: 730 },
+      { buyYear: 2016, sellYear: 2016, totalPct: -5, annualPct: -5, days: 366 },
+    ];
+    const longest = holdingSummary(tied)?.longestLosing;
+    expect(longest?.days).toBe(730);
+    expect(longest?.totalPct).toBe(-42.76);
+    expect(longest?.buyYear).toBe(2018);
   });
 
   it('reports no losing hold when every hold won', () => {

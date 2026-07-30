@@ -467,10 +467,12 @@ site.
 #### M21 — holding-period matrix — **shipped**
 
 `/holding-periods` in both trees: 17 buy years by 17 sell years, 153 triangular
-holds, coloured by compound annual rate on the monthly heatmap's steps. No
-island — it is a table of committed figures with no state a reader can change —
-which makes it the lightest page on the site at 7.0 KB gzipped and a 1.00
-Lighthouse performance score.
+holds, coloured by compound annual rate. The steps are the monthly heatmap's
+*mechanism* — fixed magnitude bands on the pos/neg tokens — at different
+thresholds: 25/60/120% a year against its 5/15/30% a month, because these are
+multi-year rates. No island, it being a table of committed figures with no state
+a reader can change, which puts it at 7.3 KB gzipped and a 1.00 Lighthouse
+performance score. (Not the lightest page on the site — `/methodology` is 5.5 KB.)
 
 **The anchoring is the whole correctness question**, and choosing it by what
 reconciles rather than by what reads well is what made the rest tractable. A hold

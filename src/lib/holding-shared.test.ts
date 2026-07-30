@@ -77,11 +77,18 @@ describe('formatTotal', () => {
 
 describe('heatClass', () => {
   it('steps on fixed thresholds, not on this dataset’s range', () => {
+    // Literals, not `HEAT_STEPS[n]`. Written against the constant, every
+    // assertion here was a tautology — changing 120 to 900 left all of them
+    // green while the top band emptied — and these three numbers are printed
+    // verbatim into the page's method note.
+    expect(HEAT_STEPS).toEqual([25, 60, 120]);
     expect(heatClass(0)).toBe('heat-pos-1');
-    expect(heatClass(HEAT_STEPS[0] - 0.01)).toBe('heat-pos-1');
-    expect(heatClass(HEAT_STEPS[0])).toBe('heat-pos-2');
-    expect(heatClass(HEAT_STEPS[1])).toBe('heat-pos-3');
-    expect(heatClass(HEAT_STEPS[2])).toBe('heat-pos-4');
+    expect(heatClass(24.99)).toBe('heat-pos-1');
+    expect(heatClass(25)).toBe('heat-pos-2');
+    expect(heatClass(59.99)).toBe('heat-pos-2');
+    expect(heatClass(60)).toBe('heat-pos-3');
+    expect(heatClass(119.99)).toBe('heat-pos-3');
+    expect(heatClass(120)).toBe('heat-pos-4');
     expect(heatClass(5341)).toBe('heat-pos-4');
   });
 

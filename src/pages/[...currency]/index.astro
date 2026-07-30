@@ -81,8 +81,10 @@ const changes = [
     <p class="method-note">
       Each cell is that month's last close over the previous month's, in percent; a month missing
       from the data makes the next month's figure span the gap, and the newest cell is
-      month-to-date ({monthlyReturns.asOf}). The Year column compounds that year's available
-      months, so a partial year is a partial figure. Shading uses fixed magnitude bands (5/15/30%)
+      month-to-date ({monthlyReturns.asOf}). The Year column is that year's own close-over-close
+      return — its last December close against the previous December's — rather than the product of
+      the months beside it, so rounding in the cells cannot accumulate into the total. A year the
+      history only partly covers is measured from its first close, and is a partial figure. Shading uses fixed magnitude bands (5/15/30%)
       rather than data-relative scaling, so a colour means the same thing in every row; figures are
       printed in every cell, so colour is never the only signal. Computed in the pipeline from
       blockchain.com's full daily history by fixture-tested pure functions.
