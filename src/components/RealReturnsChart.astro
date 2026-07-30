@@ -29,8 +29,15 @@ const { tick } = realFormatters(currency);
 // commit, justified by a claim that `captionOf` would then be called on identical
 // input by both halves — which was simply false: the caption states nothing that
 // depends on the pressed range, so the island never recomputes it and imports
-// nothing to do so. The windows, the ten other deflator fields, `fetchedAt` and
-// `schemaVersion` were 78 KB of dead payload.
+// nothing to do so.
+//
+// Worth stating what this is *not* worth, because the commit that made the change
+// said 78 KB and that is wrong by about seventy times. The dead fields — the
+// windows, the ten other deflator fields, `fetchedAt`, `schemaVersion` — measure
+// 1,086 bytes of a 77,983-byte payload: 1.4%. The series is the payload, and the
+// series is needed. This is a correctness change (a false comment removed, and a
+// smaller surface for the island to disagree with the file over), not a
+// performance one.
 const payload = {
   series: dataset.series,
   missingMonths: dataset.deflator.missingMonths,
