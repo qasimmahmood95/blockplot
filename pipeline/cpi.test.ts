@@ -23,6 +23,7 @@ import {
   type CpiPoint,
 } from './cpi';
 import { CURRENCIES } from './currencies';
+import { HISTORY_DAILY_DAYS, thinOlderToWeekly } from './series';
 
 const csv = (id: string, rows: [string, string][]): string =>
   [`observation_date,${id}`, ...rows.map(([date, value]) => `${date},${value}`)].join('\n');
@@ -413,6 +414,25 @@ describe('realWindows', () => {
 
   it('returns nothing for an empty series', () => {
     expect(realWindows([], RISING)).toEqual([]);
+  });
+
+  it('anchors every window on a row the committed series actually contains', () => {
+    // The invariant the pipeline got wrong first time. Windows measured on the
+    // full daily series and committed alongside a weekly-thinned one put the max
+    // window's start five days before the file's first row — the schema caught
+    // it, but the real cost is a tile quoting a price the chart cannot draw. So
+    // the pipeline thins first and measures second, and this pins that order.
+    const cpi = rising('2014-01', 150);
+    const full = deflate(daily('2014-01-01', '2026-06-30', 100), cpi, '2026-06');
+    const committed = thinOlderToWeekly(full, HISTORY_DAILY_DAYS);
+    const dates = new Set(committed.map((r) => r.date));
+    const windows = realWindows(committed, cpi);
+    expect(windows.length).toBeGreaterThan(0);
+    for (const window of windows) expect(dates.has(window.start)).toBe(true);
+    // And measuring on the full series is what breaks it, so the test would pass
+    // for the wrong reason if the thinning were a no-op here.
+    expect(committed.length).toBeLessThan(full.length);
+    expect(realWindows(full, cpi).some((w) => !dates.has(w.start))).toBe(true);
   });
 });
 

@@ -524,12 +524,22 @@ for (const currency of CURRENCIES) {
       // arbitrary landmark. It moves once a month, and the page names it.
       const baseMonth = cpi.at(-1)?.month ?? '';
       const full = deflate(deep, cpi, baseMonth);
-      // Windows on the full daily series, the payload thinned afterwards: a
-      // window measured on weekly points would anchor up to six days from its own
-      // target for no reason, since the maths does not need the payload's size
-      // rule.
-      const windows = realWindows(full, cpi);
-      if (full.length < 2 || windows.length === 0) {
+      // Thin first, measure second, and the order matters. Measuring on the full
+      // daily series and committing the thinned one put the max window's start
+      // five days before the first row of the file — caught by the schema, which
+      // is the layer that checks the file's claims about itself. The deeper
+      // problem it exposed is not the schema's: a tile anchored on a day the file
+      // does not contain quotes a price the chart cannot draw, so the tiles and
+      // the chart would disagree by a few days at every preset beyond two years.
+      //
+      // Measuring on the committed rows costs a weekly-section anchor up to six
+      // days of precision against its own target date. That is the same
+      // quantisation /performance carries and states, and it buys the property
+      // that matters here: every figure above the chart is measured on a point
+      // the chart draws.
+      const realSeries = thinOlderToWeekly(full, HISTORY_DAILY_DAYS);
+      const windows = realWindows(realSeries, cpi);
+      if (realSeries.length < 2 || windows.length === 0) {
         console.warn(`warning: ${currency} real returns: too little overlap — skipping`);
       } else {
         if (full[0]?.date !== deep[0]?.date) {
@@ -542,7 +552,7 @@ for (const currency of CURRENCIES) {
           schemaVersion: 1,
           currency,
           fetchedAt,
-          asOf: full.at(-1)?.date,
+          asOf: realSeries.at(-1)?.date,
           pricesThrough,
           deflator: {
             source: 'fred',
@@ -557,13 +567,13 @@ for (const currency of CURRENCIES) {
             // 1947 for a series that has been interrupted before, and a caption
             // naming a hole the chart does not contain explains nothing.
             missingMonths: cpiFetch.missingMonths.filter(
-              (month) => month >= monthOf(full[0]?.date ?? '') && month <= baseMonth,
+              (month) => month >= monthOf(realSeries[0]?.date ?? '') && month <= baseMonth,
             ),
           },
           dailyDays: HISTORY_DAILY_DAYS,
           olderResolution: 'weekly-last',
           windows,
-          series: thinOlderToWeekly(full, HISTORY_DAILY_DAYS),
+          series: realSeries,
         });
         await writeJson(`${dir}/real-returns.json`, realReturns);
         const max = windows.at(-1);
