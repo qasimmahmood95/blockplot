@@ -831,3 +831,143 @@ export const signalsDatasetSchema = z.object({
 });
 
 export type SignalsDataset = z.infer<typeof signalsDatasetSchema>;
+
+const isoMonth = z.string().regex(/^\d{4}-\d{2}$/);
+
+/**
+ * Versioned on-disk format of data/real-returns.json.
+ *
+ * Both figures for each day rather than the real one alone, and the deflator's
+ * own metadata alongside them. The page states the base month, the source series
+ * and the publication lag, and every one of those is read from here rather than
+ * written into the markup — the class of defect this project keeps producing is
+ * prose that the data contradicts, and a literal in a component is exactly how
+ * that happens.
+ */
+export const realReturnsDatasetSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    currency: currencySchema,
+    fetchedAt: z.string(),
+    /** Last day the deflator covers, which is where both series end. */
+    asOf: isoDate,
+    /** Last day prices exist for, which is later. The page states the gap. */
+    pricesThrough: isoDate,
+    deflator: z.object({
+      source: z.literal('fred'),
+      /** Series id at the source, e.g. CPIAUCSL. */
+      sourceSeries: z.string().min(1),
+      seasonalAdjustment: z.enum(['seasonally-adjusted', 'not-adjusted']),
+      /** The month whose money every real figure is stated in. */
+      baseMonth: isoMonth,
+      firstMonth: isoMonth,
+      lastMonth: isoMonth,
+      /** Whole months the deflator trails the prices by. */
+      lagMonths: z.number().int().nonnegative(),
+      /** The lag at which the pipeline treats the series as retired, not late. */
+      maxLagMonths: z.number().int().positive(),
+    }),
+    /** Calendar days at the end of the series kept at daily resolution. */
+    dailyDays: z.number().int().positive(),
+    /** How everything older than that is stored. */
+    olderResolution: z.literal('weekly-last'),
+    windows: z
+      .array(
+        z.object({
+          label: z.string().min(1),
+          start: isoDate,
+          nominalPct: z.number().nullable(),
+          realPct: z.number().nullable(),
+          nominalCagrPct: z.number().nullable(),
+          realCagrPct: z.number().nullable(),
+          inflationPct: z.number().nullable(),
+        }),
+      )
+      .min(1),
+    series: z
+      .array(
+        z.object({
+          date: isoDate,
+          nominal: z.number().positive(),
+          real: z.number().positive(),
+        }),
+      )
+      .min(2)
+      .superRefine(refineAscendingDates),
+  })
+  .superRefine((doc, ctx) => {
+    // The file's own claims, checked here rather than trusted. Each of these is
+    // a way the page could state something false while every individual figure
+    // looked reasonable.
+    if (doc.series.at(-1)?.date !== doc.asOf) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `asOf ${doc.asOf} is not the last day of the series (${doc.series.at(-1)?.date})`,
+      });
+    }
+    if (doc.asOf > doc.pricesThrough) {
+      ctx.addIssue({ code: 'custom', message: 'asOf is later than pricesThrough' });
+    }
+    // The base month is what "real" means here, and it has to be a month the
+    // deflator actually published — otherwise every real figure is scaled by a
+    // number that does not exist.
+    if (doc.deflator.baseMonth > doc.deflator.lastMonth) {
+      ctx.addIssue({ code: 'custom', message: 'baseMonth is beyond the last published month' });
+    }
+    if (doc.deflator.baseMonth < doc.deflator.firstMonth) {
+      ctx.addIssue({ code: 'custom', message: 'baseMonth is before the first published month' });
+    }
+    // The last day of the series must fall inside the last published month:
+    // a later day would mean it was deflated by an index that does not cover it,
+    // which is the carry-forward this dataset exists to refuse.
+    if (doc.asOf.slice(0, 7) > doc.deflator.lastMonth) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `series runs to ${doc.asOf}, past the last published month ${doc.deflator.lastMonth}`,
+      });
+    }
+    if (doc.deflator.lagMonths > doc.deflator.maxLagMonths) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `deflator lags by ${doc.deflator.lagMonths} months, beyond ${doc.deflator.maxLagMonths}`,
+      });
+    }
+    // Every window has to start inside the series it is measured on, and end
+    // before the series does.
+    for (const window of doc.windows) {
+      if (window.start >= doc.asOf) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `window ${window.label} starts ${window.start}, not before asOf ${doc.asOf}`,
+        });
+      }
+      if (window.start < (doc.series[0]?.date ?? '')) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `window ${window.label} starts before the series does`,
+        });
+      }
+    }
+    // Same rule the benchmark history carries, and for the same reason: the
+    // resolution claim is otherwise a string nothing verifies.
+    const last = doc.series.at(-1);
+    if (!last) return;
+    const cutoff = new Date(Date.parse(`${last.date}T00:00:00Z`) - doc.dailyDays * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    const weeks = new Set<string>();
+    for (const row of doc.series) {
+      if (row.date > cutoff) continue;
+      const week = isoWeekKeyForSchema(row.date);
+      if (weeks.has(week)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `more than one point in ISO week ${week}, but olderResolution is weekly-last`,
+        });
+        return;
+      }
+      weeks.add(week);
+    }
+  });
+
+export type RealReturnsDataset = z.infer<typeof realReturnsDatasetSchema>;
