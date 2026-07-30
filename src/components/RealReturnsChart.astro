@@ -29,9 +29,11 @@ const { tick } = realFormatters(currency);
 // the bulk either way, and handing the island the same object the build read
 // means `captionOf` is called on identical input by both halves — where a
 // hand-built payload is a second, silently divergent description of the file.
-const points = realPoints(dataset.series, initial?.start ?? '');
+const points = realPoints(dataset.series, initial?.start ?? '', dataset.deflator.missingMonths);
+// The last *finite* point of each line: a break inserted at a missing month is
+// not a place to put an end-of-line label.
 const lineEnds = ['nominal', 'real'].flatMap((line) => {
-  const last = [...points].reverse().find((p) => p.line === line);
+  const last = [...points].reverse().find((p) => p.line === line && Number.isFinite(p.value));
   return last ? [last] : [];
 });
 
@@ -116,10 +118,12 @@ const svg = points.length
           import('../lib/crosshair'),
           import('../lib/real-shared'),
         ]);
-      const points = realPoints(dataset.series, start);
+      const points = realPoints(dataset.series, start, dataset.deflator.missingMonths);
       if (points.length === 0) return;
       const lineEnds = ['nominal', 'real'].flatMap((line) => {
-        const last = [...points].reverse().find((p) => p.line === line);
+        const last = [...points]
+          .reverse()
+          .find((p) => p.line === line && Number.isFinite(p.value));
         return last ? [last] : [];
       });
       // The caption does not follow the chart, unlike /performance's: nothing it
@@ -134,11 +138,15 @@ const svg = points.length
       );
 
       const anchors = crosshairAnchors(
-        points.map((d) => ({
-          x: d.date,
-          y: d.value,
-          label: `${REAL_LABELS[d.line] ?? d.line} ${tip(d.value)}`,
-        })),
+        // Breaks excluded: a crosshair over a month the deflator does not cover
+        // would read "nominal $NaN".
+        points
+          .filter((d) => Number.isFinite(d.value))
+          .map((d) => ({
+            x: d.date,
+            y: d.value,
+            label: `${REAL_LABELS[d.line] ?? d.line} ${tip(d.value)}`,
+          })),
         isoDay,
       );
       drawChart(container, (w) => realReturnsSpec(points, lineEnds, tick, scale, w, anchors));

@@ -283,17 +283,42 @@ export interface RealPointsInput {
   real: number;
 }
 
-/** The rows of both lines from a start date, as the spec's flat point list. */
+/**
+ * The rows of both lines from a start date, as the spec's flat point list.
+ *
+ * `missingMonths` inserts a break rather than being cosmetic. Days in an
+ * unpublished month are dropped by the pipeline, and a line mark drawn over the
+ * remaining points joins straight across the hole — which draws a deflated value
+ * for every day of a month the deflator does not cover. The method note under the
+ * chart said "the lines have a gap there" while the chart had none, which is this
+ * project's most-repeated defect in miniature: prose the picture contradicts.
+ *
+ * The break is a non-finite value at mid-month, which Plot's `lineY` treats as
+ * undefined and splits the path on. Driven by the file's own record of which
+ * months are missing, not by a distance heuristic — the weekly section has
+ * seven-day steps everywhere by design, so any threshold would either miss a
+ * one-month hole out there or shatter the whole early history.
+ */
 export function realPoints(
   rows: readonly RealPointsInput[],
   start: string,
+  missingMonths: readonly string[] = [],
 ): { line: RealLine; date: Date; value: number }[] {
+  const breaks = missingMonths
+    .map((month) => `${month}-15`)
+    .filter((date) => date >= start)
+    .map((date) => new Date(date));
   const out: { line: RealLine; date: Date; value: number }[] = [];
   for (const line of REAL_LINES) {
-    for (const row of rows) {
-      if (row.date < start) continue;
-      out.push({ line, date: new Date(row.date), value: row[line] });
-    }
+    const points = rows
+      .filter((row) => row.date >= start)
+      .map((row) => ({ line, date: new Date(row.date), value: row[line] }));
+    for (const date of breaks) points.push({ line, date, value: NaN });
+    // Sorted after the breaks are added, because a line mark follows array order
+    // and a break appended at the end would split the last segment instead of the
+    // one it belongs to.
+    points.sort((a, b) => a.date.getTime() - b.date.getTime());
+    out.push(...points);
   }
   return out;
 }

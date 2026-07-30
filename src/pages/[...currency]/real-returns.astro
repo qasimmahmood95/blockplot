@@ -109,8 +109,12 @@ const sourceName = deflator ? (SOURCE_NAMES[deflator.source] ?? deflator.source)
               {holes.length === 1 ? 'One month in' : `${holes.length} months in`} the drawn range
               {holes.length === 1 ? ' has' : ' have'} no observation: {holeList}. Days in
               {holes.length === 1 ? ' it' : ' them'} are dropped rather than deflated by a
-              neighbouring month, so the lines have a gap there. This is the source's own hole, not
-              a fetch that failed — the October 2025 US release was cancelled rather than delayed.
+              neighbouring month, and both lines are broken there rather than drawn straight across
+              — a line joined over the hole would show a deflated price for every day of a month
+              the deflator does not cover. This is the source's own gap, not a fetch that failed.
+              {holes.includes('2025-10') && deflator.source === 'fred' && (
+                <> The October 2025 US release was cancelled rather than delayed.</>
+              )}
             </p>
           )}
           <p class="method-note">

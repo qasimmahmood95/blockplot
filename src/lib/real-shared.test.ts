@@ -225,6 +225,30 @@ describe('realPoints', () => {
   it('drops nothing when the start precedes the series', () => {
     expect(realPoints(dataset().series, '1970-01-01')).toHaveLength(6);
   });
+
+  it('breaks each line at an unpublished month instead of joining across it', () => {
+    // Verified on the built page: the USD chart draws two subpaths per line at the
+    // October 2025 hole, the GBP one draws a single subpath because ONS D7BT has
+    // none.
+    const points = realPoints(dataset().series, '1970-01-01', ['2020-05']);
+    const nominal = points.filter((p) => p.line === 'nominal');
+    expect(nominal).toHaveLength(4);
+    const breakAt = nominal.findIndex((p) => !Number.isFinite(p.value));
+    expect(breakAt).toBe(1);
+    // Ordered, so the break splits the segment it belongs to rather than the last
+    // one — appending it without sorting was the bug this pins.
+    expect(nominal.map((p) => p.date.toISOString().slice(0, 10))).toEqual([
+      '2010-08-22',
+      '2020-05-15',
+      '2025-06-30',
+      '2026-06-30',
+    ]);
+  });
+
+  it('ignores a missing month before the drawn range', () => {
+    const points = realPoints(dataset().series, '2025-06-30', ['2020-05']);
+    expect(points.every((p) => Number.isFinite(p.value))).toBe(true);
+  });
 });
 
 describe('realColor', () => {
