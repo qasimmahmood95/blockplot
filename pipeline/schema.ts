@@ -553,6 +553,30 @@ export const networkDatasetSchema = z.object({
     series: z.array(networkPointSchema).min(2).superRefine(refineAscendingDates),
   }),
   /**
+   * Mean fee per confirmed transaction, in satoshis — total daily fees divided
+   * by daily transactions, both from blockchain.com.
+   *
+   * Optional, because it arrived in M19 and the pipeline writes this file even
+   * when one source fails. Satoshis rather than a currency: `/network` carries
+   * chain properties only, and the live tiers this contextualises are already
+   * quoted in sat/vB.
+   */
+  feePerTx: z
+    .object({
+      unit: z.literal('sats/tx'),
+      /** Mean of the trailing 30 entries, whole satoshis. */
+      average30d: z.number().nonnegative().nullable(),
+      /** Trailing 7-entry mean vs the 7-entry mean 30 days back, %, 2 dp. */
+      change30dPct: z.number().nullable(),
+      /**
+       * Where the latest entry sits in this series' own distribution, 0-100.
+       * Null under 30 observations. What turns a fee number into an answer.
+       */
+      percentile: z.number().min(0).max(100).nullable(),
+      series: z.array(networkPointSchema).min(2).superRefine(refineAscendingDates),
+    })
+    .optional(),
+  /**
    * Fee tiers move on a ~10-minute timescale, so this committed snapshot is a
    * floor that the network page's island refreshes live and falls back to.
    */

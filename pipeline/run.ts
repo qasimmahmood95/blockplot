@@ -47,9 +47,12 @@ import {
 } from './signals';
 import { buildMonthlyDataset } from './monthly';
 import {
+  feePerTxSats,
   fetchFeeTiers,
   fetchHashRate,
+  fetchTotalFeesBtc,
   fetchTxCount,
+  percentileOfLatest,
   NETWORK_KEEP_DAYS,
   readExistingFees,
   smoothedChangePct,
@@ -106,6 +109,7 @@ const [
   stablecoins,
   hashRate,
   txCount,
+  totalFeesBtc,
   feeTiers,
   fxFetch,
 ] = await Promise.all([
@@ -123,6 +127,7 @@ const [
   attempt('defillama stablecoins', fetchStablecoins()),
   attempt('blockchain.com hash-rate', fetchHashRate()),
   attempt('blockchain.com n-transactions', fetchTxCount()),
+  attempt('blockchain.com transaction-fees', fetchTotalFeesBtc()),
   attempt('mempool.space fees', fetchFeeTiers()),
   attempt('yahoo gbpusd', fetchGbpUsd()),
 ]);
@@ -558,6 +563,9 @@ if (hashRate && txCount) {
   // Fees tolerate staleness by design — the page's island refreshes them —
   // so a mempool.space outage falls back to the committed tiers rather than
   // freezing the hash-rate and transaction series for six hours.
+  // Derived from two committed series rather than fetched, so it cannot disagree
+  // with either chart beside it. Empty when either source failed.
+  const feePerTx = totalFeesBtc ? feePerTxSats(totalFeesBtc, txCount) : [];
   const tiers = feeTiers ?? (await readExistingFees('data/network.json'));
   if (!tiers) {
     console.warn('warning: no fee tiers available and no committed fallback — skipping network.json');
@@ -581,11 +589,29 @@ if (hashRate && txCount) {
         change30dPct: smoothedChangePct(txCount, 30, 7),
         series: txCount,
       },
+      // Omitted rather than emitted empty when the fee series failed: the page
+      // drops the section, where a zero-length series would render as a chart
+      // frame with nothing in it.
+      ...(feePerTx.length >= 2
+        ? {
+            feePerTx: {
+              unit: 'sats/tx' as const,
+              average30d: trailingAverage(feePerTx, 30),
+              change30dPct: smoothedChangePct(feePerTx, 30, 7),
+              percentile: percentileOfLatest(feePerTx),
+              series: feePerTx,
+            },
+          }
+        : {}),
       fees: { source: 'mempool.space', tiers },
     });
     await writeJson('data/network.json', network);
     console.log(
-      `data/network.json: hash rate ${network.hashRate.average7d} EH/s (7d mean), ${txCount.at(-1)?.value} tx on ${network.asOf}, fastest fee ${tiers.fastestFee} sat/vB${feeTiers ? '' : ' (committed fallback)'}`,
+      `data/network.json: hash rate ${network.hashRate.average7d} EH/s (7d mean), ${txCount.at(-1)?.value} tx on ${network.asOf}, ` +
+        (network.feePerTx
+          ? `fee/tx ${network.feePerTx.series.at(-1)?.value} sats (${network.feePerTx.percentile}th pct of ${network.feePerTx.series.length}d), `
+          : 'fee/tx absent, ') +
+        `fastest fee ${tiers.fastestFee} sat/vB${feeTiers ? '' : ' (committed fallback)'}`,
     );
   }
 }

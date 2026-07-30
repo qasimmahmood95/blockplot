@@ -170,3 +170,71 @@ export async function readExistingFees(path: string): Promise<FeeTiers | null> {
   }
   return networkDatasetSchema.parse(JSON.parse(raw)).fees.tiers;
 }
+
+/**
+ * Total daily transaction fees, in BTC.
+ *
+ * BTC and not the `-usd` variant, deliberately. `/network` is currency-free —
+ * every figure on it is a property of the chain rather than of a price — and
+ * pulling in a USD series would either need the FX machinery the page does not
+ * have or leave a GBP reader with one dollar number among chain statistics. The
+ * fee history exists here to give the live sat/vB tiers something to be judged
+ * against, and satoshis are the unit those tiers are already quoted in.
+ */
+export async function fetchTotalFeesBtc(): Promise<NetworkPoint[]> {
+  return fetchChart('transaction-fees');
+}
+
+export const SATS_PER_BTC = 1e8;
+
+/**
+ * Mean fee paid per confirmed transaction, in satoshis.
+ *
+ * Derived rather than fetched: blockchain.com publishes total fees per day and
+ * transactions per day, and the quotient is the figure a reader actually wants —
+ * "what did a transaction cost" rather than "what did the whole network pay".
+ * Computed here, from two series the site already commits, so it cannot disagree
+ * with either chart beside it.
+ *
+ * Joined on date rather than by index. The two series come from separate
+ * requests and are trimmed independently, so a day present in one and missing
+ * from the other would silently pair the wrong values and shift every later
+ * point — the same class of mis-join the correlation code carries a whole
+ * comment about. A day without both is dropped instead.
+ */
+export function feePerTxSats(
+  feesBtc: readonly NetworkPoint[],
+  txCount: readonly NetworkPoint[],
+): NetworkPoint[] {
+  const txByDate = new Map(txCount.map((p) => [p.date, p.value]));
+  const out: NetworkPoint[] = [];
+  for (const { date, value } of feesBtc) {
+    const txs = txByDate.get(date);
+    // A zero or missing transaction count is not a zero fee, it is no
+    // observation: dividing would give Infinity, which plots.
+    if (txs === undefined || !(txs > 0)) continue;
+    out.push({ date, value: Math.round((value / txs) * SATS_PER_BTC) });
+  }
+  return out;
+}
+
+/**
+ * Where today's value sits in its own history, as a percentile 0-100, 0 dp.
+ *
+ * This is what turns a fee number into an answer. `/network` has shown a live
+ * sat/vB tier since M8 with nothing to compare it to, and "12 sat/vB" means
+ * nothing to a reader who does not already know the range. "Cheaper than 82% of
+ * the last two years" means something immediately.
+ *
+ * Fraction of observations strictly below the latest, so a value at the very
+ * bottom reads 0 and one above everything reads just under 100 — never exactly
+ * 100, since the latest point cannot be below itself. Null under 30 points,
+ * where a percentile is arithmetic rather than information.
+ */
+export function percentileOfLatest(series: readonly NetworkPoint[]): number | null {
+  if (series.length < 30) return null;
+  const latest = series.at(-1);
+  if (!latest) return null;
+  const below = series.filter((p) => p.value < latest.value).length;
+  return Math.round((below / series.length) * 100);
+}

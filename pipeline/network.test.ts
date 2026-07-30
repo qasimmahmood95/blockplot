@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { changeOverDaysPct, smoothedChangePct, toExahashes, trailingAverage } from './network';
+import {
+  changeOverDaysPct,
+  feePerTxSats,
+  percentileOfLatest,
+  smoothedChangePct,
+  toExahashes,
+  trailingAverage,
+} from './network';
 import { mempoolFeesSchema, networkDatasetSchema } from './schema';
 
 const series = [
@@ -150,5 +157,78 @@ describe('networkDatasetSchema', () => {
         txCount: { ...valid.txCount, series: [...valid.txCount.series].reverse() },
       }),
     ).toThrow('not strictly ascending');
+  });
+});
+
+describe('feePerTxSats', () => {
+  const p = (date: string, value: number) => ({ date, value });
+
+  it('divides total fees by transactions and converts to satoshis', () => {
+    // 1 BTC of fees over 1000 transactions is 0.001 BTC = 100,000 sats each.
+    expect(feePerTxSats([p('2024-01-01', 1)], [p('2024-01-01', 1000)])).toEqual([
+      p('2024-01-01', 100_000),
+    ]);
+  });
+
+  it('joins on date, so a day missing from either series is dropped', () => {
+    // The two series are separate requests trimmed independently. Pairing by
+    // index would put the wrong transaction count against every later day.
+    expect(
+      feePerTxSats(
+        [p('2024-01-01', 1), p('2024-01-02', 2), p('2024-01-03', 3)],
+        [p('2024-01-01', 1000), p('2024-01-03', 1000)],
+      ),
+    ).toEqual([p('2024-01-01', 100_000), p('2024-01-03', 300_000)]);
+  });
+
+  it('drops a day with no transactions rather than dividing by zero', () => {
+    expect(feePerTxSats([p('2024-01-01', 1)], [p('2024-01-01', 0)])).toEqual([]);
+    expect(feePerTxSats([p('2024-01-01', 1)], [p('2024-01-01', -5)])).toEqual([]);
+  });
+
+  it('keeps a genuine zero-fee day, which is an observation', () => {
+    expect(feePerTxSats([p('2024-01-01', 0)], [p('2024-01-01', 1000)])).toEqual([
+      p('2024-01-01', 0),
+    ]);
+  });
+
+  it('rounds to whole satoshis, the smallest unit that exists', () => {
+    // 0.000012345 BTC over 1 tx = 1234.5 sats -> 1235 (round half up on .5).
+    expect(feePerTxSats([p('2024-01-01', 0.000012345)], [p('2024-01-01', 1)])[0]?.value).toBe(1235);
+  });
+
+  it('is empty when either series is', () => {
+    expect(feePerTxSats([], [p('2024-01-01', 1000)])).toEqual([]);
+    expect(feePerTxSats([p('2024-01-01', 1)], [])).toEqual([]);
+  });
+});
+
+describe('percentileOfLatest', () => {
+  const of = (values: number[]) =>
+    values.map((v, i) => ({
+      date: new Date(Date.UTC(2024, 0, 1 + i)).toISOString().slice(0, 10),
+      value: v,
+    }));
+
+  it('reports the share of history strictly below the latest', () => {
+    // 30 values 1..30, latest 30: 29 of 30 below -> 97%.
+    expect(percentileOfLatest(of(Array.from({ length: 30 }, (_, i) => i + 1)))).toBe(97);
+  });
+
+  it('reads 0 at the very bottom and never exactly 100 at the top', () => {
+    // The latest point cannot be below itself, so the top is 1/n short of 100.
+    const rising = of([...Array.from({ length: 29 }, (_, i) => i + 2), 1]);
+    expect(percentileOfLatest(rising)).toBe(0);
+    const falling = of([...Array.from({ length: 29 }, (_, i) => i + 1), 99]);
+    expect(percentileOfLatest(falling)).toBe(97);
+  });
+
+  it('counts ties as not-below, so a repeated value does not inflate the reading', () => {
+    expect(percentileOfLatest(of(Array.from({ length: 40 }, () => 5)))).toBe(0);
+  });
+
+  it('is null below 30 observations, where a percentile is arithmetic not information', () => {
+    expect(percentileOfLatest(of(Array.from({ length: 29 }, (_, i) => i)))).toBeNull();
+    expect(percentileOfLatest([])).toBeNull();
   });
 });
