@@ -39,6 +39,12 @@ import {
   quoteDivergence,
 } from './fx';
 import { buildHalvingDataset } from './halvings';
+import {
+  holdingMatrix,
+  holdingSummary,
+  MIN_ANNUALISE_DAYS as HOLD_MIN_ANNUALISE_DAYS,
+  yearAnchors,
+} from './holding';
 import type { Currency } from './currencies';
 import type { DominancePoint, HalvingDataset, QuoteDivergenceStats } from './schema';
 import { fetchBtcHistory } from './history';
@@ -81,6 +87,7 @@ import {
   fxDatasetSchema,
   halvingDatasetSchema,
   historyDatasetSchema,
+  holdingDatasetSchema,
   monthlyDatasetSchema,
   networkDatasetSchema,
   priceDatasetSchema,
@@ -509,6 +516,59 @@ for (const currency of CURRENCIES) {
     });
     await writeJson(`${dir}/monthly-returns.json`, monthly);
     console.log(`${dir}/monthly-returns.json: ${monthly.months.length} months`);
+
+    // Holding periods read the same anchors the yearly totals above do, so the
+    // matrix's diagonal is those totals rather than a second opinion on them.
+    const anchors = yearAnchors(deep);
+    const cells = holdingMatrix(anchors);
+    const summary = holdingSummary(cells);
+    if (!summary) {
+      console.warn(`warning: ${currency} holding periods: no holds — skipping`);
+    } else {
+      const holding = holdingDatasetSchema.parse({
+        schemaVersion: 1,
+        currency,
+        fetchedAt,
+        asOf: deep.at(-1)?.date,
+        minAnnualiseDays: HOLD_MIN_ANNUALISE_DAYS,
+        years: anchors.map((a) => a.year),
+        // The first year is partial when its basis is its own first close rather
+        // than the previous December's — which is what `yearAnchors` falls back
+        // to when the history begins mid-year.
+        firstYearPartial: anchors[0]?.basisDate.slice(0, 4) === String(anchors[0]?.year),
+        cells,
+        summary: {
+          count: summary.count,
+          positive: summary.positive,
+          best: {
+            buyYear: summary.best.buyYear,
+            sellYear: summary.best.sellYear,
+            annualPct: summary.best.annualPct,
+          },
+          worst: {
+            buyYear: summary.worst.buyYear,
+            sellYear: summary.worst.sellYear,
+            annualPct: summary.worst.annualPct,
+          },
+          longestLosing: summary.longestLosing
+            ? {
+                buyYear: summary.longestLosing.buyYear,
+                sellYear: summary.longestLosing.sellYear,
+                totalPct: summary.longestLosing.totalPct,
+                days: summary.longestLosing.days,
+              }
+            : null,
+          safeYears: summary.safeYears,
+        },
+      });
+      await writeJson(`${dir}/holding-periods.json`, holding);
+      console.log(
+        `${dir}/holding-periods.json: ${holding.cells.length} holds over ` +
+          `${holding.years.length} years, ${holding.summary.positive} positive, ` +
+          `worst ${summary.worst.buyYear}->${summary.worst.sellYear} ` +
+          `${summary.worst.annualPct}%/yr, every ${holding.summary.safeYears}y hold up`,
+      );
+    }
 
     // Real returns. Skipped rather than approximated when this currency's
     // deflator did not answer: there is no substitute for it — deflating a GBP

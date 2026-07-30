@@ -1,0 +1,124 @@
+---
+import Base from '../../layouts/Base.astro';
+import { fxNote, type Currency } from '../../lib/currency';
+import { dataFor } from '../../lib/data';
+import { currencyPaths } from '../../lib/routes';
+import { cellViews, holdingTiles, HEAT_STEPS } from '../../lib/holding-shared';
+
+export const getStaticPaths = currencyPaths;
+
+const { currency } = Astro.props as { currency: Currency };
+const dataset = dataFor(currency).holdingPeriods;
+
+const tiles = holdingTiles(dataset);
+const cells = cellViews(dataset);
+const { years, summary } = dataset;
+const firstYear = years[0];
+const lastYear = years.at(-1);
+// The diagonal is each year's own return, which is the figure the halving-cycle
+// page's heatmap publishes. Named here because the reconciliation is the reason
+// the anchoring is what it is, and a reader can check it in two clicks.
+const wholeYears = dataset.firstYearPartial ? years.slice(1) : years;
+const losing = summary.count - summary.positive;
+---
+
+<Base
+  currency={currency}
+  title="blockplot · holding periods"
+  description="Every buy year against every sell year: what each hold returned, annualised, and how long you had to hold to never be down."
+>
+  <h1 class="visually-hidden">Holding periods</h1>
+
+  <dl class="stat-grid">
+    {
+      tiles.map((tile) => (
+        <div class="stat">
+          <dt>{tile.label}</dt>
+          <dd class={`num ${tile.tone}`}>{tile.value}</dd>
+          <dd class="sub num">{tile.sub}</dd>
+        </div>
+      ))
+    }
+  </dl>
+
+  <section class="chart-section">
+    <h2>Bought at the start of, sold at the end of</h2>
+    <div class="table-scroll">
+      <table class="risk-table heatmap holding-matrix">
+        <caption class="visually-hidden">
+          Annualised return for every hold from a buy year to a sell year. Rows are the year
+          bought, columns the year sold; a cell's description gives the total return and the
+          number of years held.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Buy \ sell</th>
+            {years.map((year) => <th scope="col" class="num">{String(year).slice(2)}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {
+            years.map((buyYear) => (
+              <tr>
+                <th scope="row" class="num">{buyYear}</th>
+                {years.map((sellYear) => {
+                  const cell = cells.get(`${buyYear}-${sellYear}`);
+                  return cell === undefined ? (
+                    // Not a hold, so not a gap in the data — an empty cell with
+                    // no label, since a screen reader announcing "no data" here
+                    // would be describing a triangle as a hole.
+                    <td class="num blank" aria-hidden="true" />
+                  ) : (
+                    <td class={`num ${cell.heat}`} title={cell.title}>
+                      <span class="visually-hidden">{cell.title}</span>
+                      <span aria-hidden="true">{cell.label}</span>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="method-note">
+      Each cell is one hold: bought at the start of the row's year, sold at the end of the
+      column's. The figure is the <strong>annualised</strong> rate, because that is the only one
+      comparable across the grid — a 300% total is extraordinary over one year and ordinary over
+      ten — and each cell's description carries the total return and the number of years held. The
+      lower-left half is empty because selling before you bought is not a hold.
+    </p>
+    <p class="method-note">
+      A year is priced from the last close of the previous December to the last close of its own,
+      which is not the obvious choice and is the one that reconciles: the diagonal of this grid is
+      exactly the yearly total the <a href={`${import.meta.env.BASE_URL}${currency === 'usd' ? '' : 'gbp/'}cycles/`}>halving cycles</a> heatmap
+      publishes for the same year. Anchoring on the first close of the buy year instead would put
+      the two pages a few days out from each other, with nothing saying which to believe.
+      {dataset.firstYearPartial && (
+        <>
+          {' '}{firstYear} is the exception: the history begins mid-year, so that row is measured
+          from its first close and its own single-year hold spans less than a year — which is why
+          that one cell shows no rate. Holds of at least {dataset.minAnnualiseDays} days are
+          annualised; below that a rate is an extrapolation, and extrapolating this one gave
+          +7,701% a year.
+        </>
+      )}
+    </p>
+    <p class="method-note">
+      Colour is fixed to the rate, not to this dataset's range, so the same shade means the same
+      magnitude on every refresh: bands break at {HEAT_STEPS.join('%, ')}% a year either side of
+      zero. The negative side uses the same numbers even though nothing here reaches −{HEAT_STEPS[2]}%,
+      because an asymmetric scale would make a −60% and a +60% look like different magnitudes.
+    </p>
+    <p class="method-note">
+      What this cannot tell you: it describes {wholeYears.length} whole years of one asset that
+      existed throughout them, which is the definition of a survivorship-shaped sample. "Every
+      {' '}{summary.safeYears}-year hold ended up" is a fact about {firstYear}–{lastYear} and not a
+      property of the asset — {losing} of {summary.count} holds here did end down, and the longest
+      losing one ran {summary.longestLosing?.days} days. Returns are price returns: no fees, no
+      taxes, no dividends, and a single purchase rather than the drip the{' '}
+      <a href={`${import.meta.env.BASE_URL}${currency === 'usd' ? '' : 'gbp/'}dca/`}>DCA page</a> models.{fxNote(currency)}
+    </p>
+  </section>
+</Base>

@@ -1010,3 +1010,115 @@ export const realReturnsDatasetSchema = z
   });
 
 export type RealReturnsDataset = z.infer<typeof realReturnsDatasetSchema>;
+
+/**
+ * Versioned on-disk format of data/holding-periods.json.
+ *
+ * The cells carry both figures. Only the annual rate is comparable across the
+ * matrix — a 300% total is extraordinary over one year and ordinary over ten —
+ * but the total is what a reader feels, so the grid colours by one and states
+ * the other rather than making them choose a page.
+ */
+export const holdingDatasetSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    currency: currencySchema,
+    fetchedAt: z.string(),
+    /** Last day of history the matrix was built from. */
+    asOf: isoDate,
+    /** The shortest hold the run was willing to annualise. */
+    minAnnualiseDays: z.number().int().positive(),
+    /**
+     * The years the matrix spans, ascending. Both axes use this, so a page
+     * cannot render a row the cells do not cover.
+     */
+    years: z.array(z.number().int()).min(2),
+    /** True when the first year is partial — history began mid-year. */
+    firstYearPartial: z.boolean(),
+    cells: z
+      .array(
+        z.object({
+          buyYear: z.number().int(),
+          sellYear: z.number().int(),
+          totalPct: z.number(),
+          annualPct: z.number().nullable(),
+          days: z.number().int().positive(),
+        }),
+      )
+      .min(1),
+    summary: z.object({
+      count: z.number().int().positive(),
+      positive: z.number().int().nonnegative(),
+      best: z.object({ buyYear: z.number().int(), sellYear: z.number().int(), annualPct: z.number() }),
+      worst: z.object({ buyYear: z.number().int(), sellYear: z.number().int(), annualPct: z.number() }),
+      longestLosing: z
+        .object({
+          buyYear: z.number().int(),
+          sellYear: z.number().int(),
+          totalPct: z.number(),
+          days: z.number().int().positive(),
+        })
+        .nullable(),
+      /** Shortest hold length, in whole years, that never ended down. */
+      safeYears: z.number().int().positive().nullable(),
+    }),
+  })
+  .superRefine((doc, ctx) => {
+    // The file's claims about itself, checked rather than trusted — each of these
+    // is a way the page could state something false while every cell looked fine.
+    const years = new Set(doc.years);
+    const sorted = [...doc.years].every((y, i, a) => i === 0 || y > (a[i - 1] as number));
+    if (!sorted) ctx.addIssue({ code: 'custom', message: 'years are not ascending' });
+    const seen = new Set<string>();
+    for (const cell of doc.cells) {
+      if (cell.sellYear < cell.buyYear) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `cell ${cell.buyYear}->${cell.sellYear} sells before it buys`,
+        });
+      }
+      if (!years.has(cell.buyYear) || !years.has(cell.sellYear)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `cell ${cell.buyYear}->${cell.sellYear} names a year outside the axis`,
+        });
+      }
+      const key = `${cell.buyYear}-${cell.sellYear}`;
+      if (seen.has(key)) {
+        ctx.addIssue({ code: 'custom', message: `duplicate cell ${key}` });
+      }
+      seen.add(key);
+      // A rate is either absent or measured over a year. A rate on a shorter hold
+      // is an extrapolation, and this file exists partly to keep one out.
+      if (cell.annualPct !== null && cell.days < doc.minAnnualiseDays) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `cell ${key} is annualised over ${cell.days} days, under ${doc.minAnnualiseDays}`,
+        });
+      }
+      if (cell.annualPct === null && cell.days >= doc.minAnnualiseDays) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `cell ${key} spans ${cell.days} days and has no rate`,
+        });
+      }
+    }
+    // The matrix has to be complete: every pair the axis implies must be present,
+    // or the page renders a hole a reader would read as "no data" rather than as
+    // a missing row.
+    const expected = (doc.years.length * (doc.years.length + 1)) / 2;
+    if (doc.cells.length !== expected) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${doc.cells.length} cells for ${doc.years.length} years — expected ${expected}`,
+      });
+    }
+    if (doc.summary.count !== doc.cells.length) {
+      ctx.addIssue({ code: 'custom', message: 'summary.count disagrees with the cells' });
+    }
+    if (doc.summary.positive > doc.summary.count) {
+      ctx.addIssue({ code: 'custom', message: 'more positive holds than holds' });
+    }
+  });
+
+export type HoldingDataset = z.infer<typeof holdingDatasetSchema>;

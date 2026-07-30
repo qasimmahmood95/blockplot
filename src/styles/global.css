@@ -810,3 +810,22 @@ code {
     border-color: #bbb;
   }
 }
+
+/* Holding-period matrix: the same heat steps as the monthly grid, on a wider
+   table. The lower-left triangle is not data — selling before you bought is not
+   a hold — so those cells carry no border and no background rather than reading
+   as an empty measurement. */
+.holding-matrix td.blank {
+  background: none;
+  border-color: transparent;
+}
+
+/* 17 buy years by 17 sell years does not fit a phone, so the row header stays
+   put while the grid scrolls under it — without it a reader loses which year
+   they are on two columns in. */
+.holding-matrix tbody th {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  z-index: 1;
+}
