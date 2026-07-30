@@ -508,6 +508,28 @@ the two partial years are included (span 3 has zero negatives in both
 populations) — checked rather than asserted. 143 of 153 holds ended up; the
 longest losing one ran 730 days for −41.9%.
 
+### After M21 — polish, not features
+
+The milestone list ends here by decision, not by exhaustion. What follows is
+finishing work on what exists, in this order:
+
+1. **A prose-vs-data gate.** Every one of M19, M20 and M21 shipped at least one
+   sentence the committed data refuted, and in every case what caught it was a
+   human reading the rendered page or a reviewer recomputing from source. Never
+   the suite. M21's was the sharpest: the anchoring convention was chosen
+   *specifically* so the diagonal would reconcile with a figure published on the
+   overview, and then the cell rendered a different quantity while a note
+   asserted the reconciliation anyway — three clauses of one sentence wrong, past
+   609 tests and a 1.00 accessibility score. The defect class is now the most
+   expensive thing about this codebase and the only one with no automated guard.
+2. **Visual-regression snapshots.** The other half of the same gap: two labels
+   painted at identical coordinates at every range and both scales, shipped and
+   invisible to every check the repo has.
+3. **Wire `downsample.ts`** — `/performance` at ~34 KB gz of SVG is the best
+   case, blocked on the crosshair reading the same array.
+4. **Offset dates in the series codec** — measured at 3,270 bytes gz on
+   `/correlation`.
+
 #### Carried, and not forgotten
 
 Three items from M15/M16 that are real and unscheduled:
