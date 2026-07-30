@@ -127,6 +127,13 @@ const losing = summary.count - summary.positive;
       because an asymmetric scale would make a −60% and a +60% look like different magnitudes.
     </p>
     <p class="method-note">
+      A hold's length is counted in calendar years: bought at the start of {firstYear + 1} and sold
+      at the end of {firstYear + 2} is two years, because the anchors are a December apart. The two
+      asterisked years are the exception — a hold touching one is shorter than its label by however
+      much of that year is missing, which is why each cell states its own duration in days or
+      years rather than leaving you to infer it from the two headings.
+    </p>
+    <p class="method-note">
       What this cannot tell you: it describes {wholeYears.length} whole years of one asset that
       existed throughout them, which is the definition of a survivorship-shaped sample. "Every
       {' '}{summary.safeYears}-year hold ended up" is a fact about {firstYear}–{lastYear} and not a
