@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   captionOf,
   chartLabel,
+  compactDigits,
   monthLabel,
   MULTIPLE_ABOVE_PCT,
   REAL_LINES,
@@ -286,11 +287,42 @@ describe('realColor', () => {
   });
 });
 
+describe('compactDigits', () => {
+  it('is the arithmetic Intl could not be trusted with', () => {
+    // Measured: `Intl` with style:'currency' AND notation:'compact' disagrees
+    // between Node ("$20.0K", "$105.0", "$0.0") and Chromium ("$20K", "$105",
+    // "$0"). The build draws the axis in one and the first hover redraws it in
+    // the other, so the ticks moved under the cursor. These are plain string
+    // operations, identical everywhere.
+    expect(compactDigits(20_000)).toBe('20K');
+    expect(compactDigits(1200)).toBe('1.2K');
+    expect(compactDigits(72_431)).toBe('72.4K');
+    expect(compactDigits(1_500_000)).toBe('1.5M');
+    expect(compactDigits(2e9)).toBe('2B');
+    expect(compactDigits(105)).toBe('105');
+    expect(compactDigits(4.5)).toBe('4.50');
+  });
+
+  it('keeps a sub-unit price legible, where both runtimes render $0', () => {
+    // BTC's first committed close. A log axis whose bottom three ticks all read
+    // "$0" says the early history was worthless.
+    expect(compactDigits(0.0451)).toBe('0.045');
+    expect(compactDigits(0.87)).toBe('0.87');
+    expect(compactDigits(0)).toBe('0');
+  });
+
+  it('handles negatives without losing the sign', () => {
+    expect(compactDigits(-20_000)).toBe('-20K');
+    expect(compactDigits(-0.0451)).toBe('-0.045');
+  });
+});
+
 describe('realFormatters', () => {
   it('is compact on the axis and exact in the tooltip', () => {
     const { tick, tip } = realFormatters('usd');
     expect(tick(1200)).toBe('$1.2K');
     expect(tick(72_431)).toBe('$72.4K');
+    expect(tick(0.0451)).toBe('$0.045');
     expect(tip(72_431)).toBe('$72,431');
   });
 

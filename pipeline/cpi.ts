@@ -90,11 +90,31 @@ const fredCsvUrl = (id: string): string =>
   `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}`;
 
 /**
- * ONS's keyless timeseries endpoint. `mm23` is the consumer-price-inflation
- * dataset; the series id selects the measure within it.
+ * ONS's keyless timeseries endpoints, in the order they are tried.
+ *
+ * `mm23` is the consumer-price-inflation dataset; the series id selects the
+ * measure within it. Two URLs because there are two published forms and the
+ * obvious one is dead: `https://api.ons.gov.uk/timeseries/d7bt/dataset/mm23/data`
+ * answers 404 today, measured. The website form — the series' own page with
+ * `/data` appended — is the one that serves, and it needs the topic path.
  */
-const onsUrl = (id: string): string =>
-  `https://api.ons.gov.uk/timeseries/${id.toLowerCase()}/dataset/mm23/data`;
+const onsUrls = (id: string): string[] => [
+  `https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/${id.toLowerCase()}/mm23/data`,
+  `https://api.ons.gov.uk/timeseries/${id.toLowerCase()}/dataset/mm23/data`,
+];
+
+/** The first ONS URL that answers, or a throw naming every one that did not. */
+async function fetchOnsPayload(id: string): Promise<unknown> {
+  const failures: string[] = [];
+  for (const url of onsUrls(id)) {
+    try {
+      return await getJson(url);
+    } catch (err) {
+      failures.push(err instanceof Error ? err.message : String(err));
+    }
+  }
+  throw new Error(`ons ${id}: ${failures.join('; ')}`);
+}
 
 /** One published observation: the month it describes, and the index level. */
 export interface CpiPoint {
@@ -315,7 +335,7 @@ export interface CpiFetch {
 async function loadCandidate(candidate: CpiCandidate): Promise<MonthlyCpi> {
   return candidate.source === 'fred'
     ? toMonthlyCpi(await getText(fredCsvUrl(candidate.id)), candidate.id)
-    : toMonthlyOns(await getJson(onsUrl(candidate.id)), candidate.id);
+    : toMonthlyOns(await fetchOnsPayload(candidate.id), candidate.id);
 }
 
 /**

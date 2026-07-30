@@ -101,21 +101,15 @@ export function realFormatters(currency: Currency): {
   tip: (value: number) => string;
 } {
   const code = CURRENCY_META[currency].code;
-  // One decimal on the axis, not the two `currencyFormatters` uses: its compact
-  // formatter is built for stat tiles and gives "$1.20K", where five ticks have
-  // to fit in 66 pixels. The network charts' compact formatter uses 1 for the
-  // same reason.
-  const axis = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: code,
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  });
   const exact = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: code,
     maximumFractionDigits: 0,
   });
+  // The symbol, taken from the formatter rather than written down, so a third
+  // currency needs no table here.
+  const symbol =
+    exact.formatToParts(0).find((part) => part.type === 'currency')?.value ?? '';
   // For the early history, where a whole-unit format is not a rounding choice
   // but an error: BTC's first committed close is $0.0451, and "$0" states that
   // it was worthless.
@@ -126,9 +120,37 @@ export function realFormatters(currency: Currency): {
     maximumFractionDigits: 4,
   });
   return {
-    tick: (value: number) => axis.format(value),
+    tick: (value: number) => `${symbol}${compactDigits(value)}`,
     tip: (value: number) => (Math.abs(value) < 10 ? sub.format(value) : exact.format(value)),
   };
+}
+
+/**
+ * The axis magnitude, done by arithmetic rather than by `Intl`.
+ *
+ * `Intl.NumberFormat` with `style: 'currency'` *and* `notation: 'compact'` does not
+ * agree across runtimes. Measured on the same values: Node 22 gives `$20.0K`,
+ * `$105.0`, `$0.0`; Chromium gives `$20K`, `$105`, `$0`. The build draws the axis in
+ * Node and the first hover redraws it in the browser, so the ticks changed under
+ * the reader's cursor — the exact failure the shared-spec rule exists to prevent,
+ * arriving through the one part of the spec that was not shared code but a locale
+ * database. (Plain compact without the currency style *does* agree in both, which
+ * is why `/network`'s axis is unaffected; it was checked rather than assumed.)
+ *
+ * Chromium's version is also wrong for the early history: it renders BTC's first
+ * committed close, 0.0451, as `$0`. Two significant figures below the unit keeps
+ * the bottom of a log axis meaning something.
+ */
+export function compactDigits(value: number): string {
+  const abs = Math.abs(value);
+  const trim = (scaled: number): string => scaled.toFixed(1).replace(/\.0$/, '');
+  if (abs >= 1e9) return `${trim(value / 1e9)}B`;
+  if (abs >= 1e6) return `${trim(value / 1e6)}M`;
+  if (abs >= 1e3) return `${trim(value / 1e3)}K`;
+  if (abs >= 10) return String(Math.round(value));
+  if (abs >= 1) return value.toFixed(2);
+  if (abs === 0) return '0';
+  return Number(value.toPrecision(2)).toString();
 }
 
 export interface RangeOption {
