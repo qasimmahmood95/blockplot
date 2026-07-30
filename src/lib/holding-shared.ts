@@ -198,7 +198,7 @@ export interface HoldingTile {
  */
 export function holdingTiles(dataset: HoldingDataset): HoldingTile[] {
   const { summary, years } = dataset;
-  const { best, worst, longestLosing, safeYears } = summary;
+  const { best, worst, safeYears } = summary;
   const losing = summary.count - summary.positive;
   return [
     {

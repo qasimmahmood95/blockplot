@@ -41,8 +41,8 @@ interface Cell {
 interface Summary {
   count: number;
   positive: number;
-  best: { buyYear: number; sellYear: number; annualPct: number };
-  worst: { buyYear: number; sellYear: number; annualPct: number };
+  best: { buyYear: number; sellYear: number; annualPct: number; totalPct: number };
+  worst: { buyYear: number; sellYear: number; annualPct: number; totalPct: number };
   longestLosing: Cell | null;
   safeYears: number | null;
 }
@@ -72,7 +72,7 @@ describe('holdingDatasetSchema', () => {
 
     it('refuses a best hold that does not exist', () => {
       const { ok, message } = parse((d) => {
-        summaryOf(d).best = { buyYear: 1999, sellYear: 1999, annualPct: 42 };
+        summaryOf(d).best = { buyYear: 1999, sellYear: 1999, annualPct: 42, totalPct: 42 };
       });
       expect(ok).toBe(false);
       expect(message).toMatch(/not a rated hold/);
