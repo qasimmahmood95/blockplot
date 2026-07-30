@@ -464,12 +464,47 @@ the one dataset that may legitimately not exist, and a static import would turn
 the pipeline's refusal to publish stale money into a broken build for the whole
 site.
 
-#### M21 — holding-period matrix
+#### M21 — holding-period matrix — **shipped**
 
-Buy in year X, sell in year Y, as a triangular heatmap reusing the monthly
-heatmap's colour system. Pure maths over committed history. It answers "did
-entry timing actually matter" better than any other single visual, and it
-subsumes several smaller ideas (best/worst windows, time-to-recovery framing).
+`/holding-periods` in both trees: 17 buy years by 17 sell years, 153 triangular
+holds, coloured by compound annual rate on the monthly heatmap's steps. No
+island — it is a table of committed figures with no state a reader can change —
+which makes it the lightest page on the site at 7.0 KB gzipped and a 1.00
+Lighthouse performance score.
+
+**The anchoring is the whole correctness question**, and choosing it by what
+reconciles rather than by what reads well is what made the rest tractable. A hold
+starting in year X is priced from the last close of December X−1 and one ending
+in Y at the last close of Y — exactly what `monthly.ts` compounds — so every cell
+on the diagonal must equal the yearly total the site already publishes. Measured
+on the committed data: 17/17, both currencies.
+
+Checking that reconciliation found a defect in the **existing** figure.
+`yearlyReturns` compounded twelve monthly returns already rounded to two
+decimals, so residue accumulated: 2013 published 5327.45% against a direct
+5327.41%, 2017 1216.32% against 1216.38%, 2024 119.77% against 119.83%. A year's
+return is a ratio of two closes, not a product of display values. Both pages read
+one function now, and the fixture reproduces the drift in miniature (99.995%
+against an exact 100%) so the test does not depend on the real history to show it.
+
+Three things the built page said that the data refuted, all found by reading
+rendered cells rather than the diff:
+
+- **A 122-day hold labelled "1 year."** The span came from `sellYear − buyYear +
+  1`, exact for whole years and wrong for the year the history starts mid-way
+  through. One cell read "1 year · … held 122 days, under a year".
+- **Every cell in the 2026 column said "sold end of 2026"** against a 30 July
+  close — false in the flattering direction, an unfinished year reading as a
+  finished one. Each year now carries its two anchor dates and a `whole` flag, a
+  schema refinement derives the flag from the dates so they cannot drift, and
+  cells name the date instead.
+- **The "best hold" tile was going to read +7,701% a year** — the 122-day hold,
+  annualised. Holds under a year carry no rate at all.
+
+Headline: **every 3-calendar-year hold ended up**, and that holds whether or not
+the two partial years are included (span 3 has zero negatives in both
+populations) — checked rather than asserted. 143 of 153 holds ended up; the
+longest losing one ran 730 days for −41.9%.
 
 #### Carried, and not forgotten
 
