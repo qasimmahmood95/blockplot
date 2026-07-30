@@ -219,15 +219,20 @@ export function holdingTiles(dataset: HoldingDataset): HoldingTile[] {
     {
       label: 'best hold',
       value: formatRate(best.annualPct),
-      sub: `a year · bought ${best.buyYear}, sold ${best.sellYear}`,
+      // The total beside the rate, because for a one-calendar-year hold the two
+      // differ visibly — +5,342% a year against a +5,327% total — and a reader
+      // seeing only the first has no way to tell that is an annualisation
+      // artefact rather than a discrepancy.
+      sub: `a year · ${formatTotal(best.totalPct)} total · bought ${best.buyYear}, sold ${best.sellYear}`,
       tone: 'up',
     },
     {
       label: 'worst hold',
       value: formatRate(worst.annualPct),
-      sub: longestLosing
-        ? `a year · longest loss ${longestLosing.buyYear}–${longestLosing.sellYear}, ${formatTotal(longestLosing.totalPct)}`
-        : `a year · bought ${worst.buyYear}, sold ${worst.sellYear}`,
+      // Its own total, not another hold's. This paired the worst *rate* with the
+      // longest *loss* — two different holds — so a reader would attach the
+      // second figure to the first.
+      sub: `a year · ${formatTotal(worst.totalPct)} total · bought ${worst.buyYear}, sold ${worst.sellYear}`,
       tone: 'down',
     },
   ];

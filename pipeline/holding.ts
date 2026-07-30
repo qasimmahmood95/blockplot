@@ -18,10 +18,18 @@ import type { DailyPrice } from './schema';
  * there is the telescoping product of its months' close-over-close returns, which
  * is `close(Dec Y) / close(Dec Y-1)`.
  *
- * The consequence is checkable and is checked: every cell on the diagonal must
- * equal the yearly total the monthly heatmap already publishes. Anchoring on the
- * first close of X instead would put this page a few days out from a figure the
- * site states elsewhere, with nothing saying which to believe.
+ * The consequence is checkable and is checked: every diagonal cell's `totalPct`
+ * must equal the yearly total the overview's heatmap already publishes. Anchoring
+ * on the first close of X instead would put this page a few days out from a
+ * figure the site states elsewhere, with nothing saying which to believe.
+ *
+ * `totalPct`, not `annualPct` — the distinction matters and the page once blurred
+ * it. A calendar year is 365 days and `annualPct` divides by 365.2425, so a
+ * one-year hold's rate lands a little above its own total: 2013 reads +5,342% a
+ * year against a +5,327% total. That is the correct definition of an annual rate
+ * over a period slightly shorter than a mean year, and it is the same definition
+ * `/real-returns` uses, so it stays — but it means the *displayed* diagonal is not
+ * the published figure, and the page says which one is.
  *
  * The first year of data is the exception, and it is the same exception
  * `monthlyReturns` makes: history begins mid-year, the first month has no basis
@@ -117,10 +125,10 @@ export interface HoldingCell {
   /**
    * Compound annual rate over the hold, %, or null under a year.
    *
-   * Null rather than a number for the one hold that can be shorter than a year:
-   * the first year of data is partial, so buying and selling in it is a hold of
-   * 122 days. Annualising that gives **+7,701%** in the USD tree and +7,476% in
-   * the GBP one, measured — an extrapolation
+   * Null rather than a number for the holds that can be shorter than a year: the
+   * history is truncated at both ends, so buying and selling inside either of
+   * those years is a hold of a few months. Annualising the first gives **+7,701%**
+   * in the USD tree and **+7,476%** in the GBP one, measured — an extrapolation
    * that would take the "best hold" tile and the top of the colour scale for a
    * hold nobody could have made. The cell keeps its total and states no rate.
    */

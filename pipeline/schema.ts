@@ -1064,8 +1064,26 @@ export const holdingDatasetSchema = z
     summary: z.object({
       count: z.number().int().positive(),
       positive: z.number().int().nonnegative(),
-      best: z.object({ buyYear: z.number().int(), sellYear: z.number().int(), annualPct: z.number() }),
-      worst: z.object({ buyYear: z.number().int(), sellYear: z.number().int(), annualPct: z.number() }),
+      /**
+       * The extremes, each carrying its own total as well as its rate.
+       *
+       * Both, because the tile prints both: for a one-calendar-year hold the two
+       * differ visibly — +5,342% a year against a +5,327% total — and a tile
+       * showing only the rate gives a reader no way to tell that is an
+       * annualisation artefact rather than a discrepancy with the overview.
+       */
+      best: z.object({
+        buyYear: z.number().int(),
+        sellYear: z.number().int(),
+        annualPct: z.number(),
+        totalPct: z.number(),
+      }),
+      worst: z.object({
+        buyYear: z.number().int(),
+        sellYear: z.number().int(),
+        annualPct: z.number(),
+        totalPct: z.number(),
+      }),
       longestLosing: z
         .object({
           buyYear: z.number().int(),
@@ -1168,7 +1186,11 @@ export const holdingDatasetSchema = z
       a.buyYear === b.buyYear && a.sellYear === b.sellYear;
     const pool = rated.length > 0 ? rated : cells;
     const rate = (c: { annualPct: number | null; totalPct: number }) => c.annualPct ?? c.totalPct;
-    const extremes: [string, { buyYear: number; sellYear: number; annualPct: number }, number][] = [
+    const extremes: [
+      string,
+      { buyYear: number; sellYear: number; annualPct: number; totalPct: number },
+      number,
+    ][] = [
       ['best', doc.summary.best, Math.max(...pool.map(rate))],
       ['worst', doc.summary.worst, Math.min(...pool.map(rate))],
     ];
@@ -1182,10 +1204,10 @@ export const holdingDatasetSchema = z
           code: 'custom',
           message: `summary.${label} names ${claimed.buyYear}→${claimed.sellYear}, which is not a rated hold`,
         });
-      } else if (cell.annualPct !== claimed.annualPct) {
+      } else if (cell.annualPct !== claimed.annualPct || cell.totalPct !== claimed.totalPct) {
         ctx.addIssue({
           code: 'custom',
-          message: `summary.${label} says ${claimed.annualPct}% but that hold is ${cell.annualPct}%`,
+          message: `summary.${label} says ${claimed.annualPct}%/${claimed.totalPct}% but that hold is ${cell.annualPct}%/${cell.totalPct}%`,
         });
       } else if (rate(cell) !== target) {
         ctx.addIssue({

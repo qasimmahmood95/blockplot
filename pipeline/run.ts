@@ -557,11 +557,13 @@ for (const currency of CURRENCIES) {
             buyYear: summary.best.buyYear,
             sellYear: summary.best.sellYear,
             annualPct: summary.best.annualPct,
+            totalPct: summary.best.totalPct,
           },
           worst: {
             buyYear: summary.worst.buyYear,
             sellYear: summary.worst.sellYear,
             annualPct: summary.worst.annualPct,
+            totalPct: summary.worst.totalPct,
           },
           longestLosing: summary.longestLosing
             ? {

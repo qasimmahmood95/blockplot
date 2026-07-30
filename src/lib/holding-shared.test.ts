@@ -35,8 +35,8 @@ const dataset = (over: Partial<HoldingDataset> = {}): HoldingDataset =>
     summary: {
       count: 6,
       positive: 5,
-      best: { buyYear: 2020, sellYear: 2020, annualPct: 99.71 },
-      worst: { buyYear: 2021, sellYear: 2021, annualPct: -50.02 },
+      best: { buyYear: 2020, sellYear: 2020, annualPct: 99.71, totalPct: 100 },
+      worst: { buyYear: 2021, sellYear: 2021, annualPct: -50.02, totalPct: -50 },
       longestLosing: { buyYear: 2021, sellYear: 2021, totalPct: -50, days: 365 },
       safeYears: 2,
     },
@@ -188,11 +188,18 @@ describe('holdingTiles', () => {
     expect(tiles[1]?.sub).toBe('1 ended down');
   });
 
-  it('names the best and worst holds by year', () => {
+  it('pairs each extreme with its own total, not another hold’s', () => {
+    // The worst tile showed the worst *rate* over a sub-line about the longest
+    // *loss* — two different holds — so a reader would attach the second figure
+    // to the first. And a one-calendar-year hold's rate differs visibly from its
+    // total (+5,342% a year against +5,327% on the real data), so the tile has to
+    // carry both or the rate looks like a discrepancy with the overview.
     expect(tiles[2]?.value).toBe('+100%');
-    expect(tiles[2]?.sub).toBe('a year · bought 2020, sold 2020');
+    // The rate rounds to +100% while the total is exactly 100: the leap-year
+    // artefact this tile exists to make visible.
+    expect(tiles[2]?.sub).toBe('a year · +100.0% total · bought 2020, sold 2020');
     expect(tiles[3]?.value).toBe('−50%');
-    expect(tiles[3]?.sub).toBe('a year · longest loss 2021–2021, −50.0%');
+    expect(tiles[3]?.sub).toBe('a year · −50.0% total · bought 2021, sold 2021');
   });
 
   it('says so plainly when no hold length was ever safe', () => {
@@ -208,7 +215,7 @@ describe('holdingTiles', () => {
     const clean = dataset({
       summary: { ...dataset().summary, longestLosing: null, positive: 6 },
     } as Partial<HoldingDataset>);
-    expect(holdingTiles(clean)[3]?.sub).toBe('a year · bought 2021, sold 2021');
+    expect(holdingTiles(clean)[3]?.sub).toContain('bought 2021, sold 2021');
     expect(holdingTiles(clean)[1]?.sub).toBe('0 ended down');
   });
 });
