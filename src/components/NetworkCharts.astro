@@ -4,7 +4,15 @@ import { toJsonScript } from '../lib/embed';
 import { renderResponsiveChart } from '../lib/plot-ssr';
 import { NETWORK_SERIES, networkSpec } from '../lib/specs/network';
 
-const payload = { hashRate: network.hashRate.series, txCount: network.txCount.series };
+// feePerTx is optional on disk (M19), so the payload and the loop below both
+// key off whether it is actually there — a missing series drops the figure
+// rather than rendering an empty frame.
+const feePerTx = network.feePerTx?.series ?? [];
+const payload = {
+  hashRate: network.hashRate.series,
+  txCount: network.txCount.series,
+  feePerTx,
+};
 const toPoints = (s: { date: string; value: number }[]) =>
   s.map((p) => ({ date: new Date(p.date), value: p.value }));
 
@@ -14,6 +22,17 @@ const hashRateSvg = renderResponsiveChart((w) =>
 const txCountSvg = renderResponsiveChart((w) =>
   networkSpec(toPoints(payload.txCount), NETWORK_SERIES['txcount-chart'].tick, w),
 );
+const feeSvg = feePerTx.length
+  ? renderResponsiveChart((w) =>
+      networkSpec(
+        toPoints(feePerTx),
+        NETWORK_SERIES['feepertx-chart'].tick,
+        w,
+        undefined,
+        NETWORK_SERIES['feepertx-chart'].scale,
+      ),
+    )
+  : '';
 ---
 
 <script is:inline type="application/json" id="network-chart-data" set:html={toJsonScript(payload)} />
@@ -38,6 +57,20 @@ const txCountSvg = renderResponsiveChart((w) =>
   />
 </figure>
 
+{
+  feePerTx.length > 0 && (
+    <figure class="chart-frame chart-frame-stacked">
+      <figcaption class="chart-caption num">fee per transaction · sats · log</figcaption>
+      <div
+        id="feepertx-chart"
+        role="img"
+        aria-label="Line chart of the mean fee paid per confirmed Bitcoin transaction in satoshis, on a log scale"
+        set:html={feeSvg}
+      />
+    </figure>
+  )
+}
+
 <script>
   import { chartData, upgradeChart } from '../lib/charts';
 
@@ -54,7 +87,7 @@ const txCountSvg = renderResponsiveChart((w) =>
 
   // Each chart upgrades on its own hover, so a reader who only ever touches the
   // hash rate never pays for the transaction chart's crosshair either.
-  for (const id of ['hashrate-chart', 'txcount-chart'] as const) {
+  for (const id of ['hashrate-chart', 'txcount-chart', 'feepertx-chart'] as const) {
     const container = document.getElementById(id);
     if (!container) continue;
 
@@ -69,11 +102,18 @@ const txCountSvg = renderResponsiveChart((w) =>
         import('../lib/crosshair'),
       ]);
 
-      const { tick, tip } = NETWORK_SERIES[id];
+      const { tick, tip, scale } = NETWORK_SERIES[id];
       let entry = cache.get(id);
       if (!entry) {
-        const data = chartData<{ hashRate: Point[]; txCount: Point[] }>('network-chart-data');
-        const raw = id === 'hashrate-chart' ? data.hashRate : data.txCount;
+        const data = chartData<{ hashRate: Point[]; txCount: Point[]; feePerTx: Point[] }>(
+          'network-chart-data',
+        );
+        const raw =
+          id === 'hashrate-chart'
+            ? data.hashRate
+            : id === 'txcount-chart'
+              ? data.txCount
+              : data.feePerTx;
         const points = raw.map((p) => ({ date: new Date(p.date), value: p.value }));
         entry = {
           points,
@@ -87,7 +127,7 @@ const txCountSvg = renderResponsiveChart((w) =>
 
       const points = entry.points;
       const anchors = entry.anchors as Parameters<typeof networkSpec>[3];
-      drawChart(container, (w) => networkSpec(points, tick, w, anchors));
+      drawChart(container, (w) => networkSpec(points, tick, w, anchors, scale));
     });
   }
 </script>

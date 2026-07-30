@@ -351,7 +351,35 @@ date is the reader's choice, which makes it the second chart after DCA whose
 shape is chosen at runtime, so it follows the same build-renders-the-default
 pattern.
 
-#### M19 — network history
+#### M19 — network history — **shipped (fee context)**
+
+What went in, and what was deliberately left:
+
+- **`transaction-fees` only.** BTC and not the `-usd` variant: `/network` carries
+  chain properties, so a dollar series would need FX machinery the page does not
+  have, or leave a GBP reader with one dollar figure among chain statistics.
+- **Fee per transaction is derived, not fetched** — total daily fees ÷ daily
+  transactions, in satoshis. That is what a transaction cost, where the raw
+  series is what the whole network paid. Joined on date, not position, because
+  the two series are separate requests trimmed independently.
+- **`percentileOfLatest` is the point of the milestone.** The page had shown a
+  live sat/vB tier since M8 with nothing to judge it against. "Cheaper than 82%
+  of the last two years" lands where "12 sat/vB" does not.
+- **Log axis, no area fill.** Fees sit in the low hundreds of satoshis and spike
+  into the tens of thousands; a linear axis makes every quiet period a flat line
+  on the floor. `safeScale` degrades to linear rather than dropping a genuine
+  zero-fee day, since the data is right and the axis is the problem.
+- **Still deferred, with the measured reason:** `mempool-size` reports
+  `period=minute` and is 15-minute spaced at 105,029 points; `total-bitcoins`
+  reports `period=day` and is actually 6-minute spaced at 144,506. Both need an
+  aggregation rule of their own. `miners-revenue`, `difficulty`,
+  `n-unique-addresses` and `avg-block-size` are daily and available — they were
+  left out because one primary chart per view is a design constraint, and fee
+  context was the gap.
+
+Original plan:
+
+
 
 `/network` shows live fee tiers with no historical context at all — the one
 page where a reader can see today's number and nothing to judge it against.
