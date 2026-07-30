@@ -1031,10 +1031,25 @@ export const holdingDatasetSchema = z
     /**
      * The years the matrix spans, ascending. Both axes use this, so a page
      * cannot render a row the cells do not cover.
+     *
+     * Each carries the two dates it is anchored on and whether it is a whole
+     * calendar year. Both ends of the history are partial — it began mid-2010 and
+     * the current year is year-to-date — and a cell saying "sold end of 2026" in
+     * July is false. The page reads these dates rather than assuming December.
      */
-    years: z.array(z.number().int()).min(2),
-    /** True when the first year is partial — history began mid-year. */
-    firstYearPartial: z.boolean(),
+    years: z
+      .array(
+        z.object({
+          year: z.number().int(),
+          /** Close a hold starting in this year is bought at. */
+          basisDate: isoDate,
+          /** Close a hold ending in this year is sold at. */
+          closeDate: isoDate,
+          /** False when the year is truncated at either end. */
+          whole: z.boolean(),
+        }),
+      )
+      .min(2),
     cells: z
       .array(
         z.object({
@@ -1066,8 +1081,8 @@ export const holdingDatasetSchema = z
   .superRefine((doc, ctx) => {
     // The file's claims about itself, checked rather than trusted — each of these
     // is a way the page could state something false while every cell looked fine.
-    const years = new Set(doc.years);
-    const sorted = [...doc.years].every((y, i, a) => i === 0 || y > (a[i - 1] as number));
+    const years = new Set(doc.years.map((y) => y.year));
+    const sorted = doc.years.every((y, i, a) => i === 0 || y.year > (a[i - 1]?.year ?? -Infinity));
     if (!sorted) ctx.addIssue({ code: 'custom', message: 'years are not ascending' });
     const seen = new Set<string>();
     for (const cell of doc.cells) {
@@ -1106,6 +1121,18 @@ export const holdingDatasetSchema = z
     // The matrix has to be complete: every pair the axis implies must be present,
     // or the page renders a hole a reader would read as "no data" rather than as
     // a missing row.
+    // A year is whole only if it is anchored on the previous December and closes
+    // in its own — checked here so the flag cannot drift from the dates beside it.
+    for (const y of doc.years) {
+      const whole =
+        Number(y.basisDate.slice(0, 4)) === y.year - 1 && y.closeDate.slice(5, 7) === '12';
+      if (whole !== y.whole) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `${y.year} is marked ${y.whole ? 'whole' : 'partial'} but runs ${y.basisDate} to ${y.closeDate}`,
+        });
+      }
+    }
     const expected = (doc.years.length * (doc.years.length + 1)) / 2;
     if (doc.cells.length !== expected) {
       ctx.addIssue({

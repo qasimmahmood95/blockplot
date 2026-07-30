@@ -72,8 +72,21 @@ export function heatClass(annualPct: number | null): string {
   return `heat-${annualPct < 0 ? 'neg' : 'pos'}-${step}`;
 }
 
-/** Whole years a hold spans, counting inclusively. */
-export const spanYears = (buyYear: number, sellYear: number): number => sellYear - buyYear + 1;
+/**
+ * How long a hold actually ran, in words.
+ *
+ * From the day count, not from the year arithmetic. `sellYear - buyYear + 1` is
+ * exact for every whole year — anchored December to December, buying in 2019 and
+ * selling in 2020 really is two years — and wrong for the one row the history
+ * starts mid-way through: the built page read "Bought start of 2010, sold end of
+ * 2010 · 1 year · … held 122 days, under a year", a sentence contradicting itself
+ * inside one cell. Days below a year and one decimal above it is true everywhere
+ * and needs no exception.
+ */
+export function holdDuration(days: number): string {
+  if (days < 365) return `${days} days`;
+  return `${(days / 365.2425).toFixed(1)} years`;
+}
 
 /**
  * Every cell, keyed for lookup by the table.
@@ -84,13 +97,15 @@ export const spanYears = (buyYear: number, sellYear: number): number => sellYear
  * cell's own description rather than from a second table.
  */
 export function cellViews(dataset: HoldingDataset): Map<string, HoldingCellView> {
+  const byYear = new Map(dataset.years.map((y) => [y.year, y]));
   const out = new Map<string, HoldingCellView>();
   for (const cell of dataset.cells) {
-    const years = spanYears(cell.buyYear, cell.sellYear);
-    const span = `${years} year${years === 1 ? '' : 's'}`;
+    const buy = byYear.get(cell.buyYear);
+    const sell = byYear.get(cell.sellYear);
+    const span = holdDuration(cell.days);
     const rate =
       cell.annualPct === null
-        ? `no annual rate — held ${cell.days} days, under a year`
+        ? 'no annual rate, under a year'
         : `${formatRate(cell.annualPct)} a year`;
     out.set(`${cell.buyYear}-${cell.sellYear}`, {
       buyYear: cell.buyYear,
@@ -98,12 +113,33 @@ export function cellViews(dataset: HoldingDataset): Map<string, HoldingCellView>
       label: cell.annualPct === null ? '—' : formatRate(cell.annualPct),
       heat: heatClass(cell.annualPct),
       title:
-        `Bought start of ${cell.buyYear}, sold end of ${cell.sellYear} · ${span} · ` +
-        `${formatTotal(cell.totalPct)} total · ${rate}`,
+        `Bought ${boughtPhrase(cell.buyYear, buy)}, sold ${soldPhrase(cell.sellYear, sell)} · ` +
+        `${span} · ${formatTotal(cell.totalPct)} total · ${rate}`,
     });
   }
   return out;
 }
+
+type YearAnchor = HoldingDataset['years'][number];
+
+/**
+ * "start of 2015", or the actual date when that year is not a whole one.
+ *
+ * Both ends of the history are truncated: it begins in August 2010 and the
+ * current year is year-to-date. The built page said "sold end of 2026" for every
+ * hold in that column while the close was 30 July, which is simply false — and
+ * false in the direction that flatters, since an unfinished year is being read as
+ * a finished one.
+ */
+const boughtPhrase = (year: number, anchor: YearAnchor | undefined): string =>
+  anchor === undefined || anchor.whole ? `start of ${year}` : `on ${anchor.basisDate}`;
+
+const soldPhrase = (year: number, anchor: YearAnchor | undefined): string =>
+  anchor === undefined || anchor.whole ? `end of ${year}` : `on ${anchor.closeDate}`;
+
+/** Years the matrix covers that are not whole calendar years. */
+export const partialYears = (dataset: HoldingDataset): number[] =>
+  dataset.years.filter((y) => !y.whole).map((y) => y.year);
 
 export interface HoldingTile {
   label: string;
@@ -131,7 +167,7 @@ export function holdingTiles(dataset: HoldingDataset): HoldingTile[] {
       sub:
         safeYears === null
           ? 'every hold length includes a loss'
-          : `across ${years.at(0)}–${years.at(-1)}`,
+          : `across ${years.at(0)?.year}–${years.at(-1)?.year}`,
       tone: safeYears === null ? '' : 'up',
     },
     {

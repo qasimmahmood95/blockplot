@@ -3,7 +3,7 @@ import Base from '../../layouts/Base.astro';
 import { fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
-import { cellViews, holdingTiles, HEAT_STEPS } from '../../lib/holding-shared';
+import { cellViews, holdingTiles, HEAT_STEPS, partialYears } from '../../lib/holding-shared';
 
 export const getStaticPaths = currencyPaths;
 
@@ -12,13 +12,17 @@ const dataset = dataFor(currency).holdingPeriods;
 
 const tiles = holdingTiles(dataset);
 const cells = cellViews(dataset);
-const { years, summary } = dataset;
+const { summary } = dataset;
+const years = dataset.years.map((y) => y.year);
 const firstYear = years[0];
 const lastYear = years.at(-1);
-// The diagonal is each year's own return, which is the figure the halving-cycle
-// page's heatmap publishes. Named here because the reconciliation is the reason
-// the anchoring is what it is, and a reader can check it in two clicks.
-const wholeYears = dataset.firstYearPartial ? years.slice(1) : years;
+const wholeYears = dataset.years.filter((y) => y.whole);
+const partial = partialYears(dataset);
+const partialList = partial.join(' and ');
+const partialDates = dataset.years
+  .filter((y) => !y.whole)
+  .map((y) => `${y.year} runs ${y.basisDate} to ${y.closeDate}`)
+  .join('; ');
 const losing = summary.count - summary.positive;
 ---
 
@@ -53,14 +57,24 @@ const losing = summary.count - summary.positive;
         <thead>
           <tr>
             <th scope="col">Buy \ sell</th>
-            {years.map((year) => <th scope="col" class="num">{String(year).slice(2)}</th>)}
+            {
+              years.map((year) => (
+                <th scope="col" class="num">
+                  {String(year).slice(2)}
+                  {partial.includes(year) && <abbr title="not a whole calendar year">*</abbr>}
+                </th>
+              ))
+            }
           </tr>
         </thead>
         <tbody>
           {
             years.map((buyYear) => (
               <tr>
-                <th scope="row" class="num">{buyYear}</th>
+                <th scope="row" class="num">
+                  {buyYear}
+                  {partial.includes(buyYear) && <abbr title="not a whole calendar year">*</abbr>}
+                </th>
                 {years.map((sellYear) => {
                   const cell = cells.get(`${buyYear}-${sellYear}`);
                   return cell === undefined ? (
@@ -95,13 +109,14 @@ const losing = summary.count - summary.positive;
       exactly the yearly total the <a href={`${import.meta.env.BASE_URL}${currency === 'usd' ? '' : 'gbp/'}cycles/`}>halving cycles</a> heatmap
       publishes for the same year. Anchoring on the first close of the buy year instead would put
       the two pages a few days out from each other, with nothing saying which to believe.
-      {dataset.firstYearPartial && (
+      {partial.length > 0 && (
         <>
-          {' '}{firstYear} is the exception: the history begins mid-year, so that row is measured
-          from its first close and its own single-year hold spans less than a year — which is why
-          that one cell shows no rate. Holds of at least {dataset.minAnnualiseDays} days are
-          annualised; below that a rate is an extrapolation, and extrapolating this one gave
-          +7,701% a year.
+          {' '}Both ends of the history are truncated, and the grid marks them with an asterisk:
+          {' '}{partialDates}. A hold bought or sold in {partialList} is anchored on those dates
+          rather than on a January or a December, and each cell's description names the date rather
+          than saying "end of" a year that has not ended. Their own single-year holds run under
+          {' '}{dataset.minAnnualiseDays} days and carry no annualised rate at all — below a year
+          that figure is an extrapolation, and extrapolating {firstYear}'s gave +7,701% a year.
         </>
       )}
     </p>

@@ -531,11 +531,16 @@ for (const currency of CURRENCIES) {
         fetchedAt,
         asOf: deep.at(-1)?.date,
         minAnnualiseDays: HOLD_MIN_ANNUALISE_DAYS,
-        years: anchors.map((a) => a.year),
-        // The first year is partial when its basis is its own first close rather
-        // than the previous December's — which is what `yearAnchors` falls back
-        // to when the history begins mid-year.
-        firstYearPartial: anchors[0]?.basisDate.slice(0, 4) === String(anchors[0]?.year),
+        years: anchors.map((a) => ({
+          year: a.year,
+          basisDate: a.basisDate,
+          closeDate: a.closeDate,
+          // Whole only when anchored on the previous December and closing in its
+          // own: both ends of the history are truncated, the first because it
+          // begins mid-year and the last because it is year-to-date.
+          whole:
+            Number(a.basisDate.slice(0, 4)) === a.year - 1 && a.closeDate.slice(5, 7) === '12',
+        })),
         cells,
         summary: {
           count: summary.count,
@@ -564,7 +569,8 @@ for (const currency of CURRENCIES) {
       await writeJson(`${dir}/holding-periods.json`, holding);
       console.log(
         `${dir}/holding-periods.json: ${holding.cells.length} holds over ` +
-          `${holding.years.length} years, ${holding.summary.positive} positive, ` +
+          `${holding.years.length} years (${holding.years.filter((y) => y.whole).length} whole), ` +
+          `${holding.summary.positive} positive, ` +
           `worst ${summary.worst.buyYear}->${summary.worst.sellYear} ` +
           `${summary.worst.annualPct}%/yr, every ${holding.summary.safeYears}y hold up`,
       );

@@ -6,8 +6,9 @@ import {
   heatClass,
   HEAT_STEPS,
   holdingTiles,
+  holdDuration,
   MULTIPLE_ABOVE_PCT,
-  spanYears,
+  partialYears,
 } from './holding-shared';
 import type { HoldingDataset } from '../../pipeline/schema';
 
@@ -18,8 +19,11 @@ const dataset = (over: Partial<HoldingDataset> = {}): HoldingDataset =>
     fetchedAt: '2026-07-30T00:00:00.000Z',
     asOf: '2026-07-30',
     minAnnualiseDays: 365,
-    years: [2019, 2020, 2021],
-    firstYearPartial: true,
+    years: [
+      { year: 2019, basisDate: '2019-11-30', closeDate: '2019-12-31', whole: false },
+      { year: 2020, basisDate: '2019-12-31', closeDate: '2020-12-31', whole: true },
+      { year: 2021, basisDate: '2020-12-31', closeDate: '2021-12-31', whole: true },
+    ],
     cells: [
       { buyYear: 2019, sellYear: 2019, totalPct: 25, annualPct: null, days: 31 },
       { buyYear: 2019, sellYear: 2020, totalPct: 150, annualPct: 55.4, days: 397 },
@@ -96,10 +100,19 @@ describe('heatClass', () => {
   });
 });
 
-describe('spanYears', () => {
-  it('counts inclusively: buying and selling in one year is one year held', () => {
-    expect(spanYears(2020, 2020)).toBe(1);
-    expect(spanYears(2015, 2020)).toBe(6);
+describe('holdDuration', () => {
+  it('states days below a year and years above it', () => {
+    expect(holdDuration(122)).toBe('122 days');
+    expect(holdDuration(364)).toBe('364 days');
+    expect(holdDuration(365)).toBe('1.0 years');
+    expect(holdDuration(5799)).toBe('15.9 years');
+  });
+
+  it('never calls a sub-year hold a year', () => {
+    // The built page read "1 year · … held 122 days, under a year" — one cell
+    // contradicting itself — because the span came from the year numbers rather
+    // than from the days.
+    expect(holdDuration(122)).not.toContain('year');
   });
 });
 
@@ -113,17 +126,42 @@ describe('cellViews', () => {
 
   it('carries both figures and the span in the description', () => {
     expect(views.get('2019-2020')?.title).toBe(
-      'Bought start of 2019, sold end of 2020 · 2 years · +150.0% total · +55% a year',
+      'Bought on 2019-11-30, sold end of 2020 · 1.1 years · +150.0% total · +55% a year',
     );
-    expect(views.get('2020-2020')?.title).toContain('1 year ·');
+    expect(views.get('2020-2021')?.title).toContain('Bought start of 2020, sold end of 2021');
+    expect(views.get('2020-2020')?.title).toContain('1.0 years ·');
+  });
+
+  it('names the date for a year that is not whole, rather than "end of" it', () => {
+    // The built page said "sold end of 2026" for every hold in that column while
+    // the close was 30 July — false, and false in the flattering direction, since
+    // an unfinished year reads as a finished one.
+    const dated = cellViews(
+      dataset({
+        years: [
+          { year: 2019, basisDate: '2019-11-30', closeDate: '2019-12-31', whole: false },
+          { year: 2020, basisDate: '2019-12-31', closeDate: '2020-12-31', whole: true },
+          { year: 2021, basisDate: '2020-12-31', closeDate: '2021-07-30', whole: false },
+        ],
+      } as Partial<HoldingDataset>),
+    );
+    expect(dated.get('2020-2021')?.title).toContain('sold on 2021-07-30');
+    expect(dated.get('2020-2021')?.title).not.toContain('end of 2021');
+  });
+
+  it('lists the years that are not whole', () => {
+    expect(partialYears(dataset())).toEqual([2019]);
   });
 
   it('says why a cell has no rate rather than leaving it blank', () => {
     const stub = views.get('2019-2019');
     expect(stub?.label).toBe('—');
     expect(stub?.heat).toBe('');
+    expect(stub?.title).toContain('31 days');
     expect(stub?.title).toContain('+25.0% total');
-    expect(stub?.title).toContain('held 31 days, under a year');
+    expect(stub?.title).toContain('no annual rate, under a year');
+    // And never both a day count and a year count for the same hold.
+    expect(stub?.title).not.toMatch(/\d+ years/);
   });
 });
 
