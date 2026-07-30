@@ -62,10 +62,11 @@ src/        Astro site; builds exclusively from /data
 | ------ | ------ |
 | CoinGecko | BTC daily closes (365d window), live spot, global mcap/dominance snapshot |
 | blockchain.com charts | full BTC daily history from 2010 |
-| FRED `fredgraph.csv` | S&P 500 daily closes |
+| FRED `fredgraph.csv` | S&P 500 daily closes; US CPI (`CPIAUCSL`) as the USD deflator |
 | Yahoo Finance chart API | gold (XAU/USD spot, `GC=F` fallback), DXY (`DX-Y.NYB`, `DX=F` fallback) |
 | DeFiLlama | total USD-pegged stablecoin circulating value, full history |
 | mempool.space | recommended fee tiers (committed snapshot + the network page's live refresh) |
+| ONS timeseries | UK CPI (`D7BT`) as the GBP deflator — FRED serves no live monthly UK series |
 | FRED `DEXUSUK`, Yahoo `GBPUSD=X`, ECB via Frankfurter | GBP/USD daily rates, merged |
 
 Historical BTC dominance has no keyless source, so `data/dominance.json`

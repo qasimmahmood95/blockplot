@@ -831,3 +831,182 @@ export const signalsDatasetSchema = z.object({
 });
 
 export type SignalsDataset = z.infer<typeof signalsDatasetSchema>;
+
+const isoMonth = z.string().regex(/^\d{4}-\d{2}$/);
+
+/**
+ * Versioned on-disk format of data/real-returns.json.
+ *
+ * Both figures for each day rather than the real one alone, and the deflator's
+ * own metadata alongside them. The page states the base month, the source series
+ * and the publication lag, and every one of those is read from here rather than
+ * written into the markup — the class of defect this project keeps producing is
+ * prose that the data contradicts, and a literal in a component is exactly how
+ * that happens.
+ */
+export const realReturnsDatasetSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    currency: currencySchema,
+    fetchedAt: z.string(),
+    /** Last day the deflator covers, which is where both series end. */
+    asOf: isoDate,
+    /** Last day prices exist for, which is later. The page states the gap. */
+    pricesThrough: isoDate,
+    deflator: z.object({
+      /**
+       * Which API served it. FRED for US CPI; ONS for the UK, because FRED has no
+       * live monthly UK series — see CPI_CANDIDATES for the measured 404s.
+       */
+      source: z.enum(['fred', 'ons']),
+      /** Series id at the source, e.g. CPIAUCSL. */
+      sourceSeries: z.string().min(1),
+      seasonalAdjustment: z.enum(['seasonally-adjusted', 'not-adjusted']),
+      /** The month whose money every real figure is stated in. */
+      baseMonth: isoMonth,
+      firstMonth: isoMonth,
+      lastMonth: isoMonth,
+      /** Whole months the deflator trails the prices by. */
+      lagMonths: z.number().int().nonnegative(),
+      /** The lag at which the pipeline treats the series as retired, not late. */
+      maxLagMonths: z.number().int().positive(),
+      /**
+       * Months inside the drawn range that the source did not publish, so the
+       * page can name the hole in the line instead of leaving it unexplained.
+       * US CPI has one: the October 2025 release was cancelled, not delayed.
+       */
+      missingMonths: z.array(isoMonth),
+    }),
+    /** Calendar days at the end of the series kept at daily resolution. */
+    dailyDays: z.number().int().positive(),
+    /** How everything older than that is stored. */
+    olderResolution: z.literal('weekly-last'),
+    /**
+     * The shortest span the run was willing to annualise.
+     *
+     * Recorded rather than left in the code the page imports: a committed file
+     * may have been produced under a different rule than the build that renders
+     * it, and stating today's threshold over yesterday's figures is the inverse
+     * of what this dataset exists for.
+     */
+    minAnnualiseDays: z.number().int().positive(),
+    windows: z
+      .array(
+        z.object({
+          label: z.string().min(1),
+          start: isoDate,
+          nominalPct: z.number().nullable(),
+          realPct: z.number().nullable(),
+          nominalCagrPct: z.number().nullable(),
+          realCagrPct: z.number().nullable(),
+          inflationPct: z.number().nullable(),
+        }),
+      )
+      .min(1),
+    series: z
+      .array(
+        z.object({
+          date: isoDate,
+          nominal: z.number().positive(),
+          real: z.number().positive(),
+        }),
+      )
+      .min(2)
+      .superRefine(refineAscendingDates),
+  })
+  .superRefine((doc, ctx) => {
+    // The file's own claims, checked here rather than trusted. Each of these is
+    // a way the page could state something false while every individual figure
+    // looked reasonable.
+    if (doc.series.at(-1)?.date !== doc.asOf) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `asOf ${doc.asOf} is not the last day of the series (${doc.series.at(-1)?.date})`,
+      });
+    }
+    if (doc.asOf > doc.pricesThrough) {
+      ctx.addIssue({ code: 'custom', message: 'asOf is later than pricesThrough' });
+    }
+    // The base month is what "real" means here, and it has to be a month the
+    // deflator actually published — otherwise every real figure is scaled by a
+    // number that does not exist.
+    //
+    // The range checks are the weak half and were once the whole of it: the writer
+    // sets `baseMonth` and `lastMonth` from the same expression, so neither can
+    // fire, and neither establishes what the sentence above claims. A month inside
+    // `missingMonths` sits comfortably in range and has no observation at all.
+    if (doc.deflator.baseMonth > doc.deflator.lastMonth) {
+      ctx.addIssue({ code: 'custom', message: 'baseMonth is beyond the last published month' });
+    }
+    if (doc.deflator.baseMonth < doc.deflator.firstMonth) {
+      ctx.addIssue({ code: 'custom', message: 'baseMonth is before the first published month' });
+    }
+    if (doc.deflator.missingMonths.includes(doc.deflator.baseMonth)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `baseMonth ${doc.deflator.baseMonth} is one of the unpublished months`,
+      });
+    }
+    // The last day of the series must fall inside the last published month:
+    // a later day would mean it was deflated by an index that does not cover it,
+    // which is the carry-forward this dataset exists to refuse.
+    if (doc.asOf.slice(0, 7) > doc.deflator.lastMonth) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `series runs to ${doc.asOf}, past the last published month ${doc.deflator.lastMonth}`,
+      });
+    }
+    if (doc.deflator.lagMonths > doc.deflator.maxLagMonths) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `deflator lags by ${doc.deflator.lagMonths} months, beyond ${doc.deflator.maxLagMonths}`,
+      });
+    }
+    // Every window has to be anchored on a row this file actually contains, and
+    // end before the series does.
+    //
+    // Membership, not range. `window.start >= series[0].date` was the first
+    // version and it is far weaker than it looks: it caught the max window when
+    // the pipeline measured on the full daily series and committed the thinned
+    // one, and it would have missed 3y, 5y and 10y in the same run, because their
+    // targets sit comfortably inside the range while matching no row. The
+    // property the tiles depend on is that every figure above the chart is
+    // measured on a point the chart draws.
+    const dates = new Set(doc.series.map((row) => row.date));
+    for (const window of doc.windows) {
+      if (window.start >= doc.asOf) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `window ${window.label} starts ${window.start}, not before asOf ${doc.asOf}`,
+        });
+      }
+      if (!dates.has(window.start)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `window ${window.label} starts ${window.start}, which is not a row in the series`,
+        });
+      }
+    }
+    // Same rule the benchmark history carries, and for the same reason: the
+    // resolution claim is otherwise a string nothing verifies.
+    const last = doc.series.at(-1);
+    if (!last) return;
+    const cutoff = new Date(Date.parse(`${last.date}T00:00:00Z`) - doc.dailyDays * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    const weeks = new Set<string>();
+    for (const row of doc.series) {
+      if (row.date > cutoff) continue;
+      const week = isoWeekKeyForSchema(row.date);
+      if (weeks.has(week)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `more than one point in ISO week ${week}, but olderResolution is weekly-last`,
+        });
+        return;
+      }
+      weeks.add(week);
+    }
+  });
+
+export type RealReturnsDataset = z.infer<typeof realReturnsDatasetSchema>;

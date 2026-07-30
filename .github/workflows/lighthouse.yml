@@ -5,9 +5,16 @@ name: Lighthouse
 # performance regression should not look like a broken test.
 on:
   pull_request:
+  # On push for development branches too, for the reason ci.yml records: the
+  # pull_request event did not fire at all for PR #24 while every push event
+  # did, so both gates were unrunnable on that branch.
   push:
-    branches: [main]
+    branches: [main, 'claude/**']
   workflow_dispatch:
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   audit:

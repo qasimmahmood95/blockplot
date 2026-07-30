@@ -11,6 +11,16 @@ import {
 import { fetchBtcMarketChart, PRICE_RANGE_DAYS } from './coingecko';
 import { buildCorrelationDataset, correlationBtcLeg } from './correlation';
 import {
+  cpiLagMonths,
+  deflate,
+  fetchCpi,
+  MAX_CPI_LAG_MONTHS,
+  MIN_ANNUALISE_DAYS,
+  monthOf,
+  realWindows,
+  type CpiFetch,
+} from './cpi';
+import {
   accreteDominance,
   fetchDominanceSnapshot,
   fetchStablecoins,
@@ -29,6 +39,7 @@ import {
   quoteDivergence,
 } from './fx';
 import { buildHalvingDataset } from './halvings';
+import type { Currency } from './currencies';
 import type { DominancePoint, HalvingDataset, QuoteDivergenceStats } from './schema';
 import { fetchBtcHistory } from './history';
 import { writeJson } from './io';
@@ -73,6 +84,7 @@ import {
   monthlyDatasetSchema,
   networkDatasetSchema,
   priceDatasetSchema,
+  realReturnsDatasetSchema,
   riskDatasetSchema,
   signalsDatasetSchema,
   stablecoinDatasetSchema,
@@ -133,6 +145,42 @@ const [
 ]);
 
 const series = raw ? toDailySeries(raw.prices) : null;
+
+/**
+ * The deflators, one per currency and attempted independently.
+ *
+ * Sequenced after the price history rather than fetched alongside it, because
+ * whether a CPI series is *retired* is only measurable against a last price date —
+ * two months behind is late, sixteen is over — and `fetchCpi` needs that date to
+ * choose between its candidates. A UK CPI outage must not cost the USD tree its
+ * figures, hence one attempt each rather than one for both.
+ */
+const cpiThrough = history?.at(-1)?.date ?? series?.at(-1)?.date ?? '';
+const cpiByCurrency = new Map<Currency, CpiFetch | null>(
+  cpiThrough
+    ? await Promise.all(
+        CURRENCIES.map(
+          async (currency) =>
+            [currency, await attempt(`cpi ${currency}`, fetchCpi(currency, cpiThrough))] as const,
+        ),
+      )
+    : [],
+);
+if (!cpiThrough) console.warn('warning: no price history — skipping the CPI deflators');
+for (const [currency, fetched] of cpiByCurrency) {
+  if (!fetched) continue;
+  // Which id served, and every candidate that did not. A silent fallback would
+  // make the methodology note wrong, and the note is read from the dataset.
+  console.log(
+    `${currency} cpi: ${fetched.sourceSeries} from ${fetched.source} ` +
+      `(${fetched.seasonalAdjustment}), ` +
+      `${fetched.series.length} months to ${fetched.series.at(-1)?.month}` +
+      (fetched.missingMonths.length > 0
+        ? `, unpublished: ${fetched.missingMonths.join(', ')}`
+        : ''),
+  );
+  for (const rejection of fetched.rejected) console.log(`  ${currency} cpi skipped ${rejection}`);
+}
 
 /**
  * The accreted dominance series, carried out for the signals below. Falls back
@@ -461,6 +509,87 @@ for (const currency of CURRENCIES) {
     });
     await writeJson(`${dir}/monthly-returns.json`, monthly);
     console.log(`${dir}/monthly-returns.json: ${monthly.months.length} months`);
+
+    // Real returns. Skipped rather than approximated when this currency's
+    // deflator did not answer: there is no substitute for it — deflating a GBP
+    // series by US CPI produces a figure describing nobody — so an absent file
+    // and a page that says so is the only honest degraded state.
+    const cpiFetch = cpiByCurrency.get(currency);
+    if (!cpiFetch) {
+      console.warn(`warning: ${currency} has no CPI deflator — skipping ${dir}/real-returns.json`);
+    } else {
+      const cpi = cpiFetch.series;
+      const pricesThrough = deep.at(-1)?.date ?? '';
+      // The base is the latest published month, so every real figure is in
+      // today's money — the framing a reader can actually feel ("what that would
+      // be worth now"), where the source's own 1982-84 or 2015 base is an
+      // arbitrary landmark. It moves once a month, and the page names it.
+      const baseMonth = cpi.at(-1)?.month ?? '';
+      const full = deflate(deep, cpi, baseMonth);
+      // Thin first, measure second, and the order matters. Measuring on the full
+      // daily series and committing the thinned one put the max window's start
+      // four days before the first row of the file (2010-08-18 against the
+      // thinned 2010-08-22), which the schema refused. The deeper problem it
+      // exposed is not the schema's, and the schema only caught the loudest case:
+      // review re-ran the pre-fix behaviour and the 3y, 5y and 10y anchors sit
+      // inside the committed range while matching no row in it, so a range check
+      // saw nothing. A tile anchored on a day the file does not contain quotes a
+      // price the chart cannot draw. The refinement is a set-membership test now.
+      //
+      // Measuring on the committed rows costs a weekly-section anchor up to six
+      // days of precision against its own target date. That is the same
+      // quantisation /performance carries and states, and it buys the property
+      // that matters here: every figure above the chart is measured on a point
+      // the chart draws.
+      const realSeries = thinOlderToWeekly(full, HISTORY_DAILY_DAYS);
+      const windows = realWindows(realSeries, cpi);
+      if (realSeries.length < 2 || windows.length === 0) {
+        console.warn(`warning: ${currency} real returns: too little overlap — skipping`);
+      } else {
+        if (full[0]?.date !== deep[0]?.date) {
+          console.log(
+            `${currency} real returns: prices start ${deep[0]?.date}, deflator ` +
+              `${cpi[0]?.month} — the real series starts ${full[0]?.date}`,
+          );
+        }
+        const realReturns = realReturnsDatasetSchema.parse({
+          schemaVersion: 1,
+          currency,
+          fetchedAt,
+          asOf: realSeries.at(-1)?.date,
+          pricesThrough,
+          deflator: {
+            source: cpiFetch.source,
+            sourceSeries: cpiFetch.sourceSeries,
+            seasonalAdjustment: cpiFetch.seasonalAdjustment,
+            baseMonth,
+            firstMonth: cpi[0]?.month,
+            lastMonth: baseMonth,
+            lagMonths: cpiLagMonths(cpi, pricesThrough),
+            maxLagMonths: MAX_CPI_LAG_MONTHS,
+            // Only the ones inside the drawn range. The full list reaches back to
+            // 1947 for a series that has been interrupted before, and a caption
+            // naming a hole the chart does not contain explains nothing.
+            missingMonths: cpiFetch.missingMonths.filter(
+              (month) => month >= monthOf(realSeries[0]?.date ?? '') && month <= baseMonth,
+            ),
+          },
+          dailyDays: HISTORY_DAILY_DAYS,
+          olderResolution: 'weekly-last',
+          minAnnualiseDays: MIN_ANNUALISE_DAYS,
+          windows,
+          series: realSeries,
+        });
+        await writeJson(`${dir}/real-returns.json`, realReturns);
+        const max = windows.at(-1);
+        console.log(
+          `${dir}/real-returns.json: ${realReturns.series.length} points to ${realReturns.asOf} ` +
+            `in ${baseMonth} money (${cpiFetch.sourceSeries}, ` +
+            `${realReturns.deflator.lagMonths}m lag), max window ${max?.label} ` +
+            `${max?.nominalPct}% nominal / ${max?.realPct}% real`,
+        );
+      }
+    }
   }
 
   if (spot && deep && sp && au) {

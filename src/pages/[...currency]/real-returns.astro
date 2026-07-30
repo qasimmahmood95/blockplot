@@ -1,0 +1,144 @@
+---
+import RealReturnsChart from '../../components/RealReturnsChart.astro';
+import Base from '../../layouts/Base.astro';
+import { fxNote, type Currency } from '../../lib/currency';
+import { realReturnsFor } from '../../lib/data';
+import { currencyPaths } from '../../lib/routes';
+import { daysBetween, monthLabel, realTiles, sourceNameOf } from '../../lib/real-shared';
+
+export const getStaticPaths = currencyPaths;
+
+const { currency } = Astro.props as { currency: Currency };
+const dataset = realReturnsFor(currency);
+
+// Hoisted out of the prose: an interpolation at the start of a line loses the
+// space before it, which the performance page's comment records the hard way.
+const tiles = dataset ? realTiles(dataset) : [];
+const deflator = dataset?.deflator;
+const baseLabel = deflator ? monthLabel(deflator.baseMonth) : '';
+const holes = deflator?.missingMonths ?? [];
+const holeList = holes.map(monthLabel).join(', ');
+const behindDays = dataset ? daysBetween(dataset.asOf, dataset.pricesThrough) : 0;
+const adjustment =
+  deflator?.seasonalAdjustment === 'seasonally-adjusted'
+    ? 'seasonally adjusted'
+    : 'not seasonally adjusted';
+// Every one of these is read from the file rather than from the code that wrote
+// it, including the staleness threshold. The page describes a *committed*
+// dataset, which may have been produced under a different threshold than the one
+// this build happens to compile — importing the constant would state today's rule
+// over yesterday's figures, which is the inverse of the discipline this page is
+// built on.
+const sourceName = deflator ? sourceNameOf(deflator.source) : '';
+const maxLag = deflator?.maxLagMonths ?? 0;
+---
+
+<Base
+  currency={currency}
+  title="blockplot · real returns"
+  description="BTC's price as it was quoted and restated in constant money, with nominal and inflation-adjusted returns side by side."
+>
+  <h1 class="visually-hidden">Real returns</h1>
+
+  {
+    dataset && deflator ? (
+      <>
+        <dl class="stat-grid">
+          {tiles.map((tile) => (
+            <div class="stat">
+              <dt>{tile.label}</dt>
+              <dd class={`num ${tile.tone}`}>{tile.value}</dd>
+              <dd class="sub num">{tile.sub}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <section class="chart-section">
+          {/* No range or scale in the heading — the chart's own controls carry
+              that state. The base month is not here either: it moves once a
+              month and the caption under the chart is its one home. */}
+          <h2>BTC as quoted, and in constant money</h2>
+          <RealReturnsChart currency={currency} dataset={dataset} />
+          <p class="method-note">
+            Each day's price is multiplied by the ratio of two CPI observations — the base month's
+            over that day's — so the real line reads as {baseLabel} money throughout. Because both
+            terms are observations of the same index, its base period cancels exactly: it makes no
+            difference that {deflator.sourceSeries} is published on one base and another country's
+            index on another, and no rescaling is done or needed. The tiles above lead with the real
+            figure and carry the nominal one underneath, which is the opposite of the usual order
+            and the point of the page: every other page here quotes nominal figures.
+          </p>
+          <p class="method-note">
+            The deflator is {deflator.sourceSeries} from {sourceName}, {adjustment}, published
+            monthly from {monthLabel(deflator.firstMonth)} through {monthLabel(deflator.lastMonth)}. A
+            month's observation applies to every day in that month and is never carried into the
+            next one. Carrying it forward is the obvious way to cover the publication lag and the
+            wrong one: it would deflate the most recent weeks by an index that predates them, so the
+            newest points — the ones you look at first — would be the least real, with nothing on
+            the page able to say by how much.
+          </p>
+          <p class="method-note">
+            {behindDays > 0 ? (
+              <>
+                So both lines stop at {dataset.asOf}, {behindDays} days behind the last price
+                ({dataset.pricesThrough}), and every window above is measured to that same day.
+                That costs the page a few weeks of currency and buys the only thing it is for: a
+                nominal figure and a real figure you can subtract. Ending nominal at today and real
+                a month earlier would put a different market move in each column and label the
+                difference inflation.
+              </>
+            ) : (
+              <>
+                The deflator currently reaches the last price day ({dataset.asOf}), so both lines
+                and every window above end there.
+              </>
+            )}
+            {' '}A deflator more than {maxLag} months behind is treated as retired rather than
+            late, and the pipeline then writes no dataset at all rather than deflate by an index
+            that has stopped moving — statistical agencies do retire series, and a retired one goes
+            on being served under the same id with no error, so the alternative is a confident
+            chart of stale money. The deflator is chosen from a short list in order of preference
+            and the first that is both readable and current wins, so the series named above is what
+            actually answered rather than what was intended.
+          </p>
+          {holes.length > 0 && (
+            <p class="method-note">
+              {holes.length === 1 ? 'One month in' : `${holes.length} months in`} the period this
+              file covers {holes.length === 1 ? 'has' : 'have'} no observation: {holeList}. A short
+              enough range may not reach back to {holes.length === 1 ? 'it' : 'them'}. Days in
+              {holes.length === 1 ? ' it' : ' them'} are dropped rather than deflated by a
+              neighbouring month, and both lines are broken there rather than drawn straight across
+              — a line joined over the hole would show a deflated price for every day of a month
+              the deflator does not cover. This is the source's own gap, not a fetch that failed.
+              {holes.includes('2025-10') && deflator.source === 'fred' && (
+                <> The October 2025 US release was cancelled rather than delayed.</>
+              )}
+            </p>
+          )}
+          <p class="method-note">
+            Annualised rates appear only on windows of at least {dataset.minAnnualiseDays} days — a
+            calendar year, less the few days a window may be anchored late by. Below that an
+            annualised figure is an extrapolation rather than a measurement. Returns are price returns: no
+            dividends, no yield, no fees, no taxes. Resolution matches the other history charts —
+            the last {dataset.dailyDays} days daily, everything older one point per ISO week, its
+            last close rather than an average. CPI is revised after first publication and this page
+            always shows the latest vintage, so a figure here can move slightly without any price
+            having changed.{fxNote(currency)}
+          </p>
+        </section>
+      </>
+    ) : (
+      <section class="chart-section">
+        <h2>Real returns are not available</h2>
+        <p class="method-note">
+          This page needs a consumer price index for {currency.toUpperCase()} that is still being
+          published. No candidate series produced one on the last pipeline run — either none could
+          be reached and read, or what could be read had stopped publishing — so no dataset was
+          written rather than deflate by an index that is not moving. The pipeline log names which
+          candidates were tried and why each was rejected. Nominal figures are unaffected and are
+          on every other page.
+        </p>
+      </section>
+    )
+  }
+</Base>

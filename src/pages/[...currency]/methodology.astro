@@ -1,7 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { CURRENCY_META, fxNote, type Currency } from '../../lib/currency';
-import { dataFor } from '../../lib/data';
+import { dataFor, realReturnsFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
 
 export const getStaticPaths = currencyPaths;
@@ -17,6 +17,7 @@ const {
   benchmarksHistory,
 } = dataFor(currency);
 const meta = CURRENCY_META[currency];
+const realReturns = realReturnsFor(currency);
 
 // Which ticker actually served ETH, read from the committed file rather than
 // asserted. The GBP tree takes ETH natively where every other series there is
@@ -83,6 +84,19 @@ const t = signals.thresholds;
         <dd class="num">{riskMetrics.rollingVolSource}</dd>
         <dd class="sub num">full history, not the 365d window</dd>
       </div>
+      {/* The deflator's identity is read from the dataset, never written here:
+          the pipeline picks it from an ordered candidate list, so a literal
+          would state the intended series rather than the one that answered. */}
+      {realReturns && (
+        <div class="stat">
+          <dt>CPI deflator</dt>
+          <dd class="num">{realReturns.deflator.sourceSeries}</dd>
+          <dd class="sub num">
+            {realReturns.deflator.source === 'ons' ? 'ONS' : 'FRED'} · to{' '}
+            {realReturns.deflator.lastMonth} · {realReturns.deflator.lagMonths}m lag
+          </dd>
+        </div>
+      )}
     </dl>
     <p class="method-note">
       Two BTC price sources, deliberately. CoinGecko's keyless tier caps history at 365 days, which

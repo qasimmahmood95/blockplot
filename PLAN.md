@@ -407,18 +407,62 @@ mid-milestone:
 M19 should take the daily four and treat mempool size as a separate decision
 with a stated downsampling rule, not fold it in silently.
 
-#### M20 — real returns
+#### M20 — real returns — **shipped**
 
-`parseFredCsv(text, id)` is generic over FRED series id, so `CPIAUCSL` (US CPI)
-is one more id through tested code. **Measured:** header
-`observation_date,CPIAUCSL`, 954 rows, 1947-01-01 to 2026-06-01 — **monthly**,
-and lagging the present by a month or two. Joining a monthly, revised, lagging
-index to a daily price series needs a documented rule, the same class of
-decision as M9's FX carry-forward, and the deflator's base period has to be
-stated on the page or the figures mean nothing. That buys inflation-adjusted BTC returns —
-a figure most Bitcoin dashboards do not show, on a site that already holds the
-full price history and the risk machinery to compute it. Nominal and real side
-by side, with the deflator and base period stated.
+`/real-returns` in both trees: BTC's price as quoted and restated in the latest
+published month's money, five windows of nominal against real with the CPI change
+between them, and the deflator's identity, coverage and lag stated from the file.
+
+The plan for this one was wrong in two places, and both were found by running it
+rather than by reading it.
+
+**The deflator is not one id through tested code.** `CPIAUCSL` is, and works —
+953 months to 2026-06. The GBP tree needed its own index, because deflating a
+sterling series by US prices produces a figure describing nobody, and FRED serves
+no live monthly UK CPI: `GBRCPALTT01IXOBSAM`, `GBRCPALTT01IXOBM`,
+`CPALTT01GBM661S` and `CPALTT01GBM661N` all 404, and `GBRCPIALLMINMEI` parses
+perfectly while last publishing **2025-03**, sixteen months behind. OECD retired
+the MEI dataset. So the UK deflator is ONS `D7BT` (1988-01 onward), and deflators
+are an ordered candidate list per currency with a freshness gate, spanning two
+APIs. A single hard-coded id is a design that fails silently on a schedule nobody
+controls — the only thing that caught the retired series was the gate. Measured
+consequence of doing it properly: 5y inflation is 22.31% in the US tree and
+28.03% in the UK one.
+
+**CPI is not contiguous.** `CPIAUCSL` has no observation for 2025-10 — that
+release was cancelled, not delayed. The first version threw on any gap, which
+refused the actual data. Gaps are now recorded and bounded (3 months by run
+length so a quarterly series cannot pass as monthly, 2% by share so a thinned
+response cannot), days inside them are dropped rather than deflated by a
+neighbour, and **both lines are broken at the hole** — verified on the built page
+as two subpaths per line in the USD chart and one in the GBP chart, which has no
+holes. An earlier draft of the method note claimed a gap the chart did not have.
+
+Three other things measured rather than assumed:
+
+- **Thin first, measure second.** Windows computed on the full daily series and
+  committed beside a weekly-thinned one put the max window's start four days
+  before the file's own first row. The schema caught that one and would have
+  missed the 3y, 5y and 10y anchors, which sit inside the committed range while
+  matching no row in it — the refinement is a set-membership test now. The real
+  defect either way was that a tile would quote a price the chart cannot draw.
+- **`Intl` is not portable for compact currency.** `style:'currency'` with
+  `notation:'compact'` gives `$20.0K`/`$105.0`/`$0.0` in Node 22 and
+  `$20K`/`$105`/`$0` in Chromium, so the axis changed under the cursor between
+  the server-rendered chart and the first hover. The magnitude is now arithmetic.
+  Plain compact *does* agree in both, checked rather than assumed, so
+  `/network`'s axis needed no change.
+- **Surface contrast is not pair contrast.** `--accent` and `--ink` each clear
+  3:1 against the surface in both themes and are only 2.39:1 against *each
+  other* in dark, where these two lines overlap for the whole recent history.
+  The real line is dashed, and a test fails if the pair contrast drops under 3:1
+  without the dashes differing.
+
+The page is 37.3 KB gzipped against `/gbp/dca`'s 76.9 KB, so no columnar encoding was
+added for it. `real-returns.json` is loaded by glob rather than by name — it is
+the one dataset that may legitimately not exist, and a static import would turn
+the pipeline's refusal to publish stale money into a broken build for the whole
+site.
 
 #### M21 — holding-period matrix
 

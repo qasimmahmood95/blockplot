@@ -1,0 +1,191 @@
+---
+import type { Currency } from '../lib/currency';
+import { toJsonScript } from '../lib/embed';
+import { renderResponsiveChart } from '../lib/plot-ssr';
+import { realReturnsSpec } from '../lib/specs/real-returns';
+import {
+  captionOf,
+  chartLabel,
+  REAL_LABELS,
+  realFormatters,
+  realPoints,
+  realRangeOptions,
+  realSwatch,
+} from '../lib/real-shared';
+import type { RealReturnsDataset } from '../../pipeline/schema';
+
+interface Props {
+  currency: Currency;
+  dataset: RealReturnsDataset;
+}
+
+const { currency, dataset } = Astro.props;
+
+const options = realRangeOptions(dataset);
+const initial = options.find((o) => o.selected) ?? options[0];
+const { tick } = realFormatters(currency);
+
+// Only what the island draws with. The whole dataset went over the wire for one
+// commit, justified by a claim that `captionOf` would then be called on identical
+// input by both halves — which was simply false: the caption states nothing that
+// depends on the pressed range, so the island never recomputes it and imports
+// nothing to do so.
+//
+// Worth stating what this is *not* worth, because the commit that made the change
+// said 78 KB and that is wrong by about seventy times. The dead fields — the
+// windows, the ten other deflator fields, `fetchedAt`, `schemaVersion` — measure
+// 1,086 bytes of a 77,983-byte payload: 1.4%. The series is the payload, and the
+// series is needed. This is a correctness change (a false comment removed, and a
+// smaller surface for the island to disagree with the file over), not a
+// performance one.
+const payload = {
+  series: dataset.series,
+  missingMonths: dataset.deflator.missingMonths,
+};
+
+const points = realPoints(dataset.series, initial?.start ?? '', dataset.deflator.missingMonths);
+
+// Log is the pressed default, so log is what the build draws.
+const svg = points.length
+  ? renderResponsiveChart((w) => realReturnsSpec(points, tick, 'log', w))
+  : '';
+---
+
+<figure class="chart-frame">
+  <div class="chart-controls">
+    <div class="chart-legend" aria-hidden="true">
+      {
+        ['nominal', 'real'].map((line) => (
+          <span class="legend-item">
+            <span class="legend-swatch" style={`background:${realSwatch(line)}`} />
+            {REAL_LABELS[line] ?? line}
+          </span>
+        ))
+      }
+    </div>
+    <div class="chart-toggle" id="real-range" role="group" aria-label="Start of the range">
+      {
+        options.map((o) => (
+          <button type="button" data-start={o.start} aria-pressed={o.selected ? 'true' : 'false'}>
+            {o.label}
+          </button>
+        ))
+      }
+    </div>
+    <div class="chart-toggle" id="real-scale" role="group" aria-label="Y-axis scale">
+      <button type="button" data-scale="log" aria-pressed="true">log</button>
+      <button type="button" data-scale="linear" aria-pressed="false">linear</button>
+    </div>
+  </div>
+  <script
+    is:inline
+    type="application/json"
+    id="real-chart-data"
+    set:html={toJsonScript({ currency, ...payload })}
+  />
+  <div
+    id="real-chart"
+    role="img"
+    aria-label={chartLabel(initial?.label ?? '', 'log')}
+    set:html={svg}
+  />
+  {/* The legend names the two lines; the caption is where the base month, the
+      deflator id and the truncation live, because all three move and a reader
+      checking them wants them in one sentence rather than three places. */}
+  <p class="chart-note num" id="real-caption" set:html={captionOf(dataset)} />
+</figure>
+
+<script>
+  import { chartData, upgradeChart } from '../lib/charts';
+  import { chartLabel, REAL_LABELS, realFormatters, realPoints } from '../lib/real-shared';
+  import type { Currency } from '../lib/currency';
+  import type { RealReturnsDataset } from '../../pipeline/schema';
+  import type { RealScale } from '../lib/specs/real-returns';
+
+  const container = document.getElementById('real-chart');
+  const rangeToggle = document.getElementById('real-range');
+  const scaleToggle = document.getElementById('real-scale');
+
+  if (container) {
+    const { currency, series, missingMonths } = chartData<{
+      currency: Currency;
+      series: RealReturnsDataset['series'];
+      missingMonths: string[];
+    }>('real-chart-data');
+    const { tick, tip } = realFormatters(currency);
+
+    let scale: RealScale = 'log';
+    let start =
+      (rangeToggle?.querySelector('button[aria-pressed="true"]') as HTMLButtonElement | null)
+        ?.dataset.start ?? '';
+
+    const upgrade = upgradeChart(container, async () => {
+      // `real-shared` is imported statically above — it is Plot-free and the eager
+      // path needs it. Re-importing it here bought nothing and produced a new
+      // INEFFECTIVE_DYNAMIC_IMPORT warning at every build.
+      const [{ drawChart }, { realReturnsSpec }, { crosshairAnchors, isoDay }] = await Promise.all([
+        import('../lib/plot-client'),
+        import('../lib/specs/real-returns'),
+        import('../lib/crosshair'),
+      ]);
+      const points = realPoints(series, start, missingMonths);
+      if (points.length === 0) return;
+      // The caption does not follow the chart, unlike /performance's: nothing it
+      // states depends on the range. The base month, the deflator and where both
+      // lines stop are properties of the file, not of the button pressed.
+      container.setAttribute(
+        'aria-label',
+        chartLabel(
+          rangeToggle?.querySelector('button[aria-pressed="true"]')?.textContent?.trim() ?? '',
+          scale,
+        ),
+      );
+
+      const anchors = crosshairAnchors(
+        // Breaks excluded: a crosshair over a month the deflator does not cover
+        // would read "nominal $NaN".
+        points
+          .filter((d) => Number.isFinite(d.value))
+          .map((d) => ({
+            x: d.date,
+            y: d.value,
+            label: `${REAL_LABELS[d.line] ?? d.line} ${tip(d.value)}`,
+          })),
+        isoDay,
+      );
+      drawChart(container, (w) => realReturnsSpec(points, tick, scale, w, anchors));
+    });
+
+    const press = (group: HTMLElement | null, attr: string, value: string): void => {
+      group
+        ?.querySelectorAll('button')
+        .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset[attr] === value)));
+    };
+
+    rangeToggle?.querySelectorAll('button').forEach((button) => {
+      button.addEventListener('click', () => {
+        const previous = start;
+        start = button.dataset.start ?? start;
+        press(rangeToggle, 'start', start);
+        // Put the pressed state back if Plot never arrives, rather than labelling
+        // the old chart with the new range.
+        void upgrade().catch(() => {
+          start = previous;
+          press(rangeToggle, 'start', start);
+        });
+      });
+    });
+
+    scaleToggle?.querySelectorAll('button').forEach((button) => {
+      button.addEventListener('click', () => {
+        const previous = scale;
+        scale = (button.dataset.scale as RealScale | undefined) ?? scale;
+        press(scaleToggle, 'scale', scale);
+        void upgrade().catch(() => {
+          scale = previous;
+          press(scaleToggle, 'scale', scale);
+        });
+      });
+    });
+  }
+</script>

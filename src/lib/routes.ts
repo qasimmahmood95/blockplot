@@ -4,6 +4,7 @@ import { CURRENCIES, CURRENCY_META, type Currency } from './currency';
 export const PAGES = [
   { page: '', label: 'overview' },
   { page: 'performance', label: 'performance' },
+  { page: 'real-returns', label: 'real returns' },
   { page: 'volatility', label: 'volatility & risk' },
   { page: 'cycles', label: 'halving cycles' },
   { page: 'correlation', label: 'correlation' },

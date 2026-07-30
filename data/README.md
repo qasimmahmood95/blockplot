@@ -29,6 +29,8 @@ currency, since the same key holds dollars at the root and pounds under
 | `signals.json` | Confirmed daily signal states — volatility band, drawdown band, all-time high, halving-cycle high, dominance move — plus the raw span counts the page quotes. Per currency. |
 | `halving-cycles.json` | Per-halving-epoch price series normalised to the halving-day close, for the cycle overlay |
 | `monthly-returns.json` | Month-over-month BTC returns from full history plus compounded yearly totals, for the heatmap |
+| `benchmarks-history.json` | The same benchmark closes reaching back a decade at mixed resolution — daily for the last 730 days, one point per ISO week before that — which is what the rebased performance chart reads |
+| `real-returns.json` | BTC's price twice, nominal and restated in the deflator's latest published month's money, plus per-window nominal/real returns and the CPI change between them. Written only when a current CPI series answered; the deflator that served is recorded in the file |
 | `correlations.json` | Rolling 90d Pearson correlations of aligned daily log returns for all pairs of BTC, S&P 500, gold, DXY, plus each pair's regime segmentation. Pairs with BTC carry full shared history; the other three keep 365 days |
 
 DXY is the one series never converted: it measures the dollar itself, so

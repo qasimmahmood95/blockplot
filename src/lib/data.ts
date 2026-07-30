@@ -29,6 +29,7 @@ import {
   monthlyDatasetSchema,
   networkDatasetSchema,
   priceDatasetSchema,
+  realReturnsDatasetSchema,
   riskDatasetSchema,
   signalsDatasetSchema,
   stablecoinDatasetSchema,
@@ -41,10 +42,11 @@ import type {
   HistoryDataset,
   MonthlyDataset,
   PriceDataset,
+  RealReturnsDataset,
   RiskDataset,
   SignalsDataset,
 } from '../../pipeline/schema';
-import type { Currency } from './currency';
+import { CURRENCIES, type Currency } from './currency';
 
 /**
  * Every dataset is PARSED, not cast. A cast would let a `/data` tree that has
@@ -144,3 +146,42 @@ const BY_CURRENCY: Record<Currency, CurrencyData> = {
  * genuinely GBP-denominated rather than relabelled USD.
  */
 export const dataFor = (currency: Currency): CurrencyData => BY_CURRENCY[currency];
+
+/**
+ * Real returns, which is the one dataset that may legitimately not exist.
+ *
+ * A glob rather than a static import, and the difference matters. Every file
+ * above is imported by name, so a missing one is a build error — which is right
+ * for them: they are the site. This one depends on a deflator that can be retired
+ * out from under it by a statistical agency, and the whole point of the pipeline's
+ * freshness gate is that it would rather write nothing than write stale money. A
+ * static import would turn that careful refusal into a broken build, so a UK CPI
+ * retirement would take down the USD tree, the network page and everything else.
+ * A glob makes absence representable, and the page states it.
+ *
+ * `eager: true` keeps the parse at module scope, for the reason the comment at the
+ * top of this file gives: `astro check` cannot see through these parses, so the
+ * eager pass is the only thing standing between a drifted `/data` and a published
+ * `$NaN`.
+ */
+const realReturnsFiles = import.meta.glob<{ default: unknown }>(
+  '../../data/**/real-returns.json',
+  { eager: true },
+);
+
+const REAL_BY_CURRENCY: Partial<Record<Currency, RealReturnsDataset>> = Object.fromEntries(
+  Object.entries(realReturnsFiles).flatMap(([path, module]) => {
+    // '../../data/real-returns.json' is USD; '../../data/gbp/real-returns.json'
+    // is the gbp tree. Anything else is a file this function does not know how to
+    // place, and guessing would attach one currency's figures to another.
+    const match = /data\/(?:([a-z]{3})\/)?real-returns\.json$/.exec(path);
+    const currency = (match?.[1] ?? 'usd') as Currency;
+    if (!CURRENCIES.includes(currency)) return [];
+    const file = currency === 'usd' ? 'real-returns.json' : `${currency}/real-returns.json`;
+    return [[currency, parseOne(file, realReturnsDatasetSchema, module.default)]];
+  }),
+);
+
+/** One currency's real-return dataset, or null when its deflator did not answer. */
+export const realReturnsFor = (currency: Currency): RealReturnsDataset | null =>
+  REAL_BY_CURRENCY[currency] ?? null;
