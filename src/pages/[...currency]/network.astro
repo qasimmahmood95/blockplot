@@ -5,18 +5,15 @@ import NetworkCharts from '../../components/NetworkCharts.astro';
 import Base from '../../layouts/Base.astro';
 import { network } from '../../lib/data';
 import { formatPct } from '../../lib/format';
+import { feeStandingLabel } from '../../../pipeline/network';
 
 const { hashRate, txCount, feePerTx, asOf, keepDays } = network;
+const latestTx = txCount.series.at(-1)?.value ?? null;
 const latestFee = feePerTx?.series.at(-1)?.value ?? null;
 // The percentile is the figure that makes the live tier readable, so it leads
 // its tile and the raw satoshi count is the subtitle rather than the reverse.
-const feeStanding =
-  feePerTx?.percentile === null || feePerTx?.percentile === undefined
-    ? null
-    : feePerTx.percentile <= 50
-      ? `cheaper than ${100 - feePerTx.percentile}% of ${keepDays}d`
-      : `dearer than ${feePerTx.percentile}% of ${keepDays}d`;
-const latestTx = txCount.series.at(-1)?.value ?? null;
+// The sentence itself is built in the pipeline, where it is tested.
+const feeStanding = feeStandingLabel(feePerTx?.percentile ?? null, keepDays);
 const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
 
 export const getStaticPaths = currencyPaths;

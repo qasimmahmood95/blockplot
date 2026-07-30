@@ -238,3 +238,26 @@ export function percentileOfLatest(series: readonly NetworkPoint[]): number | nu
   const below = series.filter((p) => p.value < latest.value).length;
   return Math.round((below / series.length) * 100);
 }
+
+/**
+ * The standing sentence beside a fee figure.
+ *
+ * Here rather than in the page, because it is arithmetic on a metric and
+ * CLAUDE.md keeps metric maths out of components — and because the wording is
+ * load-bearing in a way that deserves a test. `percentile` is the share of
+ * history *strictly below* the latest, so `100 - percentile` is the share at or
+ * above it, and calling that "dearer" is only exact when nothing ties.
+ *
+ * Measured on the committed 727-day series: 129 days below, 2 tied, 596 above.
+ * The strictly-dearer share is 596/727 = 82.0% and `100 - 18` is 82, so the
+ * sentence is exact at this rounding. Ties are rare because the figure is a
+ * satoshi-resolution quotient of two large numbers, but they exist, and at a
+ * coarser unit they would not be negligible — so the direction is chosen by
+ * which side reads more naturally, not by pretending ties are absent.
+ */
+export function feeStandingLabel(percentile: number | null, keepDays: number): string | null {
+  if (percentile === null) return null;
+  return percentile <= 50
+    ? `cheaper than ${100 - percentile}% of ${keepDays}d`
+    : `dearer than ${percentile}% of ${keepDays}d`;
+}

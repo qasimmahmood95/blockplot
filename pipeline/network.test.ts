@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   changeOverDaysPct,
   feePerTxSats,
+  feeStandingLabel,
   percentileOfLatest,
   smoothedChangePct,
   toExahashes,
@@ -230,5 +231,28 @@ describe('percentileOfLatest', () => {
   it('is null below 30 observations, where a percentile is arithmetic not information', () => {
     expect(percentileOfLatest(of(Array.from({ length: 29 }, (_, i) => i)))).toBeNull();
     expect(percentileOfLatest([])).toBeNull();
+  });
+});
+
+describe('feeStandingLabel', () => {
+  it('reads as cheaper below the midpoint and dearer above it', () => {
+    expect(feeStandingLabel(18, 730)).toBe('cheaper than 82% of 730d');
+    expect(feeStandingLabel(82, 730)).toBe('dearer than 82% of 730d');
+  });
+
+  it('takes the cheaper reading at exactly the midpoint', () => {
+    // Arbitrary but fixed: at 50 both readings are true, and one of them has to
+    // be chosen. Pinned so it cannot flip silently.
+    expect(feeStandingLabel(50, 730)).toBe('cheaper than 50% of 730d');
+    expect(feeStandingLabel(51, 730)).toBe('dearer than 51% of 730d');
+  });
+
+  it('handles both extremes without producing a nonsense percentage', () => {
+    expect(feeStandingLabel(0, 730)).toBe('cheaper than 100% of 730d');
+    expect(feeStandingLabel(100, 730)).toBe('dearer than 100% of 730d');
+  });
+
+  it('is null when there is no percentile, so the page can say so instead', () => {
+    expect(feeStandingLabel(null, 730)).toBeNull();
   });
 });
