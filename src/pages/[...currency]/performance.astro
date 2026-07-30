@@ -1,0 +1,112 @@
+---
+import PerformanceChart from '../../components/PerformanceChart.astro';
+import Base from '../../layouts/Base.astro';
+import { dxyNote, ethNote, fxNote, type Currency } from '../../lib/currency';
+import { dataFor } from '../../lib/data';
+import { currencyPaths } from '../../lib/routes';
+import { rebaseCovering, totalReturnPct } from '../../../pipeline/rebase';
+import { PERF_LABELS_CLIENT, perfStartOptions, toAssetSeries } from '../../lib/perf-shared';
+
+export const getStaticPaths = currencyPaths;
+
+const { currency } = Astro.props as { currency: Currency };
+const { benchmarksHistory } = dataFor(currency);
+
+const assets = toAssetSeries(benchmarksHistory);
+const options = perfStartOptions(assets, benchmarksHistory.dailyDays);
+const initial = options.find((o) => o.selected) ?? options[0];
+// The tiles describe the same window the build drew, from the same function, so
+// a figure here and the height of a line cannot disagree.
+const rebased = initial ? rebaseCovering(assets, initial.start) : null;
+const ranked = [...(rebased?.series ?? [])].sort(
+  (a, b) => totalReturnPct(b) - totalReturnPct(a),
+);
+const ethSeries = benchmarksHistory.series.find((s) => s.asset === 'eth')?.sourceSeries;
+// Hoisted out of the prose: an interpolation at the start of a line loses the
+// space before it, and the built page read "the benchmarks2016-08-05".
+const firstOf = (asset: string): string =>
+  assets.find((a) => a.asset === asset)?.rows[0]?.date ?? '—';
+const btcFrom = firstOf('btc');
+const spFrom = firstOf('sp500');
+const ethFrom = firstOf('eth');
+---
+
+<Base
+  currency={currency}
+  title="blockplot · performance"
+  description="BTC against ether, the S&P 500, gold and the dollar index, every series indexed to 100 at a shared start date."
+>
+  <h1 class="visually-hidden">Performance</h1>
+
+  <dl class="stat-grid">
+    {
+      ranked.map((s) => (
+        <div class="stat">
+          <dt>{PERF_LABELS_CLIENT[s.asset] ?? s.asset}</dt>
+          <dd class={`num ${totalReturnPct(s) < 0 ? 'down' : 'up'}`}>
+            {totalReturnPct(s) >= 0 ? '+' : ''}
+            {totalReturnPct(s).toFixed(1)}%
+          </dd>
+          <dd class="sub num">index {s.finalIndex.toFixed(0)}</dd>
+        </div>
+      ))
+    }
+  </dl>
+
+  <section class="chart-section">
+    {/* No range or scale in the heading. It named "5y · log scale" from the
+        build's defaults and never changed, so after pressing max and linear it
+        described neither the chart nor the caption below it. The chart's own
+        controls carry that state, and the caption carries the base. */}
+    <h2>Indexed to 100 · BTC against its benchmarks</h2>
+    <PerformanceChart currency={currency} />
+    <p class="method-note">
+      Every series is divided by its own close on the shared base date and multiplied by 100, so
+      the lines are directly comparable whatever their units — an index, an ounce price, a dollar
+      index and two coins. The base is the first day on which <em>every</em> drawn series has a
+      price, not the day the button names: BTC and ether trade every day where the S&amp;P 500 and
+      gold do not, so a Saturday start would otherwise index BTC two days before the S&amp;P and
+      bake that difference into every later point. The caption under the chart states the base
+      date it actually used.
+    </p>
+    <p class="method-note">
+      This file starts at {btcFrom} for BTC — the first weekly point, a few days after the
+      underlying daily history begins — at {spFrom} for the benchmarks, since FRED publishes the
+      S&amp;P 500 as a rolling decade, and at {ethFrom} for ether. "max" is therefore the
+      earliest start at which all five exist, not the earliest date in the file: a chart carrying
+      one line for seven years and then five is not the comparison this page is for. Every preset
+      consequently begins after every series does, so none of them drops a line — the machinery to
+      exclude a late-starting series and name it exists for a future range, not for something you
+      will meet here.
+    </p>
+    <p class="method-note">
+      Two consequences of the weekly resolution, stated rather than smoothed over. In the weekly
+      section the crypto legs land on Sundays and the market legs on Fridays — a seven-day week's
+      last close against a five-day week's — so no single day holds all five, and the caption names
+      the <em>week</em> they share instead of asserting a date three of them never traded. And a
+      deep preset's base can only move a week at a time, so a figure can step when the rolling
+      window crosses a week boundary and the base lands on the next Monday: BTC's 5y return moves
+      about 30 points across one such rollover, because that is what BTC did in that week of 2021.
+      The presets are snapped to week boundaries so the base is at least stable between rollovers
+      rather than sliding a day at a time. The right-hand edge is not uniform either — sources
+      publish on different schedules, so the newest close is a day older for some series than
+      others.
+    </p>
+    <p class="method-note">
+      Log is the default, which is a claim about the data rather than a preference: over a decade
+      BTC's index reaches five figures while the benchmarks stay near 200, and on a linear scale
+      every benchmark is a flat line along the bottom. Log makes equal vertical distances equal
+      <em>ratios</em>, so the benchmarks keep their shape. Linear is the honest view for a short
+      window, where ratios and differences agree.
+    </p>
+    <p class="method-note">
+      Resolution: the last {benchmarksHistory.dailyDays} days of every series are daily, and
+      everything older is one point per ISO week — its last close, never an average, since an
+      average is a number no market printed. A decade of five daily series is 92 KB gzipped and all
+      of it has to be embedded, because the start date is chosen in the browser and this site makes
+      no request to fetch more; this rule is a third of that for a difference invisible at any
+      screen width. Total returns are price returns: no dividends on the S&amp;P, no yield, no
+      fees, no taxes.{fxNote(currency)}{ethNote(currency, Boolean(ethSeries))}{dxyNote(currency)}
+    </p>
+  </section>
+</Base>

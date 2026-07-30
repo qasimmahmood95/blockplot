@@ -1,4 +1,5 @@
 import usdBenchmarks from '../../data/benchmarks-daily.json';
+import usdBenchmarkHistory from '../../data/benchmarks-history.json';
 import usdPrice from '../../data/btc-price-daily.json';
 import usdHistory from '../../data/btc-price-history.json';
 import usdCorrelations from '../../data/correlations.json';
@@ -7,6 +8,7 @@ import usdMonthly from '../../data/monthly-returns.json';
 import usdRisk from '../../data/risk-metrics.json';
 import usdSignals from '../../data/signals.json';
 import gbpBenchmarks from '../../data/gbp/benchmarks-daily.json';
+import gbpBenchmarkHistory from '../../data/gbp/benchmarks-history.json';
 import gbpPrice from '../../data/gbp/btc-price-daily.json';
 import gbpHistory from '../../data/gbp/btc-price-history.json';
 import gbpCorrelations from '../../data/gbp/correlations.json';
@@ -19,6 +21,7 @@ import networkDataset from '../../data/network.json';
 import stablecoinDataset from '../../data/stablecoins.json';
 import {
   benchmarkDatasetSchema,
+  benchmarkHistoryDatasetSchema,
   correlationDatasetSchema,
   dominanceDatasetSchema,
   halvingDatasetSchema,
@@ -32,6 +35,7 @@ import {
 } from '../../pipeline/schema';
 import type {
   BenchmarkDataset,
+  BenchmarkHistoryDataset,
   CorrelationDataset,
   HalvingDataset,
   HistoryDataset,
@@ -83,6 +87,7 @@ export const network = parseOne('network.json', networkDatasetSchema, networkDat
 interface CurrencyData {
   btcDaily: PriceDataset;
   benchmarksDaily: BenchmarkDataset;
+  benchmarksHistory: BenchmarkHistoryDataset;
   riskMetrics: RiskDataset;
   halvingCycles: HalvingDataset;
   correlations: CorrelationDataset;
@@ -95,6 +100,11 @@ interface CurrencyData {
 const currencyData = (dir: string, raw: Record<keyof CurrencyData, unknown>): CurrencyData => ({
   btcDaily: parseOne(`${dir}btc-price-daily.json`, priceDatasetSchema, raw.btcDaily),
   benchmarksDaily: parseOne(`${dir}benchmarks-daily.json`, benchmarkDatasetSchema, raw.benchmarksDaily),
+  benchmarksHistory: parseOne(
+    `${dir}benchmarks-history.json`,
+    benchmarkHistoryDatasetSchema,
+    raw.benchmarksHistory,
+  ),
   riskMetrics: parseOne(`${dir}risk-metrics.json`, riskDatasetSchema, raw.riskMetrics),
   halvingCycles: parseOne(`${dir}halving-cycles.json`, halvingDatasetSchema, raw.halvingCycles),
   correlations: parseOne(`${dir}correlations.json`, correlationDatasetSchema, raw.correlations),
@@ -107,6 +117,7 @@ const BY_CURRENCY: Record<Currency, CurrencyData> = {
   usd: currencyData('', {
     btcDaily: usdPrice,
     benchmarksDaily: usdBenchmarks,
+    benchmarksHistory: usdBenchmarkHistory,
     riskMetrics: usdRisk,
     halvingCycles: usdHalvings,
     correlations: usdCorrelations,
@@ -117,6 +128,7 @@ const BY_CURRENCY: Record<Currency, CurrencyData> = {
   gbp: currencyData('gbp/', {
     btcDaily: gbpPrice,
     benchmarksDaily: gbpBenchmarks,
+    benchmarksHistory: gbpBenchmarkHistory,
     riskMetrics: gbpRisk,
     halvingCycles: gbpHalvings,
     correlations: gbpCorrelations,

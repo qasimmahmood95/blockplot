@@ -7,7 +7,15 @@ import { currencyPaths } from '../../lib/routes';
 export const getStaticPaths = currencyPaths;
 
 const { currency } = Astro.props as { currency: Currency };
-const { riskMetrics, correlations, signals, btcHistory, btcDaily, benchmarksDaily } = dataFor(currency);
+const {
+  riskMetrics,
+  correlations,
+  signals,
+  btcHistory,
+  btcDaily,
+  benchmarksDaily,
+  benchmarksHistory,
+} = dataFor(currency);
 const meta = CURRENCY_META[currency];
 
 // Which ticker actually served ETH, read from the committed file rather than
@@ -235,6 +243,28 @@ const t = signals.thresholds;
       when any of it was bought, so this is what that much BTC was worth — not a reconstruction of a
       position. A line implying a purchase history the data cannot support would be worse than no
       line. What you enter stays in your browser; see the note on the holdings page.
+    </p>
+  </section>
+
+  <section class="chart-section">
+    <h2>Performance comparison</h2>
+    <p class="method-note">
+      Every series on the performance page is divided by its own close on a shared base date and
+      multiplied by 100. The base is the first day on which every drawn series has a price, not the
+      day the range button names — BTC and ether trade every day where the S&amp;P 500 and gold do
+      not, so a weekend start would index the crypto legs before the market ones and bake that
+      difference into every later point. A series whose history begins after the chosen start is
+      excluded and named rather than drawn from partway across.
+    </p>
+    <p class="method-note">
+      That chart reads its own file, at mixed resolution: the last
+      {benchmarksHistory.dailyDays} days daily, everything older one point per ISO week, keeping
+      each week's last close rather than an average — an average is a value no market printed. The
+      rule is chosen by measurement: a decade of five daily series is 92 KB gzipped, all of which
+      must be embedded because the start date is chosen in the browser and this site makes no
+      request to fetch more. Closes there are rounded to 6 significant figures, which moves the
+      displayed index by less than one part in a million; the unrounded series stay in
+      <code>btc-price-history.json</code> for the metrics that need them.
     </p>
   </section>
 

@@ -1,0 +1,253 @@
+import { describe, expect, it } from 'vitest';
+import {
+  earliestStartFor,
+  rebase,
+  rebaseAll,
+  rebaseCovering,
+  totalReturnPct,
+  type AssetSeries,
+} from './rebase';
+
+const rows = (...pairs: [string, number][]): AssetSeries['rows'] =>
+  pairs.map(([date, value]) => ({ date, value }));
+
+// BTC trades every day; the S&P does not. 2024-01-06 and 07 are a weekend.
+const btc: AssetSeries = {
+  asset: 'btc',
+  rows: rows(
+    ['2024-01-04', 100],
+    ['2024-01-05', 110],
+    ['2024-01-06', 120],
+    ['2024-01-07', 130],
+    ['2024-01-08', 140],
+  ),
+};
+const sp500: AssetSeries = {
+  asset: 'sp500',
+  rows: rows(['2024-01-04', 4000], ['2024-01-05', 4040], ['2024-01-08', 4080]),
+};
+
+describe('rebase', () => {
+  it('indexes to 100 at the first observation on or after the start', () => {
+    const r = rebase(btc, '2024-01-05');
+    expect(r?.baseDate).toBe('2024-01-05');
+    expect(r?.baseValue).toBe(110);
+    expect(r?.series).toEqual([
+      { date: '2024-01-05', index: 100 },
+      { date: '2024-01-06', index: 109.09 },
+      { date: '2024-01-07', index: 118.18 },
+      { date: '2024-01-08', index: 127.27 },
+    ]);
+  });
+
+  it('skips forward to the next available day rather than interpolating', () => {
+    // Asked for the Saturday, the S&P starts on the Monday. Inventing a
+    // Saturday price would be inventing a session.
+    const r = rebase(sp500, '2024-01-06');
+    expect(r?.baseDate).toBe('2024-01-08');
+    expect(r?.series).toEqual([{ date: '2024-01-08', index: 100 }]);
+  });
+
+  it('reports the final index, which is the total return plus 100', () => {
+    const r = rebase(btc, '2024-01-04');
+    expect(r?.finalIndex).toBe(140);
+    expect(totalReturnPct(r!)).toBe(40);
+  });
+
+  it('handles a fall as readily as a rise', () => {
+    const falling: AssetSeries = { asset: 'x', rows: rows(['2024-01-01', 200], ['2024-01-02', 150]) };
+    const r = rebase(falling, '2024-01-01');
+    expect(r?.finalIndex).toBe(75);
+    expect(totalReturnPct(r!)).toBe(-25);
+  });
+
+  it('is null when the window holds nothing', () => {
+    expect(rebase(btc, '2026-01-01')).toBeNull();
+    expect(rebase({ asset: 'x', rows: [] }, '2024-01-01')).toBeNull();
+  });
+
+  it('is null on a non-positive base rather than dividing by it', () => {
+    // An index is a ratio. A zero base gives Infinity and a negative one flips
+    // every sign — both plot, and neither means anything.
+    expect(rebase({ asset: 'x', rows: rows(['2024-01-01', 0], ['2024-01-02', 5]) }, '2024-01-01')).toBeNull();
+    expect(rebase({ asset: 'x', rows: rows(['2024-01-01', -1], ['2024-01-02', 5]) }, '2024-01-01')).toBeNull();
+  });
+
+  it('keeps a single point at exactly 100', () => {
+    const r = rebase({ asset: 'x', rows: rows(['2024-01-01', 42]) }, '2024-01-01');
+    expect(r?.series).toEqual([{ date: '2024-01-01', index: 100 }]);
+    expect(totalReturnPct(r!)).toBe(0);
+  });
+});
+
+describe('rebaseAll', () => {
+  it('bases every series on the first day all of them have a price', () => {
+    // Asked for the Saturday: BTC could start there and the S&P could not, so
+    // both start on the Monday. Otherwise BTC would carry two days of move the
+    // S&P never had a chance to answer, permanently, in every later point.
+    const out = rebaseAll([btc, sp500], '2024-01-06');
+    expect(out?.baseDate).toBe('2024-01-08');
+    expect(out?.series.map((s) => [s.asset, s.baseDate, s.finalIndex])).toEqual([
+      ['btc', '2024-01-08', 100],
+      ['sp500', '2024-01-08', 100],
+    ]);
+  });
+
+  it('takes the latest first-available date, not the earliest', () => {
+    const out = rebaseAll([btc, sp500], '2024-01-05');
+    // BTC has the 5th, the S&P has the 5th too, so the base is the 5th.
+    expect(out?.baseDate).toBe('2024-01-05');
+    const btcOut = out?.series.find((s) => s.asset === 'btc');
+    const spOut = out?.series.find((s) => s.asset === 'sp500');
+    expect(btcOut?.baseValue).toBe(110);
+    expect(spOut?.baseValue).toBe(4040);
+    // Same window, so the comparison is like-for-like: BTC +27.27%, S&P +0.99%.
+    expect(totalReturnPct(btcOut!)).toBe(27.27);
+    expect(totalReturnPct(spOut!)).toBe(0.99);
+  });
+
+  it('records a base date later than the one asked for', () => {
+    const late: AssetSeries = {
+      asset: 'late',
+      rows: rows(['2024-01-05', 10], ['2024-01-08', 11]),
+    };
+    const out = rebaseAll([btc, late], '2024-01-04');
+    // Asked for the 4th; `late` has nothing until the 5th, so both start there.
+    expect(out?.baseDate).toBe('2024-01-05');
+    expect(out?.series.map((s) => s.baseDate)).toEqual(['2024-01-05', '2024-01-05']);
+  });
+
+  it('is null when the common base falls past the end of another series', () => {
+    // `late` forces a base of 2024-02-01, which is past BTC's last point. There
+    // is no day both traded, so there is no comparison — the same rule as a
+    // series with nothing in the window, reached from the other direction.
+    const late: AssetSeries = { asset: 'late', rows: rows(['2024-02-01', 10], ['2024-02-02', 11]) };
+    expect(rebaseAll([btc, late], '2024-01-04')).toBeNull();
+  });
+
+  it('is null when any one series has nothing in the window', () => {
+    // Not "drop that line": a shared base has to exist for every line, and a
+    // chart of two lines where one silently vanished is worse than no chart.
+    expect(rebaseAll([btc, { asset: 'empty', rows: [] }], '2024-01-04')).toBeNull();
+    expect(rebaseAll([btc, sp500], '2030-01-01')).toBeNull();
+  });
+
+  it('is null on an empty input list, which has no common base to find', () => {
+    expect(rebaseAll([], '2024-01-04')).toBeNull();
+  });
+});
+
+describe('rebaseCovering', () => {
+  const late: AssetSeries = { asset: 'eth', rows: rows(['2024-01-07', 5], ['2024-01-08', 6]) };
+
+  it('excludes a series whose history starts after the chosen start, by name', () => {
+    // Without this, ETH existing at all would drag a 2012 start to 2017 and
+    // decide the question for every other line.
+    const out = rebaseCovering([btc, sp500, late], '2024-01-04');
+    expect(out?.excluded).toEqual(['eth']);
+    expect(out?.baseDate).toBe('2024-01-04');
+    expect(out?.series.map((s) => s.asset)).toEqual(['btc', 'sp500']);
+  });
+
+  it('includes everything once the start is late enough to cover it', () => {
+    const out = rebaseCovering([btc, sp500, late], '2024-01-07');
+    expect(out?.excluded).toEqual([]);
+    // The S&P has no 7th (weekend), so the shared base is the Monday.
+    expect(out?.baseDate).toBe('2024-01-08');
+    expect(out?.series.map((s) => s.asset)).toEqual(['btc', 'sp500', 'eth']);
+  });
+
+  it('treats a start exactly on a series first day as covered', () => {
+    expect(rebaseCovering([late], '2024-01-07')?.excluded).toEqual([]);
+  });
+
+  it('is null when every series is excluded, which is the same as none covering', () => {
+    // A day before `late` begins excludes it, leaving nothing to compare — so
+    // this is not "one line and a note", it is no chart, same as a start before
+    // any series exists.
+    expect(rebaseCovering([late], '2024-01-06')).toBeNull();
+    expect(rebaseCovering([late], '2020-01-01')).toBeNull();
+    expect(rebaseCovering([], '2024-01-07')).toBeNull();
+  });
+});
+
+describe('earliestStartFor', () => {
+  it('gives the day from which at least N series have history', () => {
+    const a: AssetSeries = { asset: 'a', rows: rows(['2010-01-01', 1]) };
+    const b: AssetSeries = { asset: 'b', rows: rows(['2016-01-01', 1]) };
+    const c: AssetSeries = { asset: 'c', rows: rows(['2017-01-01', 1]) };
+    expect(earliestStartFor([a, b, c], 1)).toBe('2010-01-01');
+    expect(earliestStartFor([a, b, c], 2)).toBe('2016-01-01');
+    expect(earliestStartFor([a, b, c], 3)).toBe('2017-01-01');
+    expect(earliestStartFor([a, b, c], 4)).toBeNull();
+  });
+
+  it('ignores an empty series, which has no first day to offer', () => {
+    const a: AssetSeries = { asset: 'a', rows: rows(['2010-01-01', 1]) };
+    expect(earliestStartFor([a, { asset: 'empty', rows: [] }], 2)).toBeNull();
+  });
+});
+
+describe('rebaseAll on weekly-thinned series', () => {
+  // The real shape of the deep history: thinning keeps each week's last close,
+  // so BTC (7 trading days) lands on Sundays and the S&P (5) on Fridays. Their
+  // weekly date sets are all but disjoint — 1 shared date in 418 weeks — which
+  // is why aligning on a shared *day* cannot work here.
+  const btcWeekly = {
+    asset: 'btc',
+    rows: rows(['2021-07-25', 90], ['2021-08-01', 100], ['2021-08-08', 110]),
+  };
+  const spWeekly = {
+    asset: 'sp500',
+    rows: rows(['2021-07-30', 100], ['2021-08-06', 110], ['2021-08-13', 120]),
+  };
+
+  it('keeps every series inside one ISO week instead of pushing some into the next', () => {
+    const out = rebaseAll([btcWeekly, spWeekly], '2021-07-28');
+    // Both bases fall in the week of Monday 2021-07-26. Before this, the base
+    // was max(2021-08-01, 2021-07-30) = BTC's Sunday, and the S&P had no point
+    // until 2021-08-06 — five days later, in the following week.
+    expect(out?.baseWeek).toBe('2021-W30');
+    expect(out?.series.map((s) => [s.asset, s.baseDate])).toEqual([
+      ['btc', '2021-08-01'],
+      ['sp500', '2021-07-30'],
+    ]);
+    expect(out?.aligned).toBe(false);
+    expect(out?.baseWeekStart).toBe('2021-07-26');
+  });
+
+  it('reports aligned when the series do share a day, so the caption can name it', () => {
+    const out = rebaseAll([btc, sp500], '2024-01-04');
+    expect(out?.aligned).toBe(true);
+    expect(out?.baseDate).toBe('2024-01-04');
+  });
+
+  it('indexes each leg at its own base, so no line inherits another calendar', () => {
+    const out = rebaseAll([btcWeekly, spWeekly], '2021-07-28');
+    const btcOut = out?.series.find((s) => s.asset === 'btc');
+    const spOut = out?.series.find((s) => s.asset === 'sp500');
+    expect(btcOut?.baseValue).toBe(100);
+    expect(spOut?.baseValue).toBe(100);
+    // Both start at 100 in the same week and run forward from there.
+    expect(btcOut?.finalIndex).toBe(110);
+    expect(spOut?.finalIndex).toBe(120);
+  });
+
+  it('is null when a gap means no week has every series in it', () => {
+    // `gappy` is missing the weeks between, so its first point at or after the
+    // start is 2021-08-15 — past BTC's last. No week holds both, so there is no
+    // comparison, the same rule as a common base falling past a series' end.
+    const gappy = { asset: 'gappy', rows: rows(['2021-07-25', 50], ['2021-08-15', 60]) };
+    expect(rebaseAll([btcWeekly, gappy], '2021-07-28')).toBeNull();
+  });
+
+  it('still bases inside the week when one series is missing that week', () => {
+    // A market-calendar series with a holiday week: its point in the base week
+    // is absent, so it takes its next point, which the caption then reports as
+    // an unaligned week rather than as a shared day.
+    const holiday = { asset: 'sp500', rows: rows(['2021-07-30', 100], ['2021-08-13', 120]) };
+    const out = rebaseAll([btcWeekly, holiday], '2021-07-28');
+    expect(out?.series.map((s) => s.baseDate)).toEqual(['2021-08-01', '2021-07-30']);
+    expect(out?.aligned).toBe(false);
+  });
+});

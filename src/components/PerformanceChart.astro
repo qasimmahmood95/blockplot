@@ -1,0 +1,217 @@
+---
+import type { Currency } from '../lib/currency';
+import { dataFor } from '../lib/data';
+import { toJsonScript } from '../lib/embed';
+import { renderResponsiveChart } from '../lib/plot-ssr';
+import { encodeDaily } from '../lib/series-codec';
+import { performanceSpec } from '../lib/specs/performance';
+import { PERF_LABELS, perfSwatch } from '../lib/perf-shared';
+import { rebaseCovering, type AssetSeries } from '../../pipeline/rebase';
+import { captionOf, chartLabel, perfStartOptions, toAssetSeries } from '../lib/perf-shared';
+
+interface Props {
+  currency: Currency;
+}
+
+const { currency } = Astro.props;
+const { benchmarksHistory } = dataFor(currency);
+
+const assets: AssetSeries[] = toAssetSeries(benchmarksHistory);
+const options = perfStartOptions(assets, benchmarksHistory.dailyDays);
+const initial = options.find((o) => o.selected) ?? options[0];
+const rebased = initial ? rebaseCovering(assets, initial.start) : null;
+
+// Only the rows go over the wire, compacted where the dates allow. The BTC
+// series is daily-contiguous for its recent 730 days and weekly before, so it
+// falls back to plain rows; the codec decides per series rather than being told.
+//
+// Built from `assets`, which `toAssetSeries` has already put in display order,
+// rather than from the file: the file is in the order the pipeline wrote it, and
+// reading it directly here meant the build's legend said BTC, ETH, S&P 500,
+// gold, DXY while the first client render said BTC, S&P 500, gold, DXY, ETH.
+// One ordering, established once, is the only way the two cannot disagree.
+const payload = {
+  dailyDays: benchmarksHistory.dailyDays,
+  series: assets.map((s) => ({
+    asset: s.asset,
+    rows: encodeDaily(
+      s.rows.map((r) => ({ date: r.date, close: r.value })),
+      'close',
+    ),
+  })),
+};
+
+const points = (rebased?.series ?? []).flatMap((s) =>
+  s.series.map((p) => ({ asset: s.asset, date: new Date(p.date), index: p.index })),
+);
+const lineEnds = (rebased?.series ?? []).flatMap((s) => {
+  const last = s.series.at(-1);
+  return last ? [{ asset: s.asset, date: new Date(last.date), index: last.index }] : [];
+});
+const shown = (rebased?.series ?? []).map((s) => s.asset);
+
+// Log is the pressed default, so log is what the build draws.
+const svg = points.length
+  ? renderResponsiveChart((w) => performanceSpec(points, lineEnds, shown, 'log', w))
+  : '';
+---
+
+<figure class="chart-frame">
+  <div class="chart-controls">
+    <div id="perf-legend" class="chart-legend" aria-hidden="true">
+      {
+        shown.map((asset) => (
+          <span class="legend-item">
+            <span class="legend-swatch" style={`background:${perfSwatch(asset)}`} />
+            {PERF_LABELS[asset] ?? asset}
+          </span>
+        ))
+      }
+    </div>
+    <div class="chart-toggle" id="perf-range" role="group" aria-label="Start of the comparison">
+      {
+        options.map((o) => (
+          <button type="button" data-start={o.start} aria-pressed={o.selected ? 'true' : 'false'}>
+            {o.label}
+          </button>
+        ))
+      }
+    </div>
+    <div class="chart-toggle" id="perf-scale" role="group" aria-label="Y-axis scale">
+      <button type="button" data-scale="log" aria-pressed="true">log</button>
+      <button type="button" data-scale="linear" aria-pressed="false">linear</button>
+    </div>
+  </div>
+  <script
+    is:inline
+    type="application/json"
+    id="perf-chart-data"
+    set:html={toJsonScript(payload)}
+  />
+  <div
+    id="perf-chart"
+    role="img"
+    aria-label={chartLabel(shown, initial?.label ?? '', 'log')}
+    set:html={svg}
+  />
+  <p class="chart-note num" id="perf-caption" set:html={rebased ? captionOf(rebased) : ''} />
+</figure>
+
+<script>
+  import { chartData, upgradeChart } from '../lib/charts';
+  import { decodeDaily, type DailySeries } from '../lib/series-codec';
+  import { rebaseCovering, type AssetSeries } from '../../pipeline/rebase';
+  import { captionOf, chartLabel, PERF_LABELS_CLIENT, perfSwatch } from '../lib/perf-shared';
+  import type { PerfScale } from '../lib/specs/performance';
+
+  const container = document.getElementById('perf-chart');
+  const rangeToggle = document.getElementById('perf-range');
+  const scaleToggle = document.getElementById('perf-scale');
+  const legend = document.getElementById('perf-legend');
+  const caption = document.getElementById('perf-caption');
+
+  if (container) {
+    const raw = chartData<{
+      dailyDays: number;
+      series: { asset: string; rows: DailySeries<'close'> }[];
+    }>('perf-chart-data');
+    const assets: AssetSeries[] = raw.series.map((s) => ({
+      asset: s.asset,
+      rows: (decodeDaily(s.rows, 'close') as { date: string; close: number }[]).map((r) => ({
+        date: r.date,
+        value: r.close,
+      })),
+    }));
+
+    let scale: PerfScale = 'log';
+    let start =
+      (rangeToggle?.querySelector('button[aria-pressed="true"]') as HTMLButtonElement | null)
+        ?.dataset.start ?? '';
+
+    const upgrade = upgradeChart(container, async () => {
+      const [{ drawChart }, { performanceSpec }, { crosshairAnchors, isoDay }] =
+        await Promise.all([
+          import('../lib/plot-client'),
+          import('../lib/specs/performance'),
+          import('../lib/crosshair'),
+        ]);
+      const rebased = rebaseCovering(assets, start);
+      if (!rebased) return;
+      const points = rebased.series.flatMap((s) =>
+        s.series.map((p) => ({ asset: s.asset, date: new Date(p.date), index: p.index })),
+      );
+      const lineEnds = rebased.series.flatMap((s) => {
+        const last = s.series.at(-1);
+        return last ? [{ asset: s.asset, date: new Date(last.date), index: last.index }] : [];
+      });
+      const shown = rebased.series.map((s) => s.asset);
+
+      // The legend and the caption follow the chart, because which assets are
+      // drawn depends on the chosen start: a legend naming five lines over a
+      // chart with three is the failure `rebaseCovering` returns `excluded` to
+      // prevent.
+      if (legend) {
+        legend.innerHTML = shown
+          .map(
+            (a) =>
+              `<span class="legend-item"><span class="legend-swatch" style="background:${perfSwatch(a)}"></span>${PERF_LABELS_CLIENT[a] ?? a}</span>`,
+          )
+          .join('');
+      }
+      if (caption) caption.innerHTML = captionOf(rebased);
+      // The label described a log chart of five series whatever was pressed, so
+      // a screen-reader user was told "log scale" over a linear axis and "5y"
+      // over a decade. It follows the chart now.
+      container.setAttribute(
+        'aria-label',
+        chartLabel(
+          shown,
+          rangeToggle?.querySelector('button[aria-pressed="true"]')?.textContent?.trim() ?? '',
+          scale,
+        ),
+      );
+
+      const anchors = crosshairAnchors(
+        points.map((d) => ({
+          x: d.date,
+          y: d.index,
+          label: `${PERF_LABELS_CLIENT[d.asset] ?? d.asset} ${d.index.toFixed(0)}`,
+        })),
+        isoDay,
+      );
+      drawChart(container, (w) => performanceSpec(points, lineEnds, shown, scale, w, anchors));
+    });
+
+    const press = (group: HTMLElement | null, attr: string, value: string): void => {
+      group
+        ?.querySelectorAll('button')
+        .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset[attr] === value)));
+    };
+
+    rangeToggle?.querySelectorAll('button').forEach((button) => {
+      button.addEventListener('click', () => {
+        const previous = start;
+        start = button.dataset.start ?? start;
+        press(rangeToggle, 'start', start);
+        // Put the pressed state back if Plot never arrives, rather than
+        // captioning the old chart with the new range.
+        void upgrade().catch(() => {
+          start = previous;
+          press(rangeToggle, 'start', start);
+        });
+      });
+    });
+
+    scaleToggle?.querySelectorAll('button').forEach((button) => {
+      button.addEventListener('click', () => {
+        const previous = scale;
+        scale = (button.dataset.scale as PerfScale | undefined) ?? scale;
+        press(scaleToggle, 'scale', scale);
+        void upgrade().catch(() => {
+          scale = previous;
+          press(scaleToggle, 'scale', scale);
+        });
+      });
+    });
+  }
+</script>
