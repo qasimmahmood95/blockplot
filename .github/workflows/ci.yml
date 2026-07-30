@@ -2,12 +2,27 @@ name: CI
 
 on:
   pull_request:
+  # Development branches run on push as well as on pull_request, because the
+  # pull_request event cannot be relied on to fire. Measured on PR #24: six
+  # pushes to the branch produced six Data pipeline runs (push) and not one CI
+  # run (pull_request), so the gate the merge rule depends on had silently not
+  # run at all. A gate that only fires on an event this setup does not always
+  # produce is the same defect class as a test that asserts nothing.
+  #
+  # The cost is a duplicate run when both events do fire, which the concurrency
+  # group below cancels.
   push:
-    branches: [main]
+    branches: [main, 'claude/**']
   # Data refreshes are pushed with GITHUB_TOKEN, which by design fires no
   # workflow — so a bot commit that lands on a PR branch leaves the newest
   # head unchecked. This lets CI be run against it on demand.
   workflow_dispatch:
+
+# One run per ref. Without this the push and pull_request events would both
+# queue a run for the same commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   checks:
