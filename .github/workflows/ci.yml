@@ -20,8 +20,13 @@ on:
 
 # One run per ref. Without this the push and pull_request events would both
 # queue a run for the same commit.
+# Keyed on the commit, not the ref, because the two events name the same commit
+# differently: `github.ref` is `refs/heads/<branch>` on push and
+# `refs/pull/N/merge` on pull_request, so a ref-keyed group puts them in
+# different buckets and cancels neither. Measured on PR #24's merge head, which
+# ran the audit twice concurrently under exactly that mistake.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
 jobs:

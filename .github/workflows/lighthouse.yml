@@ -12,8 +12,13 @@ on:
     branches: [main, 'claude/**']
   workflow_dispatch:
 
+# Keyed on the commit, not the ref, because the two events name the same commit
+# differently: `github.ref` is `refs/heads/<branch>` on push and
+# `refs/pull/N/merge` on pull_request, so a ref-keyed group puts them in
+# different buckets and cancels neither. Measured on PR #24's merge head, which
+# ran the audit twice concurrently under exactly that mistake.
 concurrency:
-  group: lighthouse-${{ github.ref }}
+  group: lighthouse-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
 jobs:
