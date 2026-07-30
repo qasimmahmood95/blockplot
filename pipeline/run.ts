@@ -381,8 +381,16 @@ for (const currency of CURRENCIES) {
     // 1659.4724038315342. Significant figures rather than decimal places
     // because this file spans BTC at 0.0451 and the S&P at 5505 — a fixed
     // decimal place is either too coarse for one end or useless at the other.
-    // At 6 s.f. the resulting index differs by less than one part in a million,
-    // which is four orders of magnitude below the 2 dp it is displayed at.
+    // At 6 s.f. each value carries up to 5 parts per million of relative error,
+    // and the index is a ratio of two of them, so its bound is ~10 ppm. Measured
+    // against the unrounded series that is still committed
+    // (gbp/btc-price-history.json): worst per-value deviation 4.83 ppm, worst
+    // index difference 0.01-0.02 index points at every start the page offers,
+    // with identical finalIndex at the 2 dp it is displayed to. So one order of
+    // magnitude below the display quantum, not four — an earlier version of this
+    // comment claimed "less than one part in a million", which is wrong by about
+    // ten times, and at the deepest preset the bound does reach half of the
+    // second decimal place.
     const rows = (series: { date: string; close: number }[]) =>
       thinOlderToWeekly(series, HISTORY_DAILY_DAYS).map(({ date, close }) => ({
         date,

@@ -187,3 +187,67 @@ describe('earliestStartFor', () => {
     expect(earliestStartFor([a, { asset: 'empty', rows: [] }], 2)).toBeNull();
   });
 });
+
+describe('rebaseAll on weekly-thinned series', () => {
+  // The real shape of the deep history: thinning keeps each week's last close,
+  // so BTC (7 trading days) lands on Sundays and the S&P (5) on Fridays. Their
+  // weekly date sets are all but disjoint — 1 shared date in 418 weeks — which
+  // is why aligning on a shared *day* cannot work here.
+  const btcWeekly = {
+    asset: 'btc',
+    rows: rows(['2021-07-25', 90], ['2021-08-01', 100], ['2021-08-08', 110]),
+  };
+  const spWeekly = {
+    asset: 'sp500',
+    rows: rows(['2021-07-30', 100], ['2021-08-06', 110], ['2021-08-13', 120]),
+  };
+
+  it('keeps every series inside one ISO week instead of pushing some into the next', () => {
+    const out = rebaseAll([btcWeekly, spWeekly], '2021-07-28');
+    // Both bases fall in the week of Monday 2021-07-26. Before this, the base
+    // was max(2021-08-01, 2021-07-30) = BTC's Sunday, and the S&P had no point
+    // until 2021-08-06 — five days later, in the following week.
+    expect(out?.baseWeek).toBe('2021-W30');
+    expect(out?.series.map((s) => [s.asset, s.baseDate])).toEqual([
+      ['btc', '2021-08-01'],
+      ['sp500', '2021-07-30'],
+    ]);
+    expect(out?.aligned).toBe(false);
+    expect(out?.baseWeekStart).toBe('2021-07-26');
+  });
+
+  it('reports aligned when the series do share a day, so the caption can name it', () => {
+    const out = rebaseAll([btc, sp500], '2024-01-04');
+    expect(out?.aligned).toBe(true);
+    expect(out?.baseDate).toBe('2024-01-04');
+  });
+
+  it('indexes each leg at its own base, so no line inherits another calendar', () => {
+    const out = rebaseAll([btcWeekly, spWeekly], '2021-07-28');
+    const btcOut = out?.series.find((s) => s.asset === 'btc');
+    const spOut = out?.series.find((s) => s.asset === 'sp500');
+    expect(btcOut?.baseValue).toBe(100);
+    expect(spOut?.baseValue).toBe(100);
+    // Both start at 100 in the same week and run forward from there.
+    expect(btcOut?.finalIndex).toBe(110);
+    expect(spOut?.finalIndex).toBe(120);
+  });
+
+  it('is null when a gap means no week has every series in it', () => {
+    // `gappy` is missing the weeks between, so its first point at or after the
+    // start is 2021-08-15 — past BTC's last. No week holds both, so there is no
+    // comparison, the same rule as a common base falling past a series' end.
+    const gappy = { asset: 'gappy', rows: rows(['2021-07-25', 50], ['2021-08-15', 60]) };
+    expect(rebaseAll([btcWeekly, gappy], '2021-07-28')).toBeNull();
+  });
+
+  it('still bases inside the week when one series is missing that week', () => {
+    // A market-calendar series with a holiday week: its point in the base week
+    // is absent, so it takes its next point, which the caption then reports as
+    // an unaligned week rather than as a shared day.
+    const holiday = { asset: 'sp500', rows: rows(['2021-07-30', 100], ['2021-08-13', 120]) };
+    const out = rebaseAll([btcWeekly, holiday], '2021-07-28');
+    expect(out?.series.map((s) => s.baseDate)).toEqual(['2021-08-01', '2021-07-30']);
+    expect(out?.aligned).toBe(false);
+  });
+});

@@ -1,7 +1,7 @@
 ---
 import PerformanceChart from '../../components/PerformanceChart.astro';
 import Base from '../../layouts/Base.astro';
-import { ethNote, fxNote, type Currency } from '../../lib/currency';
+import { dxyNote, ethNote, fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { currencyPaths } from '../../lib/routes';
 import { rebaseCovering, totalReturnPct } from '../../../pipeline/rebase';
@@ -13,7 +13,7 @@ const { currency } = Astro.props as { currency: Currency };
 const { benchmarksHistory } = dataFor(currency);
 
 const assets = toAssetSeries(benchmarksHistory);
-const options = perfStartOptions(assets);
+const options = perfStartOptions(assets, benchmarksHistory.dailyDays);
 const initial = options.find((o) => o.selected) ?? options[0];
 // The tiles describe the same window the build drew, from the same function, so
 // a figure here and the height of a line cannot disagree.
@@ -59,14 +59,29 @@ const ethSeries = benchmarksHistory.series.find((s) => s.asset === 'eth')?.sourc
       date it actually used.
     </p>
     <p class="method-note">
-      A series whose own history begins after the chosen start is excluded and named, rather than
-      drawn from partway across or silently dropped. BTC's history reaches
-      {assets.find((a) => a.asset === 'btc')?.rows[0]?.date}, the benchmarks
-      {assets.find((a) => a.asset === 'sp500')?.rows[0]?.date} — FRED publishes the S&amp;P 500 as
-      a rolling decade — and ether {assets.find((a) => a.asset === 'eth')?.rows[0]?.date}. "max" is
-      therefore the earliest start at which all of them exist, not the earliest date in the file,
-      because a chart carrying one line for seven years and then five is not the comparison this
-      page is for.
+      This file starts at {assets.find((a) => a.asset === 'btc')?.rows[0]?.date} for BTC — the
+      first weekly point, a few days after the underlying daily history begins — at
+      {assets.find((a) => a.asset === 'sp500')?.rows[0]?.date} for the benchmarks, since FRED
+      publishes the S&amp;P 500 as a rolling decade, and at
+      {assets.find((a) => a.asset === 'eth')?.rows[0]?.date} for ether. "max" is therefore the
+      earliest start at which all five exist, not the earliest date in the file: a chart carrying
+      one line for seven years and then five is not the comparison this page is for. Every preset
+      consequently begins after every series does, so none of them drops a line — the machinery to
+      exclude a late-starting series and name it exists for a future range, not for something you
+      will meet here.
+    </p>
+    <p class="method-note">
+      Two consequences of the weekly resolution, stated rather than smoothed over. In the weekly
+      section the crypto legs land on Sundays and the market legs on Fridays — a seven-day week's
+      last close against a five-day week's — so no single day holds all five, and the caption names
+      the <em>week</em> they share instead of asserting a date three of them never traded. And a
+      deep preset's base can only move a week at a time, so a figure can step when the rolling
+      window crosses a week boundary and the base lands on the next Monday: BTC's 5y return moves
+      about 30 points across one such rollover, because that is what BTC did in that week of 2021.
+      The presets are snapped to week boundaries so the base is at least stable between rollovers
+      rather than sliding a day at a time. The right-hand edge is not uniform either — sources
+      publish on different schedules, so the newest close is a day older for some series than
+      others.
     </p>
     <p class="method-note">
       Log is the default, which is a claim about the data rather than a preference: over a decade
@@ -82,7 +97,7 @@ const ethSeries = benchmarksHistory.series.find((s) => s.asset === 'eth')?.sourc
       of it has to be embedded, because the start date is chosen in the browser and this site makes
       no request to fetch more; this rule is a third of that for a difference invisible at any
       screen width. Total returns are price returns: no dividends on the S&amp;P, no yield, no
-      fees, no taxes.{fxNote(currency)}{ethNote(currency, Boolean(ethSeries))}
+      fees, no taxes.{fxNote(currency)}{ethNote(currency, Boolean(ethSeries))}{dxyNote(currency)}
     </p>
   </section>
 </Base>

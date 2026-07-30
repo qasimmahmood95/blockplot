@@ -14,6 +14,8 @@
  * counts as the start for each series.
  */
 
+import { isoWeekKey, isoWeekStart } from './series';
+
 /** One point of a rebased series: 100 at the base date. */
 export interface RebasePoint {
   date: string;
@@ -29,6 +31,19 @@ export interface RebasedSeries {
   /** Index at the last point, i.e. the whole-window total return plus 100. */
   finalIndex: number;
   series: RebasePoint[];
+}
+
+/** What `rebaseAll` returns: the series, and how honestly one date describes them. */
+export interface RebaseResult {
+  /** True when every series is indexed on the same calendar day. */
+  aligned: boolean;
+  /** The ISO week every series is indexed within. */
+  baseWeek: string;
+  /** Monday of `baseWeek`, the label to use when the days differ. */
+  baseWeekStart: string;
+  /** The single base date when `aligned`, otherwise the latest of them. */
+  baseDate: string;
+  series: RebasedSeries[];
 }
 
 export interface AssetSeries {
@@ -89,28 +104,72 @@ export function rebase(input: AssetSeries, startDate: string): RebasedSeries | n
 export function rebaseAll(
   inputs: readonly AssetSeries[],
   startDate: string,
-): { baseDate: string; series: RebasedSeries[] } | null {
+): RebaseResult | null {
   // No series is not "an empty chart", it is no comparison. Returning a
   // well-formed result with zero lines would hand the caller something that
   // renders as an axis with nothing on it.
   if (inputs.length === 0) return null;
-  const firsts: string[] = [];
+
+  const firsts: { input: AssetSeries; date: string }[] = [];
   for (const input of inputs) {
     const first = input.rows.find((r) => r.date >= startDate);
     // One series with no data in the window makes the *comparison* impossible,
     // not just that line: a common base has to exist for every line or the
     // lines are not comparable, which is the only reason to draw them together.
     if (!first) return null;
-    firsts.push(first.date);
+    firsts.push({ input, date: first.date });
   }
-  const baseDate = firsts.reduce((max, d) => (d > max ? d : max), firsts[0] ?? startDate);
+
+  // `target` is the old rule: the latest of the per-series first-available
+  // dates, i.e. the first day on which every series that shares a calendar has
+  // a price. In the daily section of the history that is exactly right, and it
+  // is what this returns.
+  const target = firsts.reduce((max, f) => (f.date > max ? f.date : max), firsts[0]?.date ?? startDate);
+  const targetWeek = isoWeekKey(target);
+
+  // Where it is wrong is the weekly section, and the correction is what this
+  // function now turns on. Thinning keeps each week's last close, and BTC and
+  // ETH trade seven days where the S&P, gold and DXY trade five — so the crypto
+  // legs land on Sundays and the market legs on Fridays, and their date sets
+  // there are all but disjoint: 1 shared date in 418 weeks for BTC and the S&P,
+  // none at all for BTC and gold.
+  //
+  // Taking the max then made things worse rather than safer. For a start falling
+  // Monday to Friday it picked BTC's Sunday, and a Friday series had no point
+  // until the *following* Friday — a five-day, cross-week offset, where leaving
+  // each series on its own nearest point would have been two days inside one
+  // week. Measured on the shipped 5y default, that put 6.78 percentage points
+  // into gold's headline return and made the caption "100 = each series on
+  // 2021-08-01" false for three of five lines: a Sunday the S&P has never traded.
+  //
+  // So a series whose next point after `target` would fall in a later ISO week
+  // bases on its own last point *within* target's week instead. Every line then
+  // starts within one week of every other, and none is pushed past it.
   const series: RebasedSeries[] = [];
-  for (const input of inputs) {
-    const one = rebase(input, baseDate);
+  for (const { input } of firsts) {
+    const next = input.rows.find((r) => r.date >= target);
+    const base =
+      next && isoWeekKey(next.date) === targetWeek
+        ? next.date
+        : (input.rows.filter((r) => r.date >= startDate && isoWeekKey(r.date) === targetWeek).at(-1)
+            ?.date ?? next?.date);
+    if (!base) return null;
+    const one = rebase(input, base);
     if (!one) return null;
     series.push(one);
   }
-  return { baseDate, series };
+
+  const bases = series.map((s) => s.baseDate);
+  const aligned = new Set(bases).size === 1;
+  return {
+    aligned,
+    baseWeek: targetWeek,
+    baseWeekStart: isoWeekStart(bases[0] ?? startDate),
+    // The latest of them when they differ, so a caller that wants one date gets
+    // the conservative one; `aligned` says whether quoting it is honest.
+    baseDate: bases.reduce((max, d) => (d > max ? d : max), bases[0] ?? startDate),
+    series,
+  };
 }
 
 /**
@@ -142,7 +201,7 @@ export const totalReturnPct = (series: RebasedSeries): number => round2(series.f
 export function rebaseCovering(
   inputs: readonly AssetSeries[],
   startDate: string,
-): { baseDate: string; series: RebasedSeries[]; excluded: string[] } | null {
+): (RebaseResult & { excluded: string[] }) | null {
   const covered: AssetSeries[] = [];
   const excluded: string[] = [];
   for (const input of inputs) {

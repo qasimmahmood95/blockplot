@@ -16,7 +16,7 @@ const { currency } = Astro.props;
 const { benchmarksHistory } = dataFor(currency);
 
 const assets: AssetSeries[] = toAssetSeries(benchmarksHistory);
-const options = perfStartOptions(assets);
+const options = perfStartOptions(assets, benchmarksHistory.dailyDays);
 const initial = options.find((o) => o.selected) ?? options[0];
 const rebased = initial ? rebaseCovering(assets, initial.start) : null;
 

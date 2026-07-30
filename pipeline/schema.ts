@@ -52,6 +52,24 @@ export const fxDatasetSchema = z.object({
 
 export type FxDataset = z.infer<typeof fxDatasetSchema>;
 
+/**
+ * ISO week key, duplicated from `series.ts` rather than imported.
+ *
+ * schema.ts is imported by the site's data loader and by the pipeline; series.ts
+ * is pipeline-only. Importing it here would pull the trimming helpers into every
+ * page bundle to validate one refinement. Six lines, and the refinement it backs
+ * is what stops the two definitions drifting: if this one were wrong, the
+ * committed file would fail its own weekly-resolution check.
+ */
+function isoWeekKeyForSchema(date: string): string {
+  const d = new Date(Date.parse(`${date}T00:00:00Z`));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const year = d.getUTCFullYear();
+  const week = Math.ceil(((d.getTime() - Date.UTC(year, 0, 1)) / 86_400_000 + 1) / 7);
+  return `${year}-W${String(week).padStart(2, '0')}`;
+}
+
 /** superRefine body pinning strictly ascending dates on a series. */
 function refineAscendingDates(series: { date: string }[], ctx: z.RefinementCtx): void {
   for (let i = 1; i < series.length; i++) {
@@ -216,7 +234,9 @@ export const benchmarkDatasetSchema = z.object({
         source: z.enum(['fred', 'yahoo']),
         /** Identifier of the series at its source, e.g. the FRED series id. */
         sourceSeries: z.string().min(1),
-        series: z.array(benchmarkDaySchema).min(2),
+        // Back-ported from the history schema, which had it and this did not:
+        // the same file, the same source, the same failure available.
+        series: z.array(benchmarkDaySchema).min(2).superRefine(refineAscendingDates),
       }),
     )
     /**
@@ -290,7 +310,36 @@ export const benchmarkHistoryDatasetSchema = z.object({
         ctx.addIssue({ code: 'custom', message: 'missing history asset btc' });
       }
     }),
-});
+})
+  // `olderResolution` was a literal nothing verified: a build that wrote the
+  // older section daily, or twice a week, while still stamping 'weekly-last'
+  // would have validated. That is not hypothetical — the ISO-week helper had a
+  // bug that kept two points for one week, and it was caught by a unit test
+  // rather than here, which is the wrong layer for a claim the file makes about
+  // itself.
+  .superRefine((doc, ctx) => {
+    for (const s of doc.series) {
+      const last = s.rows.at(-1);
+      if (!last) continue;
+      const cutoff = new Date(
+        Date.parse(`${last.date}T00:00:00Z`) - doc.dailyDays * 86_400_000,
+      )
+        .toISOString()
+        .slice(0, 10);
+      const weeks = new Set<string>();
+      for (const row of s.rows) {
+        if (row.date > cutoff) continue;
+        if (weeks.has(isoWeekKeyForSchema(row.date))) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `${s.asset}: more than one point in ISO week ${isoWeekKeyForSchema(row.date)}, but olderResolution is weekly-last`,
+          });
+          return;
+        }
+        weeks.add(isoWeekKeyForSchema(row.date));
+      }
+    }
+  });
 
 export type BenchmarkHistoryDataset = z.infer<typeof benchmarkHistoryDatasetSchema>;
 

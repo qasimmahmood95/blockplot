@@ -12,14 +12,21 @@ export function trimToLastDays<T extends { date: string }>(series: T[], days: nu
  * Calendar days of a history series kept at daily resolution. Everything older
  * is thinned to one point per ISO week.
  *
- * Measured, not chosen by feel. A ten-year daily history of five assets is
- * 11,480 points and 92 KB gzipped — on its own larger than the heaviest page
- * the site has, and it would all have to be embedded, because the reader picks
- * the start date and CLAUDE.md sanctions no runtime fetch to go and get more.
- * Thinned entirely to weekly it is 19 KB, but then a reader asking for the last
- * three months gets thirteen points. Daily for two years and weekly before that
- * is 34 KB and 3,972 points: full resolution over the window anyone reads
- * closely, and a decade of shape for the price of a third of the daily file.
+ * Chosen from a size model before the file existed, and the model's numbers are
+ * not the file's — worth separating, because this repo's standard is that a
+ * committed figure is measured from the thing it describes.
+ *
+ * The model (four synthetic series over ten years, to compare shapes) gave 92 KB
+ * gzipped for all-daily, 19 KB for all-weekly and 34 KB for daily-730d-plus-
+ * weekly. That comparison is what the rule was picked on and it still holds
+ * directionally. What actually ships is five series, not four, and includes BTC
+ * back to 2010: 5,301 points at 37.5 KB gzipped in USD and 38.7 KB in GBP.
+ *
+ * The reason for a rule at all is unchanged: every point has to be embedded,
+ * because the reader picks the start date in the browser and CLAUDE.md sanctions
+ * no runtime fetch to go and get more. All-daily would be the largest payload on
+ * the site by half again; all-weekly would give a three-month view thirteen
+ * points.
  */
 export const HISTORY_DAILY_DAYS = 730;
 
@@ -71,4 +78,12 @@ export function isoWeekKey(date: string): string {
   // dated 2021-01-04 as W02 — so the thinning kept two points for one week.
   const week = Math.ceil(((d.getTime() - jan1) / 86_400_000 + 1) / 7);
   return `${year}-W${String(week).padStart(2, '0')}`;
+}
+
+/** Monday of the ISO week containing a date, as a label for weekly-resolution data. */
+export function isoWeekStart(date: string): string {
+  const d = new Date(Date.parse(`${date}T00:00:00Z`));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() - (day - 1));
+  return d.toISOString().slice(0, 10);
 }
