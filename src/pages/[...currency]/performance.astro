@@ -22,6 +22,13 @@ const ranked = [...(rebased?.series ?? [])].sort(
   (a, b) => totalReturnPct(b) - totalReturnPct(a),
 );
 const ethSeries = benchmarksHistory.series.find((s) => s.asset === 'eth')?.sourceSeries;
+// Hoisted out of the prose: an interpolation at the start of a line loses the
+// space before it, and the built page read "the benchmarks2016-08-05".
+const firstOf = (asset: string): string =>
+  assets.find((a) => a.asset === asset)?.rows[0]?.date ?? '—';
+const btcFrom = firstOf('btc');
+const spFrom = firstOf('sp500');
+const ethFrom = firstOf('eth');
 ---
 
 <Base
@@ -47,7 +54,11 @@ const ethSeries = benchmarksHistory.series.find((s) => s.asset === 'eth')?.sourc
   </dl>
 
   <section class="chart-section">
-    <h2>Indexed to 100 · {initial?.label ?? ''} · log scale</h2>
+    {/* No range or scale in the heading. It named "5y · log scale" from the
+        build's defaults and never changed, so after pressing max and linear it
+        described neither the chart nor the caption below it. The chart's own
+        controls carry that state, and the caption carries the base. */}
+    <h2>Indexed to 100 · BTC against its benchmarks</h2>
     <PerformanceChart currency={currency} />
     <p class="method-note">
       Every series is divided by its own close on the shared base date and multiplied by 100, so
@@ -59,11 +70,9 @@ const ethSeries = benchmarksHistory.series.find((s) => s.asset === 'eth')?.sourc
       date it actually used.
     </p>
     <p class="method-note">
-      This file starts at {assets.find((a) => a.asset === 'btc')?.rows[0]?.date} for BTC — the
-      first weekly point, a few days after the underlying daily history begins — at
-      {assets.find((a) => a.asset === 'sp500')?.rows[0]?.date} for the benchmarks, since FRED
-      publishes the S&amp;P 500 as a rolling decade, and at
-      {assets.find((a) => a.asset === 'eth')?.rows[0]?.date} for ether. "max" is therefore the
+      This file starts at {btcFrom} for BTC — the first weekly point, a few days after the
+      underlying daily history begins — at {spFrom} for the benchmarks, since FRED publishes the
+      S&amp;P 500 as a rolling decade, and at {ethFrom} for ether. "max" is therefore the
       earliest start at which all five exist, not the earliest date in the file: a chart carrying
       one line for seven years and then five is not the comparison this page is for. Every preset
       consequently begins after every series does, so none of them drops a line — the machinery to

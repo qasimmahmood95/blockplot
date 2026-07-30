@@ -11,8 +11,12 @@ import type { BenchmarkHistoryDataset } from '../../pipeline/schema';
 import { earliestStartFor } from '../../pipeline/rebase';
 import { isoWeekStart } from '../../pipeline/series';
 
-/** Labels, duplicated from the spec so this module needs no Plot import. */
-export const PERF_LABELS_CLIENT: Record<string, string> = {
+/** Display order, which is also the legend order and the colour assignment. */
+export const PERF_ASSETS = ['btc', 'eth', 'sp500', 'gold', 'dxy'] as const;
+const ORDER: readonly string[] = PERF_ASSETS;
+
+/** The one definition of the labels, shared by the spec, the legend and the tiles. */
+export const PERF_LABELS: Record<string, string> = {
   btc: 'BTC',
   eth: 'ETH',
   sp500: 'S&P 500',
@@ -20,8 +24,43 @@ export const PERF_LABELS_CLIENT: Record<string, string> = {
   dxy: 'DXY',
 };
 
-/** Display order for the chart, legend and colour assignment. */
-const ORDER = ['btc', 'eth', 'sp500', 'gold', 'dxy'];
+/** Kept as an alias so existing client call sites read unchanged. */
+export const PERF_LABELS_CLIENT = PERF_LABELS;
+
+/**
+ * One colour per asset, every one of them at 3:1 or better against the chart
+ * surface in *both* themes.
+ *
+ * That constraint eliminated most of the palette, and the first version of this
+ * ignored it: ETH sat on a ramp step that resolves to the accent itself in light
+ * mode (the collision that shipped once on /flows), and after fixing that, review
+ * measured the S&P at 2.17:1 and DXY on `--line` at 1.32:1 — the hairline token,
+ * never meant to carry a series, and effectively invisible against the
+ * gridlines it matches. Only six tokens clear 3:1 in both themes, and `--pos`
+ * and `--neg` are unusable here because a returns chart makes green and red mean
+ * something they do not.
+ *
+ * So four colours, and DXY carries a dash instead of a fifth. That is not a
+ * workaround dressed up: DXY is the only line on the chart that is not an
+ * investable asset — it measures the dollar against a basket — so a different
+ * line style says something true about it.
+ */
+export function perfColor(asset: string): string {
+  if (asset === 'btc') return 'var(--accent)';
+  if (asset === 'eth') return 'var(--cycle-2)';
+  if (asset === 'sp500') return 'var(--ink)';
+  return 'var(--ink-muted)';
+}
+
+/** Dash pattern for an asset, empty when solid. */
+export const perfDash = (asset: string): string => (asset === 'dxy' ? '6,3' : '');
+
+/** The legend swatch for an asset: a solid bar, or a dashed one for DXY. */
+export function perfSwatch(asset: string): string {
+  const color = perfColor(asset);
+  if (!perfDash(asset)) return color;
+  return `repeating-linear-gradient(90deg, ${color} 0 4px, transparent 4px 7px)`;
+}
 
 /** The committed history as rebase input, in display order. */
 export function toAssetSeries(history: BenchmarkHistoryDataset): AssetSeries[] {
@@ -135,4 +174,16 @@ export function captionOf(rebased: RebaseResult & { excluded: string[] }): strin
     );
   }
   return parts.join(' · ');
+}
+
+/**
+ * The chart's accessible name, which has to follow the chart.
+ *
+ * It was a fixed string naming a log scale and the build's default range, so a
+ * screen-reader user pressing "max" and "linear" was still told "5y" and "log".
+ * Both halves build it here for the same reason they share the caption.
+ */
+export function chartLabel(assets: readonly string[], range: string, scale: string): string {
+  const names = assets.map((a) => PERF_LABELS[a] ?? a).join(', ');
+  return `Line chart of ${names} indexed to 100 at a shared start date, ${range} range, ${scale} scale`;
 }

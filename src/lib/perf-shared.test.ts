@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { captionOf, perfStartOptions, toAssetSeries } from './perf-shared';
+import {
+  captionOf,
+  chartLabel,
+  PERF_ASSETS,
+  perfColor,
+  perfDash,
+  perfStartOptions,
+  perfSwatch,
+  toAssetSeries,
+} from './perf-shared';
 import type { AssetSeries, RebaseResult, RebasedSeries } from '../../pipeline/rebase';
 
 const series = (asset: string, from: string, to: string): AssetSeries => {
@@ -142,5 +151,88 @@ describe('perfStartOptions weekly snapping', () => {
 
   it('snaps nothing when no daily window is given', () => {
     expect(perfStartOptions(assets).find((o) => o.label === '5y')?.start).toBe('2021-07-30');
+  });
+});
+
+describe('perfColor and perfDash', () => {
+  // Straight out of tokens.css. Duplicated deliberately: the point of this test
+  // is that a change there cannot quietly drop a series below the floor, so it
+  // has to fail when the two disagree.
+  const TOKENS: Record<string, { light: string; dark: string }> = {
+    '--accent': { light: '#bf4a08', dark: '#e97328' },
+    '--cycle-1': { light: '#e69c62', dark: '#7f3f10' },
+    '--cycle-2': { light: '#d47531', dark: '#a35415' },
+    '--cycle-3': { light: '#bf4a08', dark: '#c9611c' },
+    '--cycle-4': { light: '#93380a', dark: '#e97328' },
+    '--ink': { light: '#221d19', dark: '#eae4dc' },
+    '--ink-muted': { light: '#6e665e', dark: '#968c80' },
+    '--line': { light: '#e2dbd1', dark: '#322c25' },
+    '--surface': { light: '#fcfaf7', dark: '#1e1a15' },
+  };
+  const lum = (hex: string): number => {
+    const f = [1, 3, 5]
+      .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * (f[0] ?? 0) + 0.7152 * (f[1] ?? 0) + 0.0722 * (f[2] ?? 0);
+  };
+  const contrast = (a: string, b: string): number => {
+    const pair = [lum(a), lum(b)].sort((x, y) => y - x);
+    return ((pair[0] ?? 0) + 0.05) / ((pair[1] ?? 0) + 0.05);
+  };
+  const resolve = (value: string, theme: 'light' | 'dark'): string => {
+    const token = /var\((--[a-z0-9-]+)\)/.exec(value)?.[1];
+    return TOKENS[token ?? '']?.[theme] ?? '';
+  };
+  const surface = (theme: 'light' | 'dark'): string => TOKENS['--surface']?.[theme] ?? '';
+
+  it('keeps every series at 3:1 or better against the surface, in both themes', () => {
+    // The floor WCAG sets for graphical objects. Review measured the first
+    // version at 2.17:1 for the S&P and 1.32:1 for DXY on `--line` — the
+    // hairline token, indistinguishable from the gridlines it matches.
+    for (const theme of ['light', 'dark'] as const) {
+      for (const asset of PERF_ASSETS) {
+        const c = contrast(resolve(perfColor(asset), theme), surface(theme));
+        expect(c, `${asset} in ${theme} is ${c.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
+  it('never gives a non-BTC series a colour that equals the accent in either theme', () => {
+    // The ramp includes the accent as one of its own steps — cycle-3 in light,
+    // cycle-4 in dark — which is how ETH and BTC shipped as the same hex on
+    // /flows. Only BTC may resolve to it, because BTC is it.
+    for (const theme of ['light', 'dark'] as const) {
+      const accent = TOKENS['--accent']?.[theme];
+      const matching = PERF_ASSETS.filter((a) => resolve(perfColor(a), theme) === accent);
+      expect(matching, theme).toEqual(['btc']);
+    }
+  });
+
+  it('separates the two series that share a colour by dash instead', () => {
+    expect(perfColor('gold')).toBe(perfColor('dxy'));
+    expect(perfDash('gold')).toBe('');
+    expect(perfDash('dxy')).toBe('6,3');
+  });
+
+  it('gives every series a distinct colour-and-dash pair in both themes', () => {
+    for (const theme of ['light', 'dark'] as const) {
+      const keys = PERF_ASSETS.map((a) => `${resolve(perfColor(a), theme)}|${perfDash(a)}`);
+      expect(new Set(keys).size, theme).toBe(PERF_ASSETS.length);
+    }
+  });
+
+  it('renders a dashed swatch as a gradient and a solid one as the colour', () => {
+    expect(perfSwatch('gold')).toBe('var(--ink-muted)');
+    expect(perfSwatch('dxy')).toContain('repeating-linear-gradient');
+  });
+});
+
+describe('chartLabel', () => {
+  it('names the series, the range and the scale actually shown', () => {
+    // It was a fixed string saying "log scale" and the build's default range, so
+    // a screen-reader user pressing max and linear was told 5y and log.
+    expect(chartLabel(['btc', 'sp500'], 'max', 'linear')).toBe(
+      'Line chart of BTC, S&P 500 indexed to 100 at a shared start date, max range, linear scale',
+    );
   });
 });

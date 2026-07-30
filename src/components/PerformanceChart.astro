@@ -4,9 +4,10 @@ import { dataFor } from '../lib/data';
 import { toJsonScript } from '../lib/embed';
 import { renderResponsiveChart } from '../lib/plot-ssr';
 import { encodeDaily } from '../lib/series-codec';
-import { PERF_LABELS, perfColor, performanceSpec } from '../lib/specs/performance';
+import { performanceSpec } from '../lib/specs/performance';
+import { PERF_LABELS, perfSwatch } from '../lib/perf-shared';
 import { rebaseCovering, type AssetSeries } from '../../pipeline/rebase';
-import { captionOf, perfStartOptions, toAssetSeries } from '../lib/perf-shared';
+import { captionOf, chartLabel, perfStartOptions, toAssetSeries } from '../lib/perf-shared';
 
 interface Props {
   currency: Currency;
@@ -61,7 +62,7 @@ const svg = points.length
       {
         shown.map((asset) => (
           <span class="legend-item">
-            <span class="legend-swatch" style={`background:${perfColor(asset)}`} />
+            <span class="legend-swatch" style={`background:${perfSwatch(asset)}`} />
             {PERF_LABELS[asset] ?? asset}
           </span>
         ))
@@ -90,7 +91,7 @@ const svg = points.length
   <div
     id="perf-chart"
     role="img"
-    aria-label="Line chart of BTC and each benchmark indexed to 100 at a shared start date, on a log scale"
+    aria-label={chartLabel(shown, initial?.label ?? '', 'log')}
     set:html={svg}
   />
   <p class="chart-note num" id="perf-caption" set:html={rebased ? captionOf(rebased) : ''} />
@@ -100,7 +101,7 @@ const svg = points.length
   import { chartData, upgradeChart } from '../lib/charts';
   import { decodeDaily, type DailySeries } from '../lib/series-codec';
   import { rebaseCovering, type AssetSeries } from '../../pipeline/rebase';
-  import { captionOf, PERF_LABELS_CLIENT } from '../lib/perf-shared';
+  import { captionOf, chartLabel, PERF_LABELS_CLIENT, perfSwatch } from '../lib/perf-shared';
   import type { PerfScale } from '../lib/specs/performance';
 
   const container = document.getElementById('perf-chart');
@@ -128,7 +129,7 @@ const svg = points.length
         ?.dataset.start ?? '';
 
     const upgrade = upgradeChart(container, async () => {
-      const [{ drawChart }, { performanceSpec, perfColor }, { crosshairAnchors, isoDay }] =
+      const [{ drawChart }, { performanceSpec }, { crosshairAnchors, isoDay }] =
         await Promise.all([
           import('../lib/plot-client'),
           import('../lib/specs/performance'),
@@ -153,11 +154,22 @@ const svg = points.length
         legend.innerHTML = shown
           .map(
             (a) =>
-              `<span class="legend-item"><span class="legend-swatch" style="background:${perfColor(a)}"></span>${PERF_LABELS_CLIENT[a] ?? a}</span>`,
+              `<span class="legend-item"><span class="legend-swatch" style="background:${perfSwatch(a)}"></span>${PERF_LABELS_CLIENT[a] ?? a}</span>`,
           )
           .join('');
       }
       if (caption) caption.innerHTML = captionOf(rebased);
+      // The label described a log chart of five series whatever was pressed, so
+      // a screen-reader user was told "log scale" over a linear axis and "5y"
+      // over a decade. It follows the chart now.
+      container.setAttribute(
+        'aria-label',
+        chartLabel(
+          shown,
+          rangeToggle?.querySelector('button[aria-pressed="true"]')?.textContent?.trim() ?? '',
+          scale,
+        ),
+      );
 
       const anchors = crosshairAnchors(
         points.map((d) => ({
