@@ -30,6 +30,11 @@ const adjustment =
   deflator?.seasonalAdjustment === 'seasonally-adjusted'
     ? 'seasonally adjusted'
     : 'not seasonally adjusted';
+// Read from the file, not written down. The GBP tree's deflator comes from ONS
+// and the USD one from FRED, and which body served is exactly the kind of fact a
+// literal here would get wrong the first time either list changes.
+const SOURCE_NAMES: Record<string, string> = { fred: 'FRED', ons: 'the ONS' };
+const sourceName = deflator ? (SOURCE_NAMES[deflator.source] ?? deflator.source) : '';
 ---
 
 <Base
@@ -68,8 +73,8 @@ const adjustment =
             and the point of the page: four other pages here will give you the nominal number.
           </p>
           <p class="method-note">
-            The deflator is {deflator.sourceSeries} from FRED, {adjustment}, published monthly
-            from {monthLabel(deflator.firstMonth)} through {monthLabel(deflator.lastMonth)}. A
+            The deflator is {deflator.sourceSeries} from {sourceName}, {adjustment}, published
+            monthly from {monthLabel(deflator.firstMonth)} through {monthLabel(deflator.lastMonth)}. A
             month's observation applies to every day in that month and is never carried into the
             next one. Carrying it forward is the obvious way to cover the publication lag and the
             wrong one: it would deflate the most recent weeks by an index that predates them, so the

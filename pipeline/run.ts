@@ -171,7 +171,8 @@ for (const [currency, fetched] of cpiByCurrency) {
   // Which id served, and every candidate that did not. A silent fallback would
   // make the methodology note wrong, and the note is read from the dataset.
   console.log(
-    `${currency} cpi: ${fetched.sourceSeries} (${fetched.seasonalAdjustment}), ` +
+    `${currency} cpi: ${fetched.sourceSeries} from ${fetched.source} ` +
+      `(${fetched.seasonalAdjustment}), ` +
       `${fetched.series.length} months to ${fetched.series.at(-1)?.month}` +
       (fetched.missingMonths.length > 0
         ? `, unpublished: ${fetched.missingMonths.join(', ')}`
@@ -555,7 +556,7 @@ for (const currency of CURRENCIES) {
           asOf: realSeries.at(-1)?.date,
           pricesThrough,
           deflator: {
-            source: 'fred',
+            source: cpiFetch.source,
             sourceSeries: cpiFetch.sourceSeries,
             seasonalAdjustment: cpiFetch.seasonalAdjustment,
             baseMonth,

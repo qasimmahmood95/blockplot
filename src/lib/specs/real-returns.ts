@@ -18,8 +18,8 @@ export type RealScale = 'log' | 'linear';
  * prevent, and one this repo has already produced once by declaring the
  * performance labels in both places.
  */
-export { REAL_LABELS, REAL_LINES, realColor } from '../real-shared';
-import { REAL_LABELS, realColor, REAL_LINES } from '../real-shared';
+export { REAL_LABELS, REAL_LINES, realColor, realDash } from '../real-shared';
+import { REAL_LABELS, realColor, realDash, REAL_LINES } from '../real-shared';
 
 export function realReturnsSpec(
   points: readonly RealChartPoint[],
@@ -44,7 +44,17 @@ export function realReturnsSpec(
     y: { label: null, grid: true, type: scale, tickFormat },
     color: { domain: [...lines], range: lines.map(realColor) },
     marks: [
-      Plot.lineY(points, { x: 'date', y: 'value', stroke: 'line', strokeWidth: 1.5 }),
+      // Two marks rather than one, because `strokeDasharray` is a constant in
+      // Plot's options and not a channel — the same split `performance.ts`
+      // carries, for the same reason.
+      Plot.lineY(
+        points.filter((d) => !realDash(d.line)),
+        { x: 'date', y: 'value', stroke: 'line', strokeWidth: 1.5 },
+      ),
+      Plot.lineY(
+        points.filter((d) => realDash(d.line)),
+        { x: 'date', y: 'value', stroke: 'line', strokeWidth: 1.5, strokeDasharray: '5,3' },
+      ),
       ...(narrow
         ? []
         : [

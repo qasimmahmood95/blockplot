@@ -8,14 +8,25 @@
  * investor's real return nor a sterling one's. The cost is a second source and a
  * second set of caveats, and the alternative was quietly wrong.
  */
+import { z } from 'zod';
 import { parseFredCsv } from './benchmarks';
-import { getText } from './http';
+import { getJson, getText } from './http';
 import type { Currency } from './currencies';
 
 export type SeasonalAdjustment = 'seasonally-adjusted' | 'not-adjusted';
 
+export type CpiSource = 'fred' | 'ons';
+
 export interface CpiCandidate {
   id: string;
+  /**
+   * Which API serves it, because the two answer in different shapes.
+   *
+   * FRED is a CSV through the existing `parseFredCsv`; ONS is JSON with its own
+   * month encoding. Both end up in `monthlyFromPoints`, so the frequency and gap
+   * rules are applied once rather than per source.
+   */
+  source: CpiSource;
   /**
    * Whether the series is seasonally adjusted, for the methodology note.
    *
@@ -45,28 +56,45 @@ export interface CpiCandidate {
  * same arrangement `ethSource` has in `run.ts` — a silent fallback would make the
  * methodology note wrong, which is this project's most-repeated failure.
  *
- * All of them come from FRED so all of them go through `parseFredCsv`, already
- * tested, and no new host. They are not the same construction — US CPI-U is
- * published on a 1982-84=100 base and the OECD UK indices on 2015=100 — and that
- * needs no reconciling: every figure here is a ratio of two observations of one
- * series, so the base cancels exactly. There is a test asserting it.
+ * The UK deflator comes from ONS rather than FRED, which was not the plan and is
+ * what the data forced. FRED serves no live monthly UK CPI: measured, four
+ * plausible OECD ids (`GBRCPALTT01IXOBSAM`, `GBRCPALTT01IXOBM`, `CPALTT01GBM661S`,
+ * `CPALTT01GBM661N`) all 404, and the one that does exist stops in March 2025.
+ * OECD retired the MEI dataset those came from. ONS is the body that publishes UK
+ * CPI in the first place, so going there is not a workaround — `D7BT` is the
+ * headline all-items index, and the extra host buys the GBP tree the only deflator
+ * that describes its reader.
+ *
+ * The two are not the same construction: US CPI-U is seasonally adjusted on a
+ * 1982-84=100 base, ONS `D7BT` is unadjusted on 2015=100. Neither difference needs
+ * reconciling — every figure here is a ratio of two observations of one series, so
+ * the base cancels exactly, and there is a test asserting it. The adjustment is
+ * recorded and stated on the page instead.
  */
 export const CPI_CANDIDATES: Record<Currency, readonly CpiCandidate[]> = {
   usd: [
-    { id: 'CPIAUCSL', seasonalAdjustment: 'seasonally-adjusted' },
-    { id: 'CPIAUCNS', seasonalAdjustment: 'not-adjusted' },
+    { id: 'CPIAUCSL', source: 'fred', seasonalAdjustment: 'seasonally-adjusted' },
+    { id: 'CPIAUCNS', source: 'fred', seasonalAdjustment: 'not-adjusted' },
   ],
   gbp: [
-    { id: 'GBRCPALTT01IXOBSAM', seasonalAdjustment: 'seasonally-adjusted' },
-    { id: 'GBRCPALTT01IXOBM', seasonalAdjustment: 'not-adjusted' },
-    { id: 'CPALTT01GBM661S', seasonalAdjustment: 'seasonally-adjusted' },
-    { id: 'CPALTT01GBM661N', seasonalAdjustment: 'not-adjusted' },
-    { id: 'GBRCPIALLMINMEI', seasonalAdjustment: 'not-adjusted' },
+    { id: 'D7BT', source: 'ons', seasonalAdjustment: 'not-adjusted' },
+    // Kept last and expected to fail the freshness gate, which is the point: if
+    // OECD ever resumes it the list picks it up without a code change, and until
+    // then its rejection line in the log is a standing record of why the UK
+    // deflator does not come from the same place as the US one.
+    { id: 'GBRCPIALLMINMEI', source: 'fred', seasonalAdjustment: 'not-adjusted' },
   ],
 };
 
 const fredCsvUrl = (id: string): string =>
   `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}`;
+
+/**
+ * ONS's keyless timeseries endpoint. `mm23` is the consumer-price-inflation
+ * dataset; the series id selects the measure within it.
+ */
+const onsUrl = (id: string): string =>
+  `https://api.ons.gov.uk/timeseries/${id.toLowerCase()}/dataset/mm23/data`;
 
 /** One published observation: the month it describes, and the index level. */
 export interface CpiPoint {
@@ -138,8 +166,7 @@ export interface MonthlyCpi {
  */
 export function toMonthlyCpi(csv: string, seriesId: string): MonthlyCpi {
   const rows = parseFredCsv(csv, seriesId);
-  const series: CpiPoint[] = [];
-  const missingMonths: string[] = [];
+  const points: CpiPoint[] = [];
   for (const { date, close } of rows) {
     if (!date.endsWith('-01')) {
       throw new Error(
@@ -147,36 +174,105 @@ export function toMonthlyCpi(csv: string, seriesId: string): MonthlyCpi {
           `dated on the first of the month`,
       );
     }
-    const month = monthOf(date);
+    points.push({ month: monthOf(date), index: close });
+  }
+  return monthlyFromPoints(points, seriesId);
+}
+
+/**
+ * The frequency and gap rules, over observations already keyed by month.
+ *
+ * Shared by both sources so a hole in an ONS series is judged by the same rules as
+ * a hole in a FRED one — two copies of this would be two chances to disagree about
+ * what counts as monthly.
+ */
+export function monthlyFromPoints(points: readonly CpiPoint[], seriesId: string): MonthlyCpi {
+  const series: CpiPoint[] = [];
+  const missingMonths: string[] = [];
+  for (const { month, index: close } of points) {
     const previous = series.at(-1);
     if (previous) {
       const step = monthsBetween(previous.month, month);
       if (step < 1) {
-        throw new Error(
-          `toMonthlyCpi(${seriesId}): ${month} follows ${previous.month} — not ascending`,
-        );
+        throw new Error(`monthlyCpi(${seriesId}): ${month} follows ${previous.month} — not ascending`);
       }
       if (step - 1 > MAX_CPI_GAP_MONTHS) {
         throw new Error(
-          `toMonthlyCpi(${seriesId}): ${step - 1} unpublished months between ${previous.month} ` +
+          `monthlyCpi(${seriesId}): ${step - 1} unpublished months between ${previous.month} ` +
             `and ${month} — beyond ${MAX_CPI_GAP_MONTHS}, which is a coarser frequency rather ` +
             `than an interrupted release`,
         );
       }
       for (let i = 1; i < step; i++) missingMonths.push(addMonths(previous.month, i));
     }
+    if (!(close > 0) || !Number.isFinite(close)) {
+      throw new Error(`monthlyCpi(${seriesId}): ${month} has index ${close}`);
+    }
     series.push({ month, index: close });
   }
-  if (series.length === 0) throw new Error(`toMonthlyCpi(${seriesId}): no observations`);
+  if (series.length === 0) throw new Error(`monthlyCpi(${seriesId}): no observations`);
   const span = series.length + missingMonths.length;
   if (missingMonths.length > span * MAX_CPI_MISSING_SHARE) {
     throw new Error(
-      `toMonthlyCpi(${seriesId}): ${missingMonths.length} of ${span} months unpublished — ` +
+      `monthlyCpi(${seriesId}): ${missingMonths.length} of ${span} months unpublished — ` +
         `beyond ${MAX_CPI_MISSING_SHARE * 100}%, which is a thinned response rather than a ` +
         `series with holes`,
     );
   }
   return { series, missingMonths };
+}
+
+/**
+ * ONS timeseries JSON. Only `months` is read.
+ *
+ * Reading `months` rather than merging the sibling `quarters` and `years` arrays is
+ * the frequency guarantee at this source: there is no way for a quarterly figure to
+ * arrive here wearing a monthly label, because the quarterly ones are in a
+ * different array and this schema does not look at it.
+ */
+const onsTimeseriesSchema = z.object({
+  months: z
+    .array(z.object({ date: z.string().min(1), value: z.string().min(1) }))
+    .min(1),
+});
+
+const ONS_MONTHS = [
+  'JAN',
+  'FEB',
+  'MAR',
+  'APR',
+  'MAY',
+  'JUN',
+  'JUL',
+  'AUG',
+  'SEP',
+  'OCT',
+  'NOV',
+  'DEC',
+];
+
+/** `2026 JUN` as `2026-06`, or a throw. */
+export function onsMonthKey(date: string): string {
+  const [year, name] = date.trim().split(/\s+/);
+  const index = ONS_MONTHS.indexOf((name ?? '').slice(0, 3).toUpperCase());
+  if (!/^\d{4}$/.test(year ?? '') || index < 0) {
+    throw new Error(`onsMonthKey: cannot read "${date}"`);
+  }
+  return `${year}-${String(index + 1).padStart(2, '0')}`;
+}
+
+/** An ONS timeseries payload as month-keyed observations, or a throw. */
+export function toMonthlyOns(payload: unknown, seriesId: string): MonthlyCpi {
+  const { months } = onsTimeseriesSchema.parse(payload);
+  const points = months.map(({ date, value }) => ({
+    month: onsMonthKey(date),
+    index: Number(value),
+  }));
+  // ONS returns oldest-first today, but the order is not part of any contract this
+  // code can rely on, and `monthlyFromPoints` reads adjacency to find holes — so
+  // sort rather than assume, where the FRED path gets `assertAscending` for free.
+  points.sort((a, b) => (a.month < b.month ? -1 : a.month > b.month ? 1 : 0));
+  return monthlyFromPoints(points, seriesId);
 }
 
 /**
@@ -206,12 +302,20 @@ export const MAX_CPI_LAG_MONTHS = 3;
 
 export interface CpiFetch {
   currency: Currency;
+  source: CpiSource;
   sourceSeries: string;
   seasonalAdjustment: SeasonalAdjustment;
   series: CpiPoint[];
   missingMonths: string[];
   /** Candidates tried and rejected before this one, and why. */
   rejected: string[];
+}
+
+/** Fetch and normalise one candidate, whichever API serves it. */
+async function loadCandidate(candidate: CpiCandidate): Promise<MonthlyCpi> {
+  return candidate.source === 'fred'
+    ? toMonthlyCpi(await getText(fredCsvUrl(candidate.id)), candidate.id)
+    : toMonthlyOns(await getJson(onsUrl(candidate.id)), candidate.id);
 }
 
 /**
@@ -236,10 +340,11 @@ export const isFreshEnough = (cpi: readonly CpiPoint[], through: string): boolea
  */
 export async function fetchCpi(currency: Currency, through: string): Promise<CpiFetch> {
   const rejected: string[] = [];
-  for (const { id, seasonalAdjustment } of CPI_CANDIDATES[currency]) {
+  for (const candidate of CPI_CANDIDATES[currency]) {
+    const { id, source, seasonalAdjustment } = candidate;
     let parsed: MonthlyCpi;
     try {
-      parsed = toMonthlyCpi(await getText(fredCsvUrl(id)), id);
+      parsed = await loadCandidate(candidate);
     } catch (err) {
       rejected.push(`${id}: ${err instanceof Error ? err.message : String(err)}`);
       continue;
@@ -254,6 +359,7 @@ export async function fetchCpi(currency: Currency, through: string): Promise<Cpi
     }
     return {
       currency,
+      source,
       sourceSeries: id,
       seasonalAdjustment,
       series: parsed.series,

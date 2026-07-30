@@ -92,7 +92,8 @@ const t = signals.thresholds;
           <dt>CPI deflator</dt>
           <dd class="num">{realReturns.deflator.sourceSeries}</dd>
           <dd class="sub num">
-            FRED · to {realReturns.deflator.lastMonth} · {realReturns.deflator.lagMonths}m lag
+            {realReturns.deflator.source === 'ons' ? 'ONS' : 'FRED'} · to{' '}
+            {realReturns.deflator.lastMonth} · {realReturns.deflator.lagMonths}m lag
           </dd>
         </div>
       )}

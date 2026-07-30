@@ -854,7 +854,11 @@ export const realReturnsDatasetSchema = z
     /** Last day prices exist for, which is later. The page states the gap. */
     pricesThrough: isoDate,
     deflator: z.object({
-      source: z.literal('fred'),
+      /**
+       * Which API served it. FRED for US CPI; ONS for the UK, because FRED has no
+       * live monthly UK series — see CPI_CANDIDATES for the measured 404s.
+       */
+      source: z.enum(['fred', 'ons']),
       /** Series id at the source, e.g. CPIAUCSL. */
       sourceSeries: z.string().min(1),
       seasonalAdjustment: z.enum(['seasonally-adjusted', 'not-adjusted']),

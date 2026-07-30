@@ -6,7 +6,7 @@
  * accessible name are drawn on load and again on every press, and a static
  * import of the spec module would put Plot back on the critical path.
  */
-import { currencyFormatters, type Currency } from './currency';
+import { CURRENCY_META, type Currency } from './currency';
 import type { RealReturnsDataset } from '../../pipeline/schema';
 
 /** Draw order, which is also the legend order and the colour assignment. */
@@ -31,16 +31,38 @@ export const REAL_LABELS: Record<string, string> = {
  * Two colours, both of which clear 3:1 against the chart surface in both themes.
  *
  * The accent and the ink are the only two this site has established for that —
- * `perf-shared.ts` records the measurements, including the two tokens that
- * looked usable and were not. Nominal takes the accent because it is the series
- * every other page draws in it; real takes the ink. Neither `--pos` nor `--neg`,
- * because a chart of a price is not a chart of a gain.
+ * `perf-shared.ts` records the measurements, including the two tokens that looked
+ * usable and were not. Nominal takes the accent because it is the series every
+ * other page draws in it; real takes the ink. Neither `--pos` nor `--neg`, because
+ * a chart of a price is not a chart of a gain.
+ *
+ * Contrast against the surface is not enough here, though, and a test caught it:
+ * in dark mode `--accent` and `--ink` are only 2.39:1 against *each other*. On
+ * `/performance` that is tolerable — five series, each with its own end label,
+ * mostly far apart. These two hug each other for the whole recent history, which
+ * is exactly where a reader looks, so colour alone would be doing the work at
+ * 2.39:1. Hence the dash below.
  */
 export const realColor = (line: string): string =>
   line === 'nominal' ? 'var(--accent)' : 'var(--ink)';
 
-/** The legend swatch for a line. */
-export const realSwatch = (line: string): string => realColor(line);
+/**
+ * Dash pattern for a line, empty when solid.
+ *
+ * Real is dashed, and not only to fix the dark-mode pair contrast: the nominal
+ * line is what the market printed and the real one is a restatement of it, so a
+ * derived line drawn differently from a quoted one says something true. The same
+ * reasoning as DXY's dash on `/performance`, where the odd series out is the one
+ * that is not an investable asset.
+ */
+export const realDash = (line: string): string => (line === 'real' ? '5,3' : '');
+
+/** The legend swatch for a line: a solid bar, or a dashed one for real. */
+export function realSwatch(line: string): string {
+  const color = realColor(line);
+  if (!realDash(line)) return color;
+  return `repeating-linear-gradient(90deg, ${color} 0 4px, transparent 4px 7px)`;
+}
 
 /** `2026-06` as `June 2026`, for prose and the caption. */
 export function monthLabel(month: string): string {
@@ -78,15 +100,34 @@ export function realFormatters(currency: Currency): {
   tick: (value: number) => string;
   tip: (value: number) => string;
 } {
-  const { money, compact } = currencyFormatters(currency);
+  const code = CURRENCY_META[currency].code;
+  // One decimal on the axis, not the two `currencyFormatters` uses: its compact
+  // formatter is built for stat tiles and gives "$1.20K", where five ticks have
+  // to fit in 66 pixels. The network charts' compact formatter uses 1 for the
+  // same reason.
+  const axis = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: code,
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  });
+  const exact = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: code,
+    maximumFractionDigits: 0,
+  });
+  // For the early history, where a whole-unit format is not a rounding choice
+  // but an error: BTC's first committed close is $0.0451, and "$0" states that
+  // it was worthless.
+  const sub = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: code,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  });
   return {
-    // Sub-unit prices are the early history and compact notation renders them
-    // as "$0.05" already; above a thousand it is "$1.2K". Both are what the axis
-    // wants.
-    tick: (value: number) => compact.format(value),
-    // `money` carries no fraction digits, which is right for today's prices and
-    // wrong for 2011's: at $0.87 it would read "$1". Below ten, show cents.
-    tip: (value: number) => (Math.abs(value) < 10 ? compact.format(value) : money.format(value)),
+    tick: (value: number) => axis.format(value),
+    tip: (value: number) => (Math.abs(value) < 10 ? sub.format(value) : exact.format(value)),
   };
 }
 
@@ -101,11 +142,12 @@ export interface RangeOption {
  *
  * Not recomputed from the series. The tiles above the chart state a return for
  * each window and the chart draws one of them, so the two have to mean the same
- * span — and the pipeline measured its windows on the *full* daily series while
- * the chart is drawn from a payload thinned to weekly before 730 days. Deriving
- * the presets here from the thinned rows would put the chart's 10y start up to
- * six days from the tile's, which is small, invisible, and exactly the kind of
- * disagreement that makes a reader distrust both numbers.
+ * span, and the way to guarantee that is to take the span from the same place the
+ * figure came from. Deriving a "10y" start here — a fresh subtraction off the last
+ * row — would land a few days from the one the pipeline anchored on, which is
+ * small, invisible, and exactly the kind of disagreement that makes a reader
+ * distrust both numbers. The pipeline anchors its windows on rows this file
+ * contains (see the comment in `run.ts`), so every start here is a drawable point.
  *
  * The default is 5y: long enough for the deflator to have done something visible
  * and short enough that the two lines have not diverged into different orders of
@@ -167,8 +209,25 @@ export interface RealTile {
   tone: '' | 'up' | 'down';
 }
 
-const pct = (value: number | null): string =>
-  value === null ? '—' : `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+/**
+ * Above this, a return is stated as a multiple instead of a percentage.
+ *
+ * Not a style preference. The max window's real return is +56,293,498.9%, which is
+ * twelve digits a reader has to count to place the decimal point, and the tile
+ * beside it says +85,908,757.1% — two figures nobody can compare at a glance. As
+ * multiples they are ×562,936 and ×859,088, which is also how anyone actually
+ * talks about a return that size. The threshold sits above the deepest window that
+ * still reads naturally as a percentage: 10y is +6,089.8% and stays one.
+ */
+export const MULTIPLE_ABOVE_PCT = 10_000;
+
+const multiple = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+
+const pct = (value: number | null): string => {
+  if (value === null) return '—';
+  if (value >= MULTIPLE_ABOVE_PCT) return `×${multiple.format(1 + value / 100)}`;
+  return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+};
 
 /**
  * One tile per window, real first.

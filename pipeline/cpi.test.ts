@@ -16,9 +16,11 @@ import {
   MIN_ANNUALISE_DAYS,
   monthOf,
   monthsBetween,
+  onsMonthKey,
   realWindows,
   REAL_WINDOWS,
   toMonthlyCpi,
+  toMonthlyOns,
   WINDOW_START_TOLERANCE_DAYS,
   type CpiPoint,
 } from './cpi';
@@ -178,6 +180,89 @@ describe('toMonthlyCpi', () => {
         'CPIAUCSL',
       ),
     ).toThrow();
+  });
+});
+
+describe('onsMonthKey', () => {
+  it('reads the ONS month encoding', () => {
+    expect(onsMonthKey('2026 JUN')).toBe('2026-06');
+    expect(onsMonthKey('1988 JAN')).toBe('1988-01');
+    expect(onsMonthKey('2025 DEC')).toBe('2025-12');
+  });
+
+  it('tolerates casing and extra whitespace', () => {
+    expect(onsMonthKey(' 2026  jun ')).toBe('2026-06');
+    expect(onsMonthKey('2026 June')).toBe('2026-06');
+  });
+
+  it('throws on anything it cannot read', () => {
+    // A quarter or a year arriving where a month was expected has to fail loudly:
+    // silently keying "2026 Q2" to a month would deflate three months by one
+    // observation.
+    expect(() => onsMonthKey('2026 Q2')).toThrow(/cannot read/);
+    expect(() => onsMonthKey('2026')).toThrow(/cannot read/);
+    expect(() => onsMonthKey('JUN 2026')).toThrow(/cannot read/);
+  });
+});
+
+describe('toMonthlyOns', () => {
+  const payload = (months: [string, string][]): unknown => ({
+    // The sibling arrays the schema deliberately ignores: reading only `months`
+    // is the frequency guarantee at this source.
+    quarters: [{ date: '2026 Q2', value: '140.0' }],
+    years: [{ date: '2026', value: '139.0' }],
+    months: months.map(([date, value]) => ({ date, value })),
+  });
+
+  it('keys observations by month and parses the string values', () => {
+    const out = toMonthlyOns(
+      payload([
+        ['2026 MAY', '138.4'],
+        ['2026 JUN', '139.1'],
+      ]),
+      'D7BT',
+    );
+    expect(out.series).toEqual([
+      { month: '2026-05', index: 138.4 },
+      { month: '2026-06', index: 139.1 },
+    ]);
+  });
+
+  it('sorts rather than assuming the response order', () => {
+    // Adjacency is what finds the holes, so an ordering assumption would turn a
+    // newest-first response into 950 fabricated gaps.
+    const out = toMonthlyOns(
+      payload([
+        ['2026 JUN', '139.1'],
+        ['2026 APR', '137.9'],
+        ['2026 MAY', '138.4'],
+      ]),
+      'D7BT',
+    );
+    expect(out.series.map((p) => p.month)).toEqual(['2026-04', '2026-05', '2026-06']);
+    expect(out.missingMonths).toEqual([]);
+  });
+
+  it('applies the same gap rules as the FRED path', () => {
+    expect(() =>
+      toMonthlyOns(
+        payload([
+          ['2026 JAN', '137'],
+          ['2026 JUL', '139'],
+        ]),
+        'D7BT',
+      ),
+    ).toThrow(new RegExp(`beyond ${MAX_CPI_GAP_MONTHS}`));
+  });
+
+  it('rejects a non-numeric or non-positive index', () => {
+    expect(() => toMonthlyOns(payload([['2026 JUN', '..']]), 'D7BT')).toThrow(/has index/);
+    expect(() => toMonthlyOns(payload([['2026 JUN', '0']]), 'D7BT')).toThrow(/has index/);
+  });
+
+  it('rejects a payload with no months array', () => {
+    expect(() => toMonthlyOns({ years: [] }, 'D7BT')).toThrow();
+    expect(() => toMonthlyOns({ months: [] }, 'D7BT')).toThrow();
   });
 });
 
@@ -443,6 +528,7 @@ describe('deflator configuration', () => {
       expect(candidates.length).toBeGreaterThan(0);
       for (const candidate of candidates) {
         expect(candidate.id).toMatch(/^[A-Z0-9]+$/);
+        expect(candidate.source).toMatch(/^(fred|ons)$/);
         expect(candidate.seasonalAdjustment).toMatch(/^(seasonally-adjusted|not-adjusted)$/);
       }
       expect(new Set(candidates.map((c) => c.id)).size).toBe(candidates.length);
