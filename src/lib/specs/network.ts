@@ -40,11 +40,20 @@ export const NETWORK_SERIES = {
 /**
  * The scale a series can actually use.
  *
- * A log axis cannot plot a zero or a negative, and `feePerTxSats` emits a
- * genuine zero for a day with no fees at all. Rather than drop the day — the
- * data is right, the axis is the problem — the preference degrades to linear and
- * the caller can say so. Shared by the build and the browser, so the two cannot
- * pick different axes for the same data.
+ * A log axis cannot plot a zero or a negative, so the preference degrades to
+ * linear rather than producing an axis with no domain.
+ *
+ * It cannot currently fire, and the first version of this comment claimed
+ * otherwise — that it existed "rather than drop a genuine zero-fee day".
+ * `networkPointSchema` requires every value to be positive, so a zero-fee day
+ * does not reach here: it fails validation and costs the whole file, which was
+ * verified by injecting one and watching the build refuse it. This is
+ * defence-in-depth for a future series whose zeros are legitimate, or for a
+ * relaxed schema — not a path the committed data takes.
+ *
+ * Shared by the build and the browser regardless, so the two cannot pick
+ * different axes for the same data — which would show as the chart changing
+ * shape on hover.
  */
 export function safeScale(
   points: readonly NetworkPoint[],

@@ -99,7 +99,10 @@ const { currency } = Astro.props as { currency: import('../../lib/currency').Cur
   }
 
   <section class="chart-section">
-    <h2>Hash rate, transactions &amp; fees · trailing {keepDays}d</h2>
+    {/* The heading names only what is actually drawn. It said "& fees"
+        unconditionally, so a run that lost the fee series left a heading
+        promising a third chart that was not there. */}
+    <h2>{`Hash rate, transactions${feePerTx ? ' & fees' : ''} · trailing ${keepDays}d`}</h2>
     <NetworkCharts />
     <p class="method-note">
       Network hash rate (exahashes per second, converted in the pipeline from blockchain.com's
@@ -111,22 +114,24 @@ const { currency } = Astro.props as { currency: import('../../lib/currency').Cur
       complete UTC days, so this page lags the price pages by a day. All figures are computed in
       the pipeline by fixture-tested pure functions.
     </p>
-    <p class="method-note">
-      Fee per transaction is derived rather than fetched: blockchain.com publishes total fees per
-      day and transactions per day, and the quotient is what a transaction actually cost, where the
-      raw series is what the whole network paid. It is in satoshis — this page carries chain
-      properties only, so a currency would need an exchange rate the rest of the page does not use,
-      and the tiers above are already quoted in sat/vB. The two series are joined on date rather
-      than by position, since they arrive as separate requests: a day present in one and missing
-      from the other would otherwise pair the wrong values and shift everything after it.
-      {
-        feePerTx?.percentile !== null &&
-          feePerTx?.percentile !== undefined &&
-          ` The standing beside it is the share of the last ${keepDays} days strictly below today, which is the number that makes a sat/vB tier mean something — it is what the tiers above lacked entirely until now.`
-      }
-      The axis is logarithmic because the range is the story: fees sit in the low hundreds of
-      satoshis for months and spike into the tens of thousands, and on a linear axis every quiet
-      period is a flat line on the floor.
-    </p>
+    {
+      feePerTx && (
+        <p class="method-note">
+          Fee per transaction is derived rather than fetched: blockchain.com publishes total fees
+          per day and transactions per day, and the quotient is what a transaction actually cost,
+          where the raw series is what the whole network paid. It is in satoshis — this page carries
+          chain properties only, so a currency would need an exchange rate the rest of the page does
+          not use, and the tiers above are already quoted in sat/vB. The two series are joined on
+          date rather than by position, since they arrive as separate requests: a day present in one
+          and missing from the other would otherwise pair the wrong values and shift everything
+          after it.
+          {feePerTx.percentile !== null &&
+            ` The standing beside it is the share of the last ${keepDays} days strictly below today, which is the number that makes a sat/vB tier mean something — it is what the tiers above lacked entirely until now.`}
+          The axis is logarithmic because the range is the story: fees sit in the low hundreds of
+          satoshis for months and spike into the tens of thousands, and on a linear axis every quiet
+          period is a flat line on the floor.
+        </p>
+      )
+    }
   </section>
 </Base>
