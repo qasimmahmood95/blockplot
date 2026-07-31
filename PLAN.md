@@ -541,12 +541,26 @@ finishing work on what exists, in this order:
    range and both scales, and 4.6px axis type on phones. Both are visual and
    neither needs a picture: since M15 the charts are server-rendered SVG, so
    where every label sits and how big it is are facts in `dist/`.
-   `tests/rendered/charts.test.ts` checks both width variants exist at their
-   declared widths, that no label overlaps another, that none is drawn outside
-   its box, and that nominal type times the narrow container's scale stays above
-   6px. Each was confirmed red under the change it exists to catch — widening
-   `NARROW_WIDTH` to 760 reports "4.0px", an overcrowded axis names the pairs
-   sharing a pixel, a shrunk `marginLeft` names the labels off the edge.
+   `tests/rendered/charts.test.ts`, six checks over the 18 routes that carry an
+   SVG: the built chart count per route; both width variants at their declared
+   widths; effective type above 6px at *both* breakpoints; no tick label's box
+   intersecting its neighbour's; no two labels at one point; nothing drawn
+   outside the canvas, labels and mark paths alike.
+
+   The first version of it passed **ten of fifteen** real regressions. The size
+   it measured was not the size the browser uses — Plot writes `font-size="10"`
+   as an attribute and `PLOT_STYLE` writes `font-size:11px` into the same
+   element's inline style, which wins — so shrinking the shared theme's type to
+   4px shipped 2.5px labels on a phone, green. The container it divided by
+   (301px) was not the container (246px, from `body`'s 40px and
+   `.chart-frame`'s 34px at a 320px viewport), and the two errors flattered in
+   the same direction: real headroom over the floor is 0.8px, not the 1.5px its
+   comment claimed. It compared anchor points rather than boxes, so 52 week
+   ticks 5.9px apart and 13.6px wide passed. It never looked at the wide
+   variant, at vertical position, or at a `<path>` at all — so a `WIDE_WIDTH`
+   of 1600, date labels rotated onto their side and out of the box, lines drawn
+   783px above a 300px canvas, and a chart rendered completely blank were all
+   green. All fifteen are caught now, each verified by re-running the mutation.
 
    Preferred to screenshot diffing on the merits, not only on cost: a diff
    answers "did anything change", which on a site whose data moves every six
@@ -610,6 +624,22 @@ and watching it stay green:
   checks are universal, so every page with an SVG has those.
 - **Nothing outside the SVG is checked visually.** Colour, spacing, weight and
   everything in CSS is uncovered; a theme token going wrong would not fail here.
+  A legend or annotation drawn outside the `<svg>` but inside `.chart-frame` is
+  invisible to the chart checks for the same reason.
+- **The end-of-line series labels can overlap, and nothing catches it.** On
+  `/volatility`, `/cycles` and `/performance` a `Plot.text` mark labels each
+  line at its last point, so its y *is* a data value and two labels drift
+  together and apart on their own — measured over the committed series, 28.8% of
+  days on `/volatility` and 17.2% on `/performance` have some pair within 4px,
+  with a run of 30 consecutive days in the GBP tree. Real, and recurring. The
+  overlap check is deliberately scoped to axis ticks so that a *data refresh*
+  cannot turn an unchanged diff red, which would be the worse failure. The fix
+  belongs in the specs — dodge the labels, or drop them and lean on the legend
+  that already sits above every one of those three charts, which is what
+  `/performance` does at its narrow width and for this exact reason.
+- **`src/lib/specs/holdings.ts` is never checked.** It renders only in the
+  client island, so it never appears in `dist/` — and it is the one chart whose
+  labels are sized by a reader-entered amount.
 - **Drift-capable literals still in prose**: `methodology.astro`'s `0.019%`
   against `1.285%` — a one-off measurement of a past decision rather than a
   claim about current data, so arguably fine where it is, but nothing says so.
