@@ -48,7 +48,7 @@ export function cyclesSpec(
       // near each other is ordinary rather than exceptional.
       ...dodgedEnds(lineEnds, (d) => d.multiple, {
         scale,
-        domain: extentOf(points, (d) => d.multiple),
+        domain: extentOf(points, (d) => d.multiple, scale),
         plotHeight: PLOT_HEIGHT - Y_MARGINS,
         minGap: 13,
       }).map(({ datum, dy }) =>

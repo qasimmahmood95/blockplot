@@ -46,8 +46,8 @@ export function volSpec(
       Plot.lineY(points, { x: 'date', y: 'volPct', stroke: 'window', strokeWidth: 1.75 }),
       // One mark per label, because each needs its own `dy` and Plot's is a
       // constant rather than a channel. Nudged apart where the windows end
-      // close together, which they do often: on 28.6% of the days this file
-      // covers some pair of these labels would sit within 4px, and on 7.1%
+      // close together, which they do often: on 20.6% of the days this file
+      // covers some pair of these labels would sit within 4px, and on 6.3%
       // within one. See `end-labels.ts`.
       ...dodgedEnds(lineEnds, (d) => d.volPct, {
         scale: 'linear',

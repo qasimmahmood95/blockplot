@@ -8,11 +8,16 @@
  * labels on top of each other.
  *
  * Not hypothetical, and not rare. Replaying `/volatility`'s committed series
- * day by day: on **28.6%** of the 364 days all three windows cover, some pair
- * of labels sits within 4px, and on **7.1%** within one pixel. Most recently
- * 2026-07-05. Today they happen to be 14.6px apart, which is why nobody has
- * seen it — the condition comes and goes with the market, and it came back
- * about every third day.
+ * day by day — each day's axis domain taken from the points drawn up to that
+ * day, as the chart does — some pair of labels sits within 4px on **20.6%** of
+ * the 364 days all three windows cover, and within one pixel on **6.3%**. Most
+ * recently 2026-07-05 and 2026-07-04. Today they are 14.1px apart, which is why
+ * nobody had seen it: the condition comes and goes with the market, and came
+ * back about one day in five.
+ *
+ * (An earlier version of these figures said 28.6% and 7.1%. That replay held
+ * the domain at the full history's extent instead of letting it move with the
+ * data, which is not what the chart does — it overstated the rate by a third.)
  *
  * So the labels are nudged apart. Nudged, not dropped: the legend above each
  * chart is a worse way to identify five lines, and `/performance` already drops
@@ -29,6 +34,12 @@
  * misplace them. The output is a `dy` in pixels, which Plot applies verbatim.
  */
 
+interface Placed {
+  index: number;
+  at: number;
+  placed: number;
+}
+
 export interface DodgeOptions {
   /** The y scale the chart is drawing with. */
   scale: 'linear' | 'log';
@@ -42,9 +53,15 @@ export interface DodgeOptions {
 
 const project = (value: number, { scale, domain, plotHeight }: DodgeOptions): number => {
   const [lo, hi] = domain;
-  const at = scale === 'log' ? Math.log(Math.max(value, Number.MIN_VALUE)) : value;
-  const from = scale === 'log' ? Math.log(Math.max(lo, Number.MIN_VALUE)) : lo;
-  const to = scale === 'log' ? Math.log(Math.max(hi, Number.MIN_VALUE)) : hi;
+  // No clamp to `Number.MIN_VALUE`. It papered over a mismatch rather than
+  // fixing one: Plot drops non-positive values from a log domain, so clamping
+  // them here put `Math.log(5e-324) = −744` at one end of a domain Plot had
+  // built from the positive values alone, squeezing every real label into a
+  // 1.5px sliver. `extentOf` skips them on a log axis now, the same way Plot
+  // does, and a non-finite result falls through to the guard in `dodgeBy`.
+  const at = scale === 'log' ? Math.log(value) : value;
+  const from = scale === 'log' ? Math.log(lo) : lo;
+  const to = scale === 'log' ? Math.log(hi) : hi;
   if (!(to > from)) return plotHeight / 2;
   // Pixels down from the top, which is how SVG counts and how `dy` reads.
   return ((to - at) / (to - from)) * plotHeight;
@@ -63,22 +80,60 @@ export function dodgeBy(values: readonly number[], options: DodgeOptions): numbe
   const dy = values.map(() => 0);
   if (values.length < 2) return dy;
 
-  const order = values.map((value, index) => ({ index, at: project(value, options) }));
+  const order: Placed[] = values.map((value, index) => ({
+    index,
+    at: project(value, options),
+    placed: undefined as unknown as number,
+  }));
+  // A non-finite position cannot be ordered or separated, and letting one
+  // through poisoned every label after it — `Math.max(NaN, …)` is NaN, so the
+  // running floor became NaN and so did the rest. `extentOf` guards the same
+  // hazard one function down; this did not.
   order.sort((a, b) => a.at - b.at);
 
   let previous = -Infinity;
   for (const entry of order) {
+    if (!Number.isFinite(entry.at)) continue;
     const placed = Math.max(entry.at, previous + options.minGap);
+    entry.placed = placed;
     dy[entry.index] = placed - entry.at;
     previous = placed;
   }
 
-  // Pushing only downward biases the whole group away from its lines. Half the
-  // total push goes back up, which halves the worst single label's error and
-  // leaves the separation untouched — every gap is a difference, and shifting
-  // them all by the same amount does not change a difference.
-  const pushed = dy.reduce((a, b) => Math.max(a, b), 0);
-  if (pushed > 0) for (let i = 0; i < dy.length; i += 1) (dy[i] as number) -= pushed / 2;
+  // Pushing only downward biases a crowd away from its lines, so each crowd
+  // slides back up by half its own overflow.
+  //
+  // Per *run*, not across the whole chart: shifting everything by the largest
+  // push anywhere moved labels that never collided. Four cycles ending 175px
+  // apart, two of them close together, had all four displaced by 19px — and on
+  // `/cycles` the labels are not even in one column, so two of those could not
+  // have overlapped whatever their y.
+  //
+  // A run is a maximal group the forward pass welded together at exactly
+  // `minGap`. Runs settle top-first, and each one's rise is clamped by the one
+  // above it: unclamped, a lower run can rise further than its neighbour and
+  // close the gap the forward pass just opened — measured on
+  // [100, 100, 89.6, 89.6, 89.6], where a 13px separation became 6.5px.
+  const settled = order.filter((entry) => entry.placed !== undefined);
+  let floor = -Infinity;
+  for (let i = 0; i < settled.length; ) {
+    let end = i;
+    while (
+      end + 1 < settled.length &&
+      (settled[end + 1] as Placed).placed - (settled[end] as Placed).placed <= options.minGap + 1e-9
+    ) {
+      end += 1;
+    }
+    const last = settled[end] as Placed;
+    const rise = Math.min((last.placed - last.at) / 2, (settled[i] as Placed).placed - floor);
+    for (let j = i; j <= end; j += 1) {
+      const entry = settled[j] as Placed;
+      entry.placed -= rise;
+      dy[entry.index] = entry.placed - entry.at;
+    }
+    floor = last.placed + options.minGap;
+    i = end + 1;
+  }
   // Rounded, because the subtraction above leaves residue on the labels that
   // did not need moving — a `dy` of −2.8e-14, which Plot writes into the markup
   // in exponential form as `translate(20,-2.8e-14)`. Sub-hundredth-pixel
@@ -105,15 +160,31 @@ export function dodgedEnds<T>(
   return ends.map((datum, i) => ({ datum, dy: offsets[i] as number }));
 }
 
-/** The y values a chart spans, from the points it is drawing. */
-export function extentOf<T>(points: readonly T[], value: (datum: T) => number): [number, number] {
+/**
+ * The y values a chart spans, from the points it is drawing.
+ *
+ * Scale-aware, because Plot's domain is: on a log axis it drops non-positive
+ * values, since they have no position there. Taking them would put this
+ * function's domain somewhere Plot's is not, which is the one way the
+ * projection above can disagree with the chart it is measuring.
+ *
+ * Non-finite values are skipped either way — `/real-returns` inserts them to
+ * break a line at a hole in the deflator, and one of them would otherwise make
+ * the whole extent `NaN`.
+ */
+export function extentOf<T>(
+  points: readonly T[],
+  value: (datum: T) => number,
+  scale: DodgeOptions['scale'] = 'linear',
+): [number, number] {
   let lo = Infinity;
   let hi = -Infinity;
   for (const point of points) {
     const at = value(point);
     if (!Number.isFinite(at)) continue;
+    if (scale === 'log' && at <= 0) continue;
     if (at < lo) lo = at;
     if (at > hi) hi = at;
   }
-  return Number.isFinite(lo) ? [lo, hi] : [0, 1];
+  return Number.isFinite(lo) && Number.isFinite(hi) ? [lo, hi] : [0, 1];
 }

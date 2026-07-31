@@ -87,7 +87,7 @@ export function performanceSpec(
         ? []
         : dodgedEnds(lineEnds, (d) => d.index, {
             scale,
-            domain: extentOf(points, (d) => d.index),
+            domain: extentOf(points, (d) => d.index, scale),
             plotHeight: PLOT_HEIGHT - Y_MARGINS,
             minGap: 12,
           }).map(({ datum, dy }) =>
@@ -95,7 +95,16 @@ export function performanceSpec(
               x: 'date',
               y: 'index',
               text: (d: PerfPoint) => PERF_LABELS[d.asset] ?? d.asset,
-              fill: 'asset',
+              // The token, resolved here, rather than the `asset` channel Plot
+              // would put through its colour scale. One mark per label broke
+              // that: Plot skips the scale when *every* value in a colour
+              // channel is already a valid CSS colour, and a one-datum channel
+              // of `['gold']` is — so the gold label shipped painted literal
+              // `gold`, `#FFD700`, while its line stayed `var(--ink-muted)`.
+              // A baked colour does not follow the theme toggle, which is what
+              // CLAUDE.md's "colours are `var(--token)`" rule is for, and it
+              // stopped the label matching the line it names.
+              fill: perfColor(datum.asset),
               textAnchor: 'start',
               dx: 6,
               dy,

@@ -657,19 +657,20 @@ and watching it stay green:
   the check now covers them.** On `/volatility`, `/cycles` and `/performance` a
   `Plot.text` mark labels each line at its last point, so its y *is* a data
   value and two labels drift together and apart on their own. Replayed over the
-  committed series: some pair within 4px on **28.6%** of days and within one
-  pixel on **7.1%**, most recently 2026-07-05. Today they sit 14.6px apart,
-  which is why nobody had seen it.
+  committed series, with each day's domain taken from the points drawn up to
+  that day as the chart does: some pair within 4px on **20.6%** of days and
+  within one pixel on **6.3%**, most recently 2026-07-05 and 2026-07-04. Today
+  they sit 14.1px apart, which is why nobody had seen it.
 
   `src/lib/specs/end-labels.ts` nudges them apart — dodged rather than dropped,
   since the legend is a worse way to identify five lines. It re-derives only the
   linear/log mapping over a domain the caller passes, not Plot's scale
-  construction, so there is no second definition to drift; a domain Plot rounds
-  outward shrinks the nudges slightly and cannot reorder them. With the
-  condition gone from the charts, the rendered gate's co-location check drops
-  its axis-only exemption and covers every label. Swept across ten end
-  spacings from an exact tie to 5pp: green at all ten, and red at the tie with
-  the dodge disabled, so the sweep is not passing vacuously.
+  construction, so there is no second definition to drift — and that claim is
+  now tested rather than argued: the three specs are rendered at a tie and the
+  separation read back out of the SVG, which is what catches a wrong plot
+  height, a domain taken from the wrong points, or a log axis read as linear.
+  With the condition gone from the charts, the rendered gate's co-location check
+  drops its axis-only exemption and covers every label.
 - **`src/lib/specs/holdings.ts` is never checked.** It renders only in the
   client island, so it never appears in `dist/` — and it is the one chart whose
   labels are sized by a reader-entered amount.
