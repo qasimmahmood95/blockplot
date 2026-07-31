@@ -195,7 +195,8 @@ describe('realTiles', () => {
       ],
     });
     const [tile] = realTiles(eroded);
-    expect(tile?.value).toBe('-1.2%');
+    // U+2212, like every other figure on the site — see `formatPct`.
+    expect(tile?.value).toBe('−1.2%');
     expect(tile?.tone).toBe('down');
   });
 

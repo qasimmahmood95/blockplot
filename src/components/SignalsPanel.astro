@@ -1,6 +1,7 @@
 ---
 import { CURRENCY_META, type Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
+import { formatPct } from '../lib/format';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
@@ -24,7 +25,7 @@ const money = new Intl.NumberFormat('en-US', {
 });
 
 const { thresholds: t } = signals;
-const pct = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+const pct = formatPct;
 const days = (n: number): string => `${n} ${n === 1 ? 'day' : 'days'}`;
 
 /**

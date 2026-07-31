@@ -3,6 +3,7 @@ import PerformanceChart from '../../components/PerformanceChart.astro';
 import Base from '../../layouts/Base.astro';
 import { dxyNote, ethNote, fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
+import { formatPct } from '../../lib/format';
 import { currencyPaths } from '../../lib/routes';
 import { rebaseCovering, totalReturnPct } from '../../../pipeline/rebase';
 import { PERF_LABELS_CLIENT, perfStartOptions, toAssetSeries } from '../../lib/perf-shared';
@@ -43,10 +44,7 @@ const ethFrom = firstOf('eth');
       ranked.map((s) => (
         <div class="stat">
           <dt>{PERF_LABELS_CLIENT[s.asset] ?? s.asset}</dt>
-          <dd class={`num ${totalReturnPct(s) < 0 ? 'down' : 'up'}`}>
-            {totalReturnPct(s) >= 0 ? '+' : ''}
-            {totalReturnPct(s).toFixed(1)}%
-          </dd>
+          <dd class={`num ${totalReturnPct(s) < 0 ? 'down' : 'up'}`}>{formatPct(totalReturnPct(s))}</dd>
           <dd class="sub num">index {s.finalIndex.toFixed(0)}</dd>
         </div>
       ))
