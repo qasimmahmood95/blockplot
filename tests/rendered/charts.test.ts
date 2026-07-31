@@ -26,10 +26,24 @@
  * What this still does not cover: colour, spacing, weight, and anything living
  * in CSS rather than in the SVG. PLAN.md keeps that open.
  */
+import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { assertFresh, page, routes } from './dist';
 
 assertFresh();
+
+/**
+ * Whether `/real-returns` has a dataset to draw this run.
+ *
+ * The one chart on the site whose absence is a *designed* state rather than an
+ * outage: the pipeline writes `real-returns.json` only when a CPI deflator is
+ * both reachable and still publishing, and the page explains itself when there
+ * is none. Every other empty-data branch — `/correlation`, `/network`,
+ * `/performance` — fires only when a source has failed, and the count check
+ * below is meant to go red on those.
+ */
+const hasRealReturns = (segment: string): boolean =>
+  existsSync(new URL(`../../data/${segment}real-returns.json`, import.meta.url));
 
 /**
  * The two rendered widths, as literals.
@@ -217,11 +231,12 @@ describe('server-rendered charts', () => {
     // `continue-on-error`, so a source outage drops a route out of
     // `chartRoutes` entirely — a smaller loop, silently green, with a chart
     // gone from the built site.
-    expect(chartRoutes.length).toBe(18);
+    //
     // Two per chart, narrow and wide. Pinned per route so losing one of a
-    // page's three charts fails rather than thinning the sample.
-    const counts = Object.fromEntries(chartRoutes.map((r) => [r, svgCount(r)]));
-    expect(counts).toEqual({
+    // page's three charts fails rather than thinning the sample. `/real-returns`
+    // is the one entry read from the data rather than written down, because its
+    // absence is a designed state; see `hasRealReturns`.
+    const expected: Record<string, number> = {
       '/': 2,
       '/correlation/': 2,
       '/cycles/': 2,
@@ -229,7 +244,6 @@ describe('server-rendered charts', () => {
       '/flows/': 4,
       '/network/': 6,
       '/performance/': 2,
-      '/real-returns/': 2,
       '/volatility/': 4,
       '/gbp/': 2,
       '/gbp/correlation/': 2,
@@ -238,9 +252,11 @@ describe('server-rendered charts', () => {
       '/gbp/flows/': 4,
       '/gbp/network/': 6,
       '/gbp/performance/': 2,
-      '/gbp/real-returns/': 2,
       '/gbp/volatility/': 4,
-    });
+    };
+    if (hasRealReturns('')) expected['/real-returns/'] = 2;
+    if (hasRealReturns('gbp/')) expected['/gbp/real-returns/'] = 2;
+    expect(Object.fromEntries(chartRoutes.map((r) => [r, svgCount(r)]))).toEqual(expected);
   });
 
   it.each(chartRoutes)('%s ships both width variants of every chart', (route) => {
