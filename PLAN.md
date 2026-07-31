@@ -590,9 +590,19 @@ finishing work on what exists, in this order:
    Wiring it properly means bucketing over the shared extent into plot-area
    columns, which needs the margins and the sibling series — neither of which
    `envelopeByPixel`'s signature carries. Left unwired with that written down.
-4. **Offset dates in the series codec** — measured at 3,270 bytes gz on
-   `/correlation`. Lossless, unlike item 3, which is why it is now the better
-   of the two.
+4. ~~**Offset dates in the series codec**~~ — **done, and far larger than the
+   3,270 bytes gz this entry estimated.** A start date plus the whole-day gap to
+   each next row, for any ascending series the contiguous form cannot take. The
+   gapped series turn out to be the *long* ones, because equities and gold do
+   not trade at weekends: `/correlation`'s market pairs carry 2,472 rows with
+   540 gaps each and were writing every date out.
+
+   Measured on the built site: **929,164 → 833,049 bytes gzipped across 25 HTML
+   files (−10.3%)**, raw −22%. `/correlation` alone goes 65,571 → 37,755 gz
+   (−42%) and `/performance` 75,990 → 55,730. Lossless, verified end to end:
+   every one of the 36 encoded series in `dist/` decodes to strictly ascending
+   dates, and the 20 correlation pairs decode byte-identically to the committed
+   files across 24,130 rows.
 
 #### Carried, and not forgotten
 
@@ -619,12 +629,11 @@ Three items from M15/M16 that are real and unscheduled:
   guess: it claimed the thinned line paints the same topmost and bottommost
   pixels in every column, which holds only if a bucket *is* a column. It is not,
   and the file now says so with the numbers.
-- **Offset dates in the series codec**, measured during M17 and deliberately not
-  taken there. Storing a gapped series as a start date plus day-offsets, instead
-  of falling back to plain rows, is worth a further 3,270 bytes gz on
-  `/correlation` alone. It changes a codec four components share, so it wants
-  its own PR and its own round-trip tests rather than riding inside a data
-  milestone.
+- ~~**Offset dates in the series codec**~~ — **done**, see item 4 above. The
+  3,270 bytes gz measured during M17 was an underestimate by a factor of thirty:
+  the site-wide saving is 96 KB gzipped. The instinct to give it its own PR and
+  its own round-trip tests was right — it changes a codec five components share,
+  and the tests now carry a real weekday-only year rather than a two-row toy.
 - **Fetched payloads** stay deferred, with the seven preconditions recorded
   above. `/correlation` is the page that would benefit and the one where the
   atomicity risk is sharpest, since its regime bands and its tables come from

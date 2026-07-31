@@ -15,23 +15,40 @@
  * 19.7 KB and 28.4 → 14.6 KB), with no change to what the reader gets and no
  * new request.
  *
- * It is deliberately not clever beyond that. No deltas, no quantisation, no
- * base-N packing: those trade exactness or legibility for a few more percent
- * on a payload that is already off the critical path, and this data is the
- * thing the whole site is about being exact on.
+ * A series with *gaps* gets the same treatment one step down: a start date plus
+ * the number of days from each row to the next. Which is where most of the
+ * remaining weight was, because the gapped series are the long ones — the
+ * market pairs on `/correlation` carry 2,472 rows with 540 gaps each, since
+ * equities and gold do not trade at weekends, so every one of them fell back to
+ * writing out its dates. Measured on that page's payload: 47.3 KB gzipped as
+ * rows, 21.9 as day offsets from the start, **11.4 as gaps to the next row**.
  *
- * If the dates turn out not to be contiguous the encoder says so and stores
- * them, rather than silently shifting every reading by a day. `/data` is
- * pipeline-generated and currently gapless, but a gap is a data condition, not
- * an impossibility — the dominance series accretes one snapshot per UTC day
- * from a job that can miss a run.
+ * The gap form supersedes a "no deltas" rule this file used to state, and the
+ * reason it stated it does not apply: deltas were rejected as trading
+ * "exactness or legibility for a few more percent", and whole-day gaps are
+ * exact — `2` means two days, not an approximation of one — while 21.9 → 11.4
+ * is not a few percent. What they do cost is that a date is now a running sum
+ * rather than a lookup, which is why the round-trip tests carry a real gapped
+ * series rather than a toy.
+ *
+ * Still deliberately not clever beyond that: no quantisation, no base-N
+ * packing. Those trade exactness, and this data is the thing the whole site is
+ * about being exact on.
+ *
+ * Anything the two forms cannot describe exactly — a repeated date, a
+ * non-ascending one, a sub-day interval — falls back to storing the rows, rather
+ * than silently shifting a reading.
  */
 
 const DAY_MS = 86_400_000;
 
-/** A start date plus one value per day, or the plain rows when they have gaps. */
+/**
+ * A start date plus one value per day; the same plus the gaps between rows; or
+ * the plain rows when neither describes the dates exactly.
+ */
 export type DailySeries<K extends string> =
   | { from: string; values: number[] }
+  | { from: string; gaps: number[]; values: number[] }
   | { rows: Record<K | 'date', string | number>[] };
 
 const toUtc = (date: string): number => Date.parse(`${date}T00:00:00Z`);
@@ -45,15 +62,36 @@ export function isDailyContiguous(dates: readonly string[]): boolean {
   return true;
 }
 
+/**
+ * The whole-day steps between consecutive dates, or null if they are not that.
+ *
+ * Null covers every shape the gap form cannot reproduce exactly: a date that
+ * repeats, one that goes backwards, and any interval that is not a whole number
+ * of days. An unparseable date gives NaN here, which is not `> 0` and not an
+ * integer, so it takes the same route.
+ */
+function dailyGaps(dates: readonly string[]): number[] | null {
+  const gaps: number[] = [];
+  for (let i = 1; i < dates.length; i++) {
+    const step = (toUtc(dates[i] as string) - toUtc(dates[i - 1] as string)) / DAY_MS;
+    if (!Number.isInteger(step) || step <= 0) return null;
+    gaps.push(step);
+  }
+  return gaps;
+}
+
 export function encodeDaily<K extends string>(
   rows: readonly Record<string, unknown>[],
   key: K,
 ): DailySeries<K> {
   const dates = rows.map((r) => r['date'] as string);
-  if (rows.length === 0 || !isDailyContiguous(dates)) {
-    return { rows: rows as Record<K | 'date', string | number>[] };
-  }
-  return { from: dates[0] as string, values: rows.map((r) => r[key] as number) };
+  if (rows.length === 0) return { rows: rows as Record<K | 'date', string | number>[] };
+  const from = dates[0] as string;
+  const values = rows.map((r) => r[key] as number);
+  if (isDailyContiguous(dates)) return { from, values };
+  const gaps = dailyGaps(dates);
+  if (gaps === null) return { rows: rows as Record<K | 'date', string | number>[] };
+  return { from, gaps, values };
 }
 
 export function decodeDaily<K extends string>(
@@ -62,7 +100,16 @@ export function decodeDaily<K extends string>(
 ): Record<string, string | number>[] {
   if ('rows' in encoded) return encoded.rows as Record<string, string | number>[];
   const start = toUtc(encoded.from);
-  return encoded.values.map((value, i) => ({ date: toIso(start + i * DAY_MS), [key]: value }));
+  if (!('gaps' in encoded)) {
+    return encoded.values.map((value, i) => ({ date: toIso(start + i * DAY_MS), [key]: value }));
+  }
+  let at = start;
+  return encoded.values.map((value, i) => {
+    // The first row sits on `from`; every one after it steps by its own gap, so
+    // the step read here is the one *into* this row.
+    if (i > 0) at += (encoded.gaps[i - 1] ?? 0) * DAY_MS;
+    return { date: toIso(at), [key]: value };
+  });
 }
 
 /**

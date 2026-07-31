@@ -45,15 +45,62 @@ describe('encodeDaily / decodeDaily', () => {
     expect(decodeDaily(encodeDaily(rows, 'price'), 'price')).toEqual(rows);
   });
 
-  it('keeps the rows verbatim when there is a gap, rather than shifting them', () => {
+  it('stores the gaps rather than shifting the rows across them', () => {
     // The failure this guards against is silent: re-dating by index would move
-    // every reading after the gap a day earlier.
+    // every reading after the gap a day earlier. It used to be avoided by
+    // giving up and writing the dates out, which cost 47.3 KB gzipped on
+    // `/correlation` — the gapped series are the long ones there, because
+    // equities and gold do not trade at weekends.
     const gapped = [
       { date: '2024-01-01', price: 1 },
       { date: '2024-01-03', price: 2 },
+      { date: '2024-01-08', price: 3 },
     ];
-    expect(encodeDaily(gapped, 'price')).toEqual({ rows: gapped });
+    expect(encodeDaily(gapped, 'price')).toEqual({
+      from: '2024-01-01',
+      gaps: [2, 5],
+      values: [1, 2, 3],
+    });
     expect(decodeDaily(encodeDaily(gapped, 'price'), 'price')).toEqual(gapped);
+  });
+
+  it('round-trips a weekday-only year, which is the shape this is for', () => {
+    // A real gapped series rather than a toy: weekdays only, so a 3-day gap
+    // every weekend, over a year and across two DST switches and a leap day.
+    const rows: { date: string; price: number }[] = [];
+    for (let i = 0; i < 366; i++) {
+      const at = new Date(Date.UTC(2024, 0, 1) + i * 86_400_000);
+      if (at.getUTCDay() === 0 || at.getUTCDay() === 6) continue;
+      rows.push({ date: at.toISOString().slice(0, 10), price: 100 + i });
+    }
+    const encoded = encodeDaily(rows, 'price');
+    expect(encoded).toHaveProperty('gaps');
+    expect(decodeDaily(encoded, 'price')).toEqual(rows);
+    // And it is worth having: the same rows written out are far larger.
+    expect(JSON.stringify(encoded).length).toBeLessThan(JSON.stringify(rows).length / 2);
+  });
+
+  it('falls back to the rows for dates the gap form cannot reproduce', () => {
+    // Each of these decodes to something other than what went in, so none of
+    // them may take the compact path.
+    const cases = [
+      [
+        { date: '2024-01-03', price: 1 },
+        { date: '2024-01-01', price: 2 },
+      ],
+      [
+        { date: '2024-01-01', price: 1 },
+        { date: '2024-01-01', price: 2 },
+      ],
+      [
+        { date: '2024-01-01', price: 1 },
+        { date: 'not-a-date', price: 2 },
+      ],
+    ];
+    for (const rows of cases) {
+      expect(encodeDaily(rows, 'price')).toEqual({ rows });
+      expect(decodeDaily(encodeDaily(rows, 'price'), 'price')).toEqual(rows);
+    }
   });
 
   it('handles an empty series', () => {
