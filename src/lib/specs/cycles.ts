@@ -3,6 +3,7 @@ import * as Plot from '@observablehq/plot';
 import { crosshairMarksFrom } from '../crosshair-marks';
 import type { CrosshairAnchor } from '../crosshair';
 import { CYCLE_RAMP, INK, PLOT_STYLE } from '../plot-theme';
+import { dodgedEnds, extentOf } from './end-labels';
 
 export interface CyclePoint {
   cycle: string;
@@ -15,6 +16,10 @@ export type CycleScale = 'log' | 'linear';
 /** Oldest cycle lightest, current cycle the strongest step. */
 export const cycleColor = (index: number): string => CYCLE_RAMP[index] ?? 'var(--accent)';
 
+const PLOT_HEIGHT = 380;
+/** Plot's default top and bottom margins, which the drawing area is short by. */
+const Y_MARGINS = 50;
+
 export function cyclesSpec(
   points: readonly CyclePoint[],
   lineEnds: readonly CyclePoint[],
@@ -25,7 +30,7 @@ export function cyclesSpec(
 ): Parameters<typeof Plot.plot>[0] {
   return {
     width,
-    height: 380,
+    height: PLOT_HEIGHT,
     marginLeft: 48,
     marginRight: 44,
     x: { label: 'days since halving' },
@@ -38,14 +43,25 @@ export function cyclesSpec(
     color: { domain: [...domain], range: domain.map((_, i) => cycleColor(i)) },
     marks: [
       Plot.lineY(points, { x: 'day', y: 'multiple', stroke: 'cycle', strokeWidth: 1.5 }),
-      Plot.text(lineEnds, {
-        x: 'day',
-        y: 'multiple',
-        text: 'cycle',
-        dx: 20,
-        fill: INK,
-        fontSize: 11,
-      }),
+      // One mark per label, each with its own nudge — see `end-labels.ts`. The
+      // cycles end at whatever multiple they reached, so two of them finishing
+      // near each other is ordinary rather than exceptional.
+      ...dodgedEnds(lineEnds, (d) => d.multiple, {
+        scale,
+        domain: extentOf(points, (d) => d.multiple),
+        plotHeight: PLOT_HEIGHT - Y_MARGINS,
+        minGap: 13,
+      }).map(({ datum, dy }) =>
+        Plot.text([datum], {
+          x: 'day',
+          y: 'multiple',
+          text: 'cycle',
+          dx: 20,
+          dy,
+          fill: INK,
+          fontSize: 11,
+        }),
+      ),
       // Every cycle still running at this day, in ramp order. Cycles have
       // different lengths and the newest is incomplete, so the later days
       // legitimately list fewer than four.

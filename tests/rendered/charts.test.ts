@@ -184,7 +184,10 @@ const inherited = (el: Element, attr: string): string | null => {
   return null;
 };
 
-const TRANSLATE = /translate\(\s*(-?[\d.]+)\s*(?:[, ]\s*(-?[\d.]+)\s*)?\)/;
+// Exponent notation included: a computed offset can round to something like
+// -2.8e-14, and Plot writes it out that way rather than as a decimal.
+const NUMBER = String.raw`-?\d*\.?\d+(?:e[-+]?\d+)?`;
+const TRANSLATE = new RegExp(String.raw`translate\(\s*(${NUMBER})\s*(?:[, ]\s*(${NUMBER})\s*)?\)`, 'i');
 
 /**
  * Absolute position, summing the `translate` chain up to the `<svg>`.
@@ -425,18 +428,21 @@ describe('server-rendered charts', () => {
     expect([...new Set(overlaps)]).toEqual([]);
   });
 
-  it.each(chartRoutes)('%s draws no two tick labels at the same point', (route) => {
+  it.each(chartRoutes)('%s draws no two labels at the same point', (route) => {
     // The backstop the box comparison needs, for a stack the grouping above
-    // cannot see — two ticks from *different* axes landing on one another.
+    // cannot see — two ticks from different axes landing on one another, or two
+    // series labels the dodge failed to separate.
     //
-    // Axis labels only, on the same reasoning: at 1px this looked like a
-    // safe universal rule, and it is not. The series labels all share an x
-    // exactly, so for them it reduces to "two lines within 0.1 of each other",
-    // which every crossing produces — replayed over the committed history, 12.9%
-    // of days would have failed here, most recently 2026-07-04.
+    // Every label now, axis and series alike. It was axis-only, because the
+    // series labels take their y from the data and two lines ending close
+    // together printed two labels in one place — on 12.9% of days, replayed
+    // over the committed history. They are dodged in the spec now
+    // (`end-labels.ts`), so the condition cannot arise and the exemption can
+    // go; a check that had to skip the labels most likely to collide was the
+    // wrong half of the problem to solve.
     const stacked: string[] = [];
     for (const svg of page(route).querySelectorAll('svg')) {
-      const lines = linesOf(svg).filter((line) => line.axis);
+      const lines = linesOf(svg);
       for (let i = 0; i < lines.length; i += 1) {
         for (let j = i + 1; j < lines.length; j += 1) {
           const a = lines[i] as Line;

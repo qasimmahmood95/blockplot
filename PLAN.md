@@ -653,17 +653,23 @@ and watching it stay green:
   everything in CSS is uncovered; a theme token going wrong would not fail here.
   A legend or annotation drawn outside the `<svg>` but inside `.chart-frame` is
   invisible to the chart checks for the same reason.
-- **The end-of-line series labels can overlap, and nothing catches it.** On
-  `/volatility`, `/cycles` and `/performance` a `Plot.text` mark labels each
-  line at its last point, so its y *is* a data value and two labels drift
-  together and apart on their own — measured over the committed series, 28.8% of
-  days on `/volatility` and 17.2% on `/performance` have some pair within 4px,
-  with a run of 30 consecutive days in the GBP tree. Real, and recurring. The
-  overlap check is deliberately scoped to axis ticks so that a *data refresh*
-  cannot turn an unchanged diff red, which would be the worse failure. The fix
-  belongs in the specs — dodge the labels, or drop them and lean on the legend
-  that already sits above every one of those three charts, which is what
-  `/performance` does at its narrow width and for this exact reason.
+- ~~**The end-of-line series labels can overlap**~~ — **fixed in the specs, and
+  the check now covers them.** On `/volatility`, `/cycles` and `/performance` a
+  `Plot.text` mark labels each line at its last point, so its y *is* a data
+  value and two labels drift together and apart on their own. Replayed over the
+  committed series: some pair within 4px on **28.6%** of days and within one
+  pixel on **7.1%**, most recently 2026-07-05. Today they sit 14.6px apart,
+  which is why nobody had seen it.
+
+  `src/lib/specs/end-labels.ts` nudges them apart — dodged rather than dropped,
+  since the legend is a worse way to identify five lines. It re-derives only the
+  linear/log mapping over a domain the caller passes, not Plot's scale
+  construction, so there is no second definition to drift; a domain Plot rounds
+  outward shrinks the nudges slightly and cannot reorder them. With the
+  condition gone from the charts, the rendered gate's co-location check drops
+  its axis-only exemption and covers every label. Swept across ten end
+  spacings from an exact tie to 5pp: green at all ten, and red at the tie with
+  the dodge disabled, so the sweep is not passing vacuously.
 - **`src/lib/specs/holdings.ts` is never checked.** It renders only in the
   client island, so it never appears in `dist/` — and it is the one chart whose
   labels are sized by a reader-entered amount.
