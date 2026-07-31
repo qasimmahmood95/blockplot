@@ -2,6 +2,7 @@
 import type { Currency } from '../lib/currency';
 import { dataFor } from '../lib/data';
 import { formatPct } from '../lib/format';
+import { monthlyHeatClass } from '../lib/heat-shared';
 
 interface Props {
   currency: Currency;
@@ -25,12 +26,16 @@ const rows = [...byYear.keys()].sort((a, b) => b - a);
  * Four-step diverging intensity per sign. Thresholds are fixed (not
  * data-relative) so the same colour always means the same magnitude, and
  * BTC's ±40% months don't wash out ordinary ones.
+ *
+ * Banded on the printed figure rather than the raw one, and importing its steps
+ * from `heat-shared` rather than declaring them here — both for the reason the
+ * holding matrix records. The overview had the same two defects the matrix was
+ * fixed for: the bands were a literal here *and* a separate literal in the
+ * sentence under the table, so changing one left the other asserting the old
+ * numbers; and a cell printing exactly the threshold could take the band below.
  */
-const intensity = (value: number): string => {
-  const magnitude = Math.abs(value);
-  const step = magnitude >= 30 ? 4 : magnitude >= 15 ? 3 : magnitude >= 5 ? 2 : 1;
-  return `${value < 0 ? 'neg' : 'pos'}-${step}`;
-};
+const intensity = (value: number): string =>
+  monthlyHeatClass(value).replace('heat-', '');
 ---
 
 <div class="table-scroll">

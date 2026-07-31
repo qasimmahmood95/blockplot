@@ -183,6 +183,7 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
       import { valueHoldings } from '../../pipeline/holdings';
       import type { Currency } from '../../pipeline/currencies';
       import { chartData } from '../lib/charts';
+      import { formatPct } from '../lib/format';
       import {
         HOLDINGS_EVENT,
         HOLDINGS_EXTERNAL_EVENT,
@@ -272,10 +273,14 @@ const ogImage = new URL(`${base}/og.png`, Astro.site);
         // the link already says whose figure this is, so repeating the word
         // read as "your holdings … holdings", and this says something the
         // reader cannot otherwise tell — why there is no percentage beside it.
+        // `formatPct`, like the panel's own profit-and-loss line, which is the
+        // same figure from the same `valueHoldings` call one row away. They were
+        // two formatters, and they disagreed on every loss (-12.3% against
+        // −12.4%), on every value past a thousand (+9900.0% against +9,900.0%)
+        // and on halves. CLAUDE.md names these two islands as one class for a
+        // reason: whatever else they share, they must agree on the number.
         holdingsPnlEl.textContent =
-          result.pnlPct === null
-            ? 'no cost basis'
-            : `${result.pnlPct >= 0 ? '+' : ''}${result.pnlPct.toFixed(1)}%`;
+          result.pnlPct === null ? 'no cost basis' : formatPct(result.pnlPct);
         holdingsPnlEl.className = `tick-date ${result.pnlPct === null ? '' : result.pnlPct < 0 ? 'down' : 'up'}`.trim();
       }
       renderHoldings();

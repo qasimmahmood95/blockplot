@@ -27,6 +27,35 @@ const ethSeries = benchmarksHistory.series.find((s) => s.asset === 'eth')?.sourc
 // space before it, and the built page read "the benchmarks2016-08-05".
 const firstOf = (asset: string): string =>
   assets.find((a) => a.asset === asset)?.rows[0]?.date ?? '—';
+/**
+ * The deepest preset, and how far apart its series finish.
+ *
+ * The note about why log is the default used to assert this from memory — "over
+ * a decade BTC's index reaches five figures while the benchmarks stay near 200"
+ * — and every clause was refuted by the page under it. The deepest preset here
+ * begins in 2017, not a decade ago; BTC ends at 820, not five figures; the
+ * benchmarks end between 107 and 546, not near 200; and on the *default* view
+ * BTC (153) finishes below gold (230). The argument for a log axis survives all
+ * of that, so it is made from the measured spread instead.
+ */
+const deepestOption = options.reduce<(typeof options)[number] | undefined>(
+  (best, o) => (best === undefined || o.start < best.start ? o : best),
+  undefined,
+);
+const deepestSeries = deepestOption ? rebaseCovering(assets, deepestOption.start) : null;
+const finals = (deepestSeries?.series ?? []).map((s) => s.finalIndex);
+const deepest = {
+  label: deepestOption?.label ?? '—',
+  start: deepestOption?.start ?? '—',
+  spread:
+    finals.length < 2
+      ? null
+      : {
+          low: Math.round(Math.min(...finals)),
+          high: Math.round(Math.max(...finals)),
+          factor: `${(Math.max(...finals) / Math.min(...finals)).toFixed(1)}×`,
+        },
+};
 const btcFrom = firstOf('btc');
 const spFrom = firstOf('sp500');
 const ethFrom = firstOf('eth');
@@ -91,11 +120,16 @@ const ethFrom = firstOf('eth');
       others.
     </p>
     <p class="method-note">
-      Log is the default, which is a claim about the data rather than a preference: over a decade
-      BTC's index reaches five figures while the benchmarks stay near 200, and on a linear scale
-      every benchmark is a flat line along the bottom. Log makes equal vertical distances equal
-      <em>ratios</em>, so the benchmarks keep their shape. Linear is the honest view for a short
-      window, where ratios and differences agree.
+      Log is the default, which is a claim about the data rather than a preference. On the deepest
+      preset ({deepest.label}, from {deepest.start}) the series end
+      {' '}{deepest.spread === null ? 'at a wide spread' : (
+        <>
+          between {deepest.spread.low} and {deepest.spread.high} — a factor of
+          {' '}{deepest.spread.factor}
+        </>
+      )}, and a linear axis gives that whole range to the strongest line while the rest share
+      what is left. Log makes equal vertical distances equal <em>ratios</em>, so every series keeps
+      its shape. Linear is the honest view for a short window, where ratios and differences agree.
     </p>
     <p class="method-note">
       Resolution: the last {benchmarksHistory.dailyDays} days of every series are daily, and

@@ -78,9 +78,18 @@ export function assertFresh(): void {
   } catch {
     throw new Error('dist/ is missing — run `npm run build` before `npm run test:rendered`');
   }
+  // Every tree the build reads. `pipeline/` is not optional here and looked it:
+  // a dozen modules under `src/` import from it statically — `rebase`, `dca`,
+  // `holdings`, `flows`, `series`, `schema` — and several of those are rendered
+  // straight into the markup these checks read, so a guard consulting only
+  // `data/` and `src/` reported FRESH for a `dist/` predating a change to the
+  // arithmetic behind half the figures in it.
   const inputs = Math.max(
     newestMtime(join(ROOT, 'data')),
     newestMtime(join(ROOT, 'src'), (name) => name.endsWith('.test.ts')),
+    newestMtime(join(ROOT, 'pipeline'), (name) => name.endsWith('.test.ts')),
+    newestMtime(join(ROOT, 'public')),
+    statSync(join(ROOT, 'astro.config.ts')).mtimeMs,
   );
   if (dist < inputs) {
     throw new Error(
@@ -90,7 +99,18 @@ export function assertFresh(): void {
   }
 }
 
-/** Every built route, as a site path: '/', '/gbp/dca/', … */
+/**
+ * Every built page, as the path it is served at: '/', '/gbp/dca/', '/404.html'.
+ *
+ * Every `.html`, not only `index.html`. Astro emits the 404 page as a flat
+ * `dist/404.html` rather than `404/index.html`, so an index-only walk missed it
+ * entirely — which meant the two `!== '/404/'` exclusions written to keep it out
+ * of the route inventory were filtering a value that never appeared, under a
+ * comment explaining the care taken over them. Dead code asserting a decision
+ * that was never in force is the same defect these tests exist to catch, one
+ * layer in. Included, the 404 page gets the residue scan like any other, and the
+ * exclusions become real.
+ */
 export function routes(): string[] {
   const out: string[] = [];
   const walk = (dir: string): void => {
@@ -100,6 +120,9 @@ export function routes(): string[] {
       else if (entry === 'index.html') {
         const rel = relative(DIST, dir).replace(/\\/g, '/');
         out.push(rel === '' ? '/' : `/${rel}/`);
+      } else if (entry.endsWith('.html')) {
+        const rel = relative(DIST, child).replace(/\\/g, '/');
+        out.push(`/${rel}`);
       }
     }
   };
@@ -118,7 +141,9 @@ const parsed = new Map<string, Document>();
 export function page(route: string): Document {
   const cached = parsed.get(route);
   if (cached) return cached;
-  const file = join(DIST, route === '/' ? '' : route, 'index.html');
+  const file = route.endsWith('.html')
+    ? join(DIST, route)
+    : join(DIST, route === '/' ? '' : route, 'index.html');
   const { document } = parseHTML(readFileSync(file, 'utf8'));
   parsed.set(route, document as unknown as Document);
   return document as unknown as Document;

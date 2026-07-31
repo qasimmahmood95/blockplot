@@ -17,8 +17,15 @@ const volWindows = rollingVol.map((w) => w.windowDays).join('/');
 
 const latestVol = (window: number) =>
   rollingVol.find((w) => w.windowDays === window)?.series.at(-1) ?? null;
-const vol30 = latestVol(30);
-const vol90 = latestVol(90);
+// The two windows the tiles show, named once. The note below wrote them down
+// again — "the 30d/90d tiles", "even the 365d window" — one line under the
+// heading that was interpolated for exactly this reason, so a change to the
+// pipeline's window list would have left the sentence describing tiles that no
+// longer existed.
+const TILE_WINDOWS = [30, 90] as const;
+const [vol30, vol90] = TILE_WINDOWS.map(latestVol);
+const tileWindows = TILE_WINDOWS.map((w) => `${w}d`).join('/');
+const deepestWindow = Math.max(...rollingVol.map((w) => w.windowDays));
 const btc = comparison.find((c) => c.asset === 'btc');
 
 // Gold's and ether's labels carry whichever Yahoo series actually served the
@@ -47,12 +54,12 @@ const assetLabels: Record<string, string> = {
 
   <dl class="stat-grid">
     <div class="stat">
-      <dt>30d realized vol</dt>
+      <dt>{TILE_WINDOWS[0]}d realized vol</dt>
       <dd class="num">{vol30 ? formatUnsignedPct(vol30.volPct) : '—'}</dd>
       <dd class="sub num">annualized</dd>
     </div>
     <div class="stat">
-      <dt>90d realized vol</dt>
+      <dt>{TILE_WINDOWS[1]}d realized vol</dt>
       <dd class="num">{vol90 ? formatUnsignedPct(vol90.volPct) : '—'}</dd>
       <dd class="sub num">annualized</dd>
     </div>
@@ -77,8 +84,9 @@ const assetLabels: Record<string, string> = {
     <p class="method-note">
       Rolling sample standard deviation of daily log returns, annualized by √365 and shown as a
       percentage; each point uses the window of returns ending that day. The vol curves (and the
-      30d/90d tiles, which read their latest points) derive from blockchain.com's full history
-      series so even the 365d window has enough pre-window returns; the 1y figure, drawdown, and
+      {' '}{tileWindows} tiles, which read their latest points) derive from blockchain.com's full
+      history series so even the {deepestWindow}d window has enough pre-window returns; the 1y
+      figure, drawdown, and
       comparison table use CoinGecko's 365-day spot series, so figures can differ fractionally.
     </p>
   </section>
