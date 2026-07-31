@@ -569,10 +569,30 @@ finishing work on what exists, in this order:
    open:** colour, spacing, weight and anything living in CSS rather than in the
    SVG. Pixel snapshots are the tool for those, and would want a pinned
    container image to be reproducible.
-3. **Wire `downsample.ts`** — `/performance` at ~34 KB gz of SVG is the best
-   case, blocked on the crosshair reading the same array.
+3. ~~**Wire `downsample.ts`**~~ — **tried, measured, reverted.** Two of the
+   three things this entry used to claim were wrong. "~34 KB gz" is the *size*
+   of `/performance`'s SVGs, not the saving. And the crosshair is not the
+   blocker on that page: it builds its anchors from the decoded client payload,
+   a different array from the one the chart draws
+   (`PerformanceChart.astro:189`), so build-time thinning never touches it.
+
+   The real blocker is that a bucket is not a pixel column. `envelopeByPixel`
+   divides each series' *own* x extent into *SVG-width* buckets, while Plot maps
+   the *shared* extent of all series into the *plot area* — 400px becomes about
+   308 — so the two grids never line up, and a point that is the extreme of its
+   column need not be the extreme of its bucket. Wired and measured against the
+   un-thinned render, interpolating along each drawn segment: the ink moved by
+   up to **12.5px on log and 19.8px on linear at 400px**, on 69 of 1,661
+   columns, for **3.9 KB gzipped** (33.7 → 29.8). Not a trade worth making on a
+   chart. The harness reads 0.000px wherever nothing is thinned, so the shifts
+   are real and not an artefact.
+
+   Wiring it properly means bucketing over the shared extent into plot-area
+   columns, which needs the margins and the sibling series — neither of which
+   `envelopeByPixel`'s signature carries. Left unwired with that written down.
 4. **Offset dates in the series codec** — measured at 3,270 bytes gz on
-   `/correlation`.
+   `/correlation`. Lossless, unlike item 3, which is why it is now the better
+   of the two.
 
 #### Carried, and not forgotten
 
@@ -594,13 +614,11 @@ Three items from M15/M16 that are real and unscheduled:
   the shipped woff2) were built and discarded: they fixed nothing, because the
   mechanism was never text reflow, and `local()` only ever helps a reader who has
   that exact font installed.
-- `downsample.ts` ships tested and **unwired**. Wiring needs per-series
-  bucketing and pinned series endpoints. `/performance` (M18) is now the best
-  case: five lines at up to ~1,800 points each, drawn at 400px and 760px, is
-  ~34 KB gz of SVG for a shape that would be identical at half the points. The
-  obstacle is the same one `/correlation` has — `btc-eth` carries 3,144 readings drawn at 760px, four per
-  pixel. The obstacle is the crosshair, which reads its anchors from the same
-  array, so downsampling the payload coarsens the readout.
+- `downsample.ts` ships tested and **still unwired**, now for a measured reason
+  rather than a guessed one — see item 3 above. Its own docstring carried the
+  guess: it claimed the thinned line paints the same topmost and bottommost
+  pixels in every column, which holds only if a bucket *is* a column. It is not,
+  and the file now says so with the numbers.
 - **Offset dates in the series codec**, measured during M17 and deliberately not
   taken there. Storing a gapped series as a start date plus day-offsets, instead
   of falling back to plain rows, is worth a further 3,270 bytes gz on

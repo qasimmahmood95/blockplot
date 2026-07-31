@@ -11,10 +11,29 @@ const run = (points: P[], width: number): readonly P[] => envelopeByPixel(points
 const ramp = (n: number): P[] => Array.from({ length: n }, (_, i) => ({ x: i, y: i }));
 
 describe('envelopeByPixel', () => {
-  it('leaves a series that is already under two points per pixel alone', () => {
+  it('leaves a series with no more points than pixels alone', () => {
+    // Returns the same array, not a copy: at one point per pixel every bucket
+    // holds one point and the keep-set is the whole series, so there is nothing
+    // to do. The threshold was two, which is not a fidelity margin — it is a
+    // "don't bother" guard, and at two it skipped `/performance` at 760px,
+    // where the series carry 888 points.
     const points = ramp(100);
     expect(run(points, 100)).toBe(points);
-    expect(run(points, 50)).toBe(points);
+    expect(run(points, 200)).toBe(points);
+  });
+
+  it('drops nothing from a bucket of two, however the threshold is set', () => {
+    // Worth pinning, because it is why lowering the guard from two to one is
+    // safe rather than merely cheap. A bucket contributes its first, last,
+    // lowest and highest point; with two in it those are the same two, so the
+    // series comes back whole. Thinning only bites where a column holds enough
+    // points that some are neither an end nor an extreme.
+    const points = ramp(150);
+    expect(run(points, 100)).toHaveLength(150);
+    // And the real series do have such columns: `/performance` at 760px keeps
+    // 3,622 of 3,756 points, and at 400px 2,895 — measured on the committed
+    // data at the preset the build draws.
+    expect(run(ramp(1500), 100).length).toBeLessThan(1500);
   });
 
   it('thins one that is over', () => {

@@ -5,17 +5,42 @@
  * because a hovered figure has to be the real one — this decides which points
  * are worth *drawing*, never which are worth reporting.
  *
- * The rule is min/max per x-pixel bucket, not "keep every Nth point". Naive
+ * The rule is min/max per x bucket, not "keep every Nth point". Naive
  * decimation drops whichever samples fall between the ones it keeps, so a
  * single-day spike — exactly the kind of thing a Bitcoin chart exists to show —
  * disappears at some sampling rates and survives at others. Keeping the highest
- * and lowest value in each pixel column preserves the drawn envelope: for every
- * column of the rendered line, the same topmost and bottommost pixels are
- * painted as would have been with the full series.
+ * and lowest value in each bucket preserves the drawn envelope *of that bucket*,
+ * and the bucket's first and last points are kept too, so the line enters and
+ * leaves it where it did before and no segment is redrawn across a gap it did
+ * not span.
  *
- * The bucket's first and last points are kept too, so the line enters and
- * leaves each column where it did before and no segment is redrawn across a
- * gap it did not span.
+ * ## What this does not promise, measured
+ *
+ * An earlier version of this comment said "for every column of the rendered
+ * line, the same topmost and bottommost pixels are painted as would have been
+ * with the full series". That is only true when a bucket *is* a rendered pixel
+ * column, and for every caller this codebase would have, it is not:
+ *
+ * - the caller knows the SVG width, but Plot draws into the plot area, which is
+ *   that width less the margins — 400px becomes about 308, so a bucket is 0.77
+ *   of a column and the two grids never line up;
+ * - the buckets here span each series' own x extent, while Plot's x scale spans
+ *   the extent of *all* series together, and on this site they end on different
+ *   days because their sources publish on different schedules.
+ *
+ * Misaligned either way, a point that is the extreme of its pixel column need
+ * not be the extreme of its bucket, so it can be dropped. Wired to
+ * `/performance` and measured against the un-thinned render, column by column,
+ * interpolating along each drawn segment rather than sampling its vertices: the
+ * ink moved by up to **12.5px on log and 19.8px on linear at 400px**, on 69 of
+ * 1,661 columns. The harness reads 0.000px wherever nothing is thinned, so
+ * those are real. That bought 3.9 KB gzipped, which is not a trade worth making
+ * on a chart.
+ *
+ * So this stays unwired, and the way to wire it is to make a bucket a column:
+ * bucket over the *shared* x extent, into *plot-area* columns rather than SVG
+ * width. That needs the margins and the sibling series, neither of which this
+ * signature carries. See PLAN.md.
  *
  * Monotonic y-transforms are safe: a log axis maps the largest value to the
  * highest pixel just as a linear one does, so the extremes found here are the
@@ -24,10 +49,15 @@
  */
 
 /**
- * Below this many points per pixel a series is already at or under the screen's
- * resolution, and thinning it would cost fidelity for nothing.
+ * Below this many points per bucket there is nothing to remove.
+ *
+ * One, not two: at one point per bucket every bucket holds a single point and
+ * the keep-set is the whole series, so this only skips work. Two was a fidelity
+ * margin, and a coarse one — the measurement above shows that where fidelity is
+ * actually lost, it is lost to the grids not lining up, which no threshold
+ * fixes.
  */
-const POINTS_PER_PIXEL = 2;
+const POINTS_PER_PIXEL = 1;
 
 export function envelopeByPixel<T>(
   points: readonly T[],
