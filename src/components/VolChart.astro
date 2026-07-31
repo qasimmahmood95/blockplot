@@ -21,6 +21,12 @@ const lineEnds = payload.flatMap((w) => {
   return last ? [{ window: `${w.windowDays}d`, date: new Date(last.date), volPct: last.volPct }] : [];
 });
 const domain = payload.map((w) => `${w.windowDays}d`);
+// The accessible name names the windows the chart actually draws. It listed
+// "30, 90, and 365" as a literal, which would have gone false the moment the
+// pipeline's window list changed while the lines beside it moved.
+const days = payload.map((w) => String(w.windowDays));
+const windowList =
+  days.length > 1 ? `${days.slice(0, -1).join(', ')}, and ${days[days.length - 1]}` : (days[0] ?? '');
 
 const svg = renderResponsiveChart((w) => volSpec(points, lineEnds, domain, w));
 ---
@@ -40,7 +46,7 @@ const svg = renderResponsiveChart((w) => volSpec(points, lineEnds, domain, w));
   <div
     id="vol-chart"
     role="img"
-    aria-label="Line chart of annualized BTC realized volatility over rolling 30, 90, and 365 day windows"
+    aria-label={`Line chart of annualized BTC realized volatility over rolling ${windowList} day windows`}
     set:html={svg}
   />
 </figure>

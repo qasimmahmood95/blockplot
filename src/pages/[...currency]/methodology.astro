@@ -166,7 +166,7 @@ const t = signals.thresholds;
       than quoted here; the sign flip is what a unit test pins.
       And the re-dating happens <em>before</em> currency conversion, not after: conversion is itself
       a per-date join, so re-dating afterwards leaves the two legs on different days and the FX term
-      stops cancelling — measured at 0.16 of noise in GBP correlations, against a 0.25 threshold.
+      stops cancelling — measured at 0.16 of noise in GBP correlations, against a {correlations.regimeThreshold} threshold.
     </p>
     <p class="method-note">
       Ether is dated differently from Bitcoin here, and the difference is measured rather than

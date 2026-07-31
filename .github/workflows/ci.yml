@@ -43,3 +43,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # After the build, because it reads `dist/`. This is the half of the suite
+      # that checks what a page *says* against what it *shows* — every defect it
+      # was written for shipped past a green `npm test`, a clean build and a 1.00
+      # Lighthouse score, and was caught by a person reading the rendered page.
+      - run: npm run test:rendered

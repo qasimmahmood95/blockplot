@@ -13,6 +13,7 @@ const { benchmarksDaily, riskMetrics } = dataFor(currency);
 import { formatPct, formatRatio, formatUnsignedPct } from '../../lib/format';
 
 const { rollingVol, drawdown, comparison, windowDays, asOf } = riskMetrics;
+const volWindows = rollingVol.map((w) => w.windowDays).join('/');
 
 const latestVol = (window: number) =>
   rollingVol.find((w) => w.windowDays === window)?.series.at(-1) ?? null;
@@ -68,7 +69,10 @@ const assetLabels: Record<string, string> = {
   </dl>
 
   <section class="chart-section">
-    <h2>Realized volatility · rolling 30/90/365d · annualized</h2>
+    {/* Windows read from the file, not written down. The same three numbers are
+        interpolated on /methodology from the same field, and a literal here would
+        have made one page true and the other false the moment they changed. */}
+    <h2>Realized volatility · rolling {volWindows}d · annualized</h2>
     <VolChart currency={currency} />
     <p class="method-note">
       Rolling sample standard deviation of daily log returns, annualized by √365 and shown as a

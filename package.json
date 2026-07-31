@@ -13,6 +13,7 @@
     "typecheck": "astro check",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:rendered": "vitest run --config vitest.rendered.config.ts",
     "pipeline": "tsx pipeline/run.ts"
   },
   "dependencies": {
