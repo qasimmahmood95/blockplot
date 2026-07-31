@@ -3,6 +3,7 @@ import * as Plot from '@observablehq/plot';
 import { crosshairMarksFrom } from '../crosshair-marks';
 import type { CrosshairAnchor } from '../crosshair';
 import { PLOT_STYLE } from '../plot-theme';
+import { dodgedEnds, extentOf } from './end-labels';
 
 export interface PerfPoint {
   asset: string;
@@ -11,6 +12,10 @@ export interface PerfPoint {
 }
 
 export type PerfScale = 'log' | 'linear';
+
+const PLOT_HEIGHT = 380;
+/** Plot's default top and bottom margins, which the drawing area is short by. */
+const Y_MARGINS = 50;
 
 /**
  * Labels and colours re-exported from the Plot-free module, so there is one
@@ -37,7 +42,7 @@ export function performanceSpec(
   const narrow = width < 500;
   return {
     width,
-    height: 380,
+    height: PLOT_HEIGHT,
     marginLeft: 52,
     // Room for the end-of-line labels, which is why they are dropped when the
     // chart is narrow: at 400px the labels take a quarter of the plot area and
@@ -75,20 +80,38 @@ export function performanceSpec(
         points.filter((d) => perfDash(d.asset)),
         { x: 'date', y: 'index', stroke: 'asset', strokeWidth: 1.5, strokeDasharray: '6,3' },
       ),
+      // One mark per label, each with its own nudge — see `end-labels.ts`. Five
+      // rebased indices ending within a couple of percent of one another is
+      // routine, and on a log axis a couple of percent is a couple of pixels.
       ...(narrow
         ? []
-        : [
-            Plot.text(lineEnds, {
+        : dodgedEnds(lineEnds, (d) => d.index, {
+            scale,
+            domain: extentOf(points, (d) => d.index, scale),
+            plotHeight: PLOT_HEIGHT - Y_MARGINS,
+            minGap: 12,
+          }).map(({ datum, dy }) =>
+            Plot.text([datum], {
               x: 'date',
               y: 'index',
               text: (d: PerfPoint) => PERF_LABELS[d.asset] ?? d.asset,
-              fill: 'asset',
+              // The token, resolved here, rather than the `asset` channel Plot
+              // would put through its colour scale. One mark per label broke
+              // that: Plot skips the scale when *every* value in a colour
+              // channel is already a valid CSS colour, and a one-datum channel
+              // of `['gold']` is — so the gold label shipped painted literal
+              // `gold`, `#FFD700`, while its line stayed `var(--ink-muted)`.
+              // A baked colour does not follow the theme toggle, which is what
+              // CLAUDE.md's "colours are `var(--token)`" rule is for, and it
+              // stopped the label matching the line it names.
+              fill: perfColor(datum.asset),
               textAnchor: 'start',
               dx: 6,
+              dy,
               fontFamily: 'var(--font-mono)',
               fontSize: 10,
             }),
-          ]),
+          )),
       ...(anchors ? crosshairMarksFrom(anchors, width) : []),
     ],
     style: PLOT_STYLE,

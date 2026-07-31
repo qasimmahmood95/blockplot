@@ -653,17 +653,24 @@ and watching it stay green:
   everything in CSS is uncovered; a theme token going wrong would not fail here.
   A legend or annotation drawn outside the `<svg>` but inside `.chart-frame` is
   invisible to the chart checks for the same reason.
-- **The end-of-line series labels can overlap, and nothing catches it.** On
-  `/volatility`, `/cycles` and `/performance` a `Plot.text` mark labels each
-  line at its last point, so its y *is* a data value and two labels drift
-  together and apart on their own — measured over the committed series, 28.8% of
-  days on `/volatility` and 17.2% on `/performance` have some pair within 4px,
-  with a run of 30 consecutive days in the GBP tree. Real, and recurring. The
-  overlap check is deliberately scoped to axis ticks so that a *data refresh*
-  cannot turn an unchanged diff red, which would be the worse failure. The fix
-  belongs in the specs — dodge the labels, or drop them and lean on the legend
-  that already sits above every one of those three charts, which is what
-  `/performance` does at its narrow width and for this exact reason.
+- ~~**The end-of-line series labels can overlap**~~ — **fixed in the specs, and
+  the check now covers them.** On `/volatility`, `/cycles` and `/performance` a
+  `Plot.text` mark labels each line at its last point, so its y *is* a data
+  value and two labels drift together and apart on their own. Replayed over the
+  committed series, with each day's domain taken from the points drawn up to
+  that day as the chart does: some pair within 4px on **20.6%** of days and
+  within one pixel on **6.3%**, most recently 2026-07-05 and 2026-07-04. Today
+  they sit 14.1px apart, which is why nobody had seen it.
+
+  `src/lib/specs/end-labels.ts` nudges them apart — dodged rather than dropped,
+  since the legend is a worse way to identify five lines. It re-derives only the
+  linear/log mapping over a domain the caller passes, not Plot's scale
+  construction, so there is no second definition to drift — and that claim is
+  now tested rather than argued: the three specs are rendered at a tie and the
+  separation read back out of the SVG, which is what catches a wrong plot
+  height, a domain taken from the wrong points, or a log axis read as linear.
+  With the condition gone from the charts, the rendered gate's co-location check
+  drops its axis-only exemption and covers every label.
 - **`src/lib/specs/holdings.ts` is never checked.** It renders only in the
   client island, so it never appears in `dist/` — and it is the one chart whose
   labels are sized by a reader-entered amount.

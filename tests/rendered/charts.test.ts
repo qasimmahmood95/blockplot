@@ -154,13 +154,16 @@ const fontSizeOf = (el: Element): number => {
  * chart pages — 345 labels with no size below the root, 14 with one, and the 14
  * are exactly the end-of-line series labels.
  *
- * The distinction matters because the two behave completely differently under a
- * data refresh. A tick's position is Plot's decision and it lays them out to
- * fit; a series label's y *is* a data value, so two of them drift together and
- * apart on their own — measured over the committed history, some pair lands
- * within a pixel on 12.9% of days. Checking those would redden an unchanged
- * diff every eight days or so, which is the failure that teaches people to
- * ignore a gate. PLAN.md carries the overlap itself as an open spec defect.
+ * The tick checks need the distinction because they group by the shape an axis
+ * has — a row sharing a baseline, a column sharing an x — and a set of series
+ * labels can take that shape by accident, which on a long-enough `/cycles`
+ * they did.
+ *
+ * It is no longer an exemption from collision. It was: a series label's y is a
+ * data value, so two of them drifted together on their own and checking them
+ * would have reddened an unchanged diff on one day in five. They are dodged in
+ * the spec now (`specs/end-labels.ts`), so the co-location check below covers
+ * every label.
  */
 const isAxisLabel = (el: Element): boolean => {
   let node: Element | null = el;
@@ -184,7 +187,10 @@ const inherited = (el: Element, attr: string): string | null => {
   return null;
 };
 
-const TRANSLATE = /translate\(\s*(-?[\d.]+)\s*(?:[, ]\s*(-?[\d.]+)\s*)?\)/;
+// Exponent notation included: a computed offset can round to something like
+// -2.8e-14, and Plot writes it out that way rather than as a decimal.
+const NUMBER = String.raw`-?\d*\.?\d+(?:e[-+]?\d+)?`;
+const TRANSLATE = new RegExp(String.raw`translate\(\s*(${NUMBER})\s*(?:[, ]\s*(${NUMBER})\s*)?\)`, 'i');
 
 /**
  * Absolute position, summing the `translate` chain up to the `<svg>`.
@@ -376,9 +382,8 @@ describe('server-rendered charts', () => {
     // 5.9px apart and are 13.6px wide, overlapping by more than half, and were
     // green. This compares boxes.
     //
-    // Scoped to the axes — see `isAxisLabel` for why the series labels are out
-    // and what PLAN.md carries in their place. Within the axes, grouped by the
-    // shape an axis has rather than by a margin the markup does not carry: a
+    // Scoped to the axes, and grouped by the shape an axis has rather than by
+    // a margin the markup does not carry: a
     // row of labels sharing a baseline is an x axis, a column sharing an x with
     // `text-anchor: end` is a y axis. The earlier version of this grouped *all*
     // labels that way, which let three series labels on a long-enough `/cycles`
@@ -425,18 +430,21 @@ describe('server-rendered charts', () => {
     expect([...new Set(overlaps)]).toEqual([]);
   });
 
-  it.each(chartRoutes)('%s draws no two tick labels at the same point', (route) => {
+  it.each(chartRoutes)('%s draws no two labels at the same point', (route) => {
     // The backstop the box comparison needs, for a stack the grouping above
-    // cannot see — two ticks from *different* axes landing on one another.
+    // cannot see — two ticks from different axes landing on one another, or two
+    // series labels the dodge failed to separate.
     //
-    // Axis labels only, on the same reasoning: at 1px this looked like a
-    // safe universal rule, and it is not. The series labels all share an x
-    // exactly, so for them it reduces to "two lines within 0.1 of each other",
-    // which every crossing produces — replayed over the committed history, 12.9%
-    // of days would have failed here, most recently 2026-07-04.
+    // Every label now, axis and series alike. It was axis-only, because the
+    // series labels take their y from the data and two lines ending close
+    // together printed two labels in one place — on 12.9% of days, replayed
+    // over the committed history. They are dodged in the spec now
+    // (`end-labels.ts`), so the condition cannot arise and the exemption can
+    // go; a check that had to skip the labels most likely to collide was the
+    // wrong half of the problem to solve.
     const stacked: string[] = [];
     for (const svg of page(route).querySelectorAll('svg')) {
-      const lines = linesOf(svg).filter((line) => line.axis);
+      const lines = linesOf(svg);
       for (let i = 0; i < lines.length; i += 1) {
         for (let j = i + 1; j < lines.length; j += 1) {
           const a = lines[i] as Line;
