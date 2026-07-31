@@ -22,3 +22,9 @@ Thumbs.db
 # can import from it; they are working notes, not repo content.
 .census-tmp*
 *.scratch.mjs
+
+# Throwaway git worktrees an AI review agent checks out so it can mutate the
+# tree without touching this one. A whole second copy of the repo, and `git add
+# -A` would take all of it — which is how a scratch script got swept into a
+# commit once already.
+.claude/worktrees/
