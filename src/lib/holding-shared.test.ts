@@ -83,13 +83,31 @@ describe('heatClass', () => {
     // verbatim into the page's method note.
     expect(HEAT_STEPS).toEqual([25, 60, 120]);
     expect(heatClass(0)).toBe('heat-pos-1');
-    expect(heatClass(24.99)).toBe('heat-pos-1');
     expect(heatClass(25)).toBe('heat-pos-2');
-    expect(heatClass(59.99)).toBe('heat-pos-2');
     expect(heatClass(60)).toBe('heat-pos-3');
-    expect(heatClass(119.99)).toBe('heat-pos-3');
     expect(heatClass(120)).toBe('heat-pos-4');
     expect(heatClass(5341)).toBe('heat-pos-4');
+  });
+
+  it('bands on the rate the cell prints, not on the one behind it', () => {
+    // The cell shows a whole percent, and the note under the grid tells the
+    // reader where the bands break — so the boundary has to be where the
+    // *printed* figure crosses it. 119.6 shows as +120% and used to take the
+    // band below, which put a cell reading "+120%" in the 60-to-120 colour on
+    // the built page.
+    expect(formatRate(119.6)).toBe('+120%');
+    expect(heatClass(119.6)).toBe('heat-pos-4');
+    expect(formatRate(119.4)).toBe('+119%');
+    expect(heatClass(119.4)).toBe('heat-pos-3');
+    // Both ends of every band, either side of the rounding.
+    expect(heatClass(24.4)).toBe('heat-pos-1');
+    expect(heatClass(24.5)).toBe('heat-pos-2');
+    expect(heatClass(59.4)).toBe('heat-pos-2');
+    expect(heatClass(59.5)).toBe('heat-pos-3');
+    // And the negative half rounds away from zero, as `Intl` does: −59.5 shows
+    // as −60%, which `Math.round` alone would have banded as −59.
+    expect(formatRate(-59.5)).toBe('−60%');
+    expect(heatClass(-59.5)).toBe('heat-neg-3');
   });
 
   it('is symmetric about zero', () => {

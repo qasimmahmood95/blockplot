@@ -11,6 +11,7 @@
  * for want of a Plot-free import, which is exactly the duplication the spec
  * split exists to prevent.
  */
+import { formatPct } from '../format';
 
 export interface WealthPoint {
   date: Date;
@@ -144,7 +145,7 @@ export function dcaFormatters(code: string): {
   });
   return {
     money: (value) => money.format(value),
-    signedPct: (value) => `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`,
+    signedPct: formatPct,
   };
 }
 

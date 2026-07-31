@@ -7,6 +7,7 @@
  * import of the spec module would put Plot back on the critical path.
  */
 import { CURRENCY_META, type Currency } from './currency';
+import { formatPct } from './format';
 // The tested definition, not a second copy: this feeds the day count the caption
 // displays, and `pipeline/series.ts` is zod-free so it costs the island nothing.
 import { daysBetween } from '../../pipeline/series';
@@ -276,18 +277,16 @@ export interface RealTile {
 export const MULTIPLE_ABOVE_PCT = 10_000;
 
 const multiple = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+
 // Grouped, like the multiple beside it. Ungrouped, one tile row read "+8473.6%"
 // over a neighbour reading "×859,089" — two conventions for the same quantity,
-// one row apart.
-const percent = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
-
+// one row apart. That is now `formatPct`'s business rather than a local
+// `Intl` instance's, for the reason recorded there: three of these existed and
+// they disagreed on grouping, on the minus sign, and on how to round a half.
 const pct = (value: number | null): string => {
   if (value === null) return '—';
   if (value >= MULTIPLE_ABOVE_PCT) return `×${multiple.format(1 + value / 100)}`;
-  return `${value >= 0 ? '+' : ''}${percent.format(value)}%`;
+  return formatPct(value);
 };
 
 /**
@@ -298,8 +297,7 @@ const pct = (value: number | null): string => {
  * formatter for one commit, where only the fixture's modest CAGR kept a test
  * green that claimed this rule already existed.
  */
-const ratePct = (value: number | null): string =>
-  value === null ? '—' : `${value >= 0 ? '+' : ''}${percent.format(value)}%`;
+const ratePct = (value: number | null): string => (value === null ? '—' : formatPct(value));
 
 /**
  * One tile per window, real first.

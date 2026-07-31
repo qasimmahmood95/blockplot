@@ -186,12 +186,16 @@ describe('dcaFormatters', () => {
     expect(dcaFormatters('GBP').money(15700)).toBe('£15,700');
   });
 
-  it('signs a percentage on both sides of zero', () => {
+  it('signs a percentage on both sides of zero, like the rest of the site', () => {
     const { signedPct } = dcaFormatters('USD');
     expect(signedPct(1.04)).toBe('+1.0%');
-    // -2.0%, not -2.1%: same binary-rounding characteristic as above.
-    expect(signedPct(-2.05)).toBe('-2.0%');
-    expect(signedPct(-2.06)).toBe('-2.1%');
+    // −2.1%, and it used to be -2.0%. This was its own `toFixed` call, which
+    // rounds the binary double nearest −2.05 downward; it is `formatPct` now,
+    // which rounds halves away from zero the way a reader expects and the way
+    // every other figure on the site already did. The minus is U+2212 for the
+    // same reason.
+    expect(signedPct(-2.05)).toBe('−2.1%');
+    expect(signedPct(-2.06)).toBe('−2.1%');
     expect(signedPct(0)).toBe('+0.0%');
   });
 });

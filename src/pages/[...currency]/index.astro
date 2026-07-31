@@ -6,6 +6,7 @@ import Base from '../../layouts/Base.astro';
 import { CURRENCY_META, currencyFormatters, fxNote, type Currency } from '../../lib/currency';
 import { dataFor } from '../../lib/data';
 import { formatPct } from '../../lib/format';
+import { MONTHLY_HEAT_STEPS } from '../../lib/heat-shared';
 import { currencyPaths } from '../../lib/routes';
 
 export const getStaticPaths = currencyPaths;
@@ -67,7 +68,7 @@ const changes = [
     <h2>Monthly returns · {monthlyReturns.years[0]?.year}–{monthlyReturns.asOf.slice(0, 4)}</h2>
     <MonthlyHeatmap currency={currency} />
     <p class="heat-legend" aria-hidden="true">
-      <span>−30%+</span>
+      <span>−{MONTHLY_HEAT_STEPS[2]}%+</span>
       <span class="swatch heat-neg-4"></span>
       <span class="swatch heat-neg-3"></span>
       <span class="swatch heat-neg-2"></span>
@@ -76,7 +77,7 @@ const changes = [
       <span class="swatch heat-pos-2"></span>
       <span class="swatch heat-pos-3"></span>
       <span class="swatch heat-pos-4"></span>
-      <span>+30%+</span>
+      <span>+{MONTHLY_HEAT_STEPS[2]}%+</span>
     </p>
     <p class="method-note">
       Each cell is that month's last close over the previous month's, in percent; a month missing
@@ -84,7 +85,8 @@ const changes = [
       month-to-date ({monthlyReturns.asOf}). The Year column is that year's own close-over-close
       return — its last December close against the previous December's — rather than the product of
       the months beside it, so rounding in the cells cannot accumulate into the total. A year the
-      history only partly covers is measured from its first close, and is a partial figure. Shading uses fixed magnitude bands (5/15/30%)
+      history only partly covers is measured from its first close, and is a partial figure. Shading
+      uses fixed magnitude bands ({MONTHLY_HEAT_STEPS.join('/')}%)
       rather than data-relative scaling, so a colour means the same thing in every row; figures are
       printed in every cell, so colour is never the only signal. Computed in the pipeline from
       blockchain.com's full daily history by fixture-tested pure functions.

@@ -94,6 +94,7 @@ const payload = {
   import { chartData, responsiveChart } from '../lib/charts';
   import { decodeDaily } from '../lib/series-codec';
   import { compactMoney } from '../lib/chart-format';
+  import { formatPct } from '../lib/format';
   import {
     clearHoldings,
     HOLDINGS_EXTERNAL_EVENT,
@@ -129,7 +130,7 @@ const payload = {
     currency: data.code,
     maximumFractionDigits: 2,
   });
-  const signedPct = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+  const signedPct = formatPct;
   /** Sub-dollar ticks need decimals; above a dollar they are noise. */
   const axisMoney = (v: number): string =>
     new Intl.NumberFormat('en-US', {
