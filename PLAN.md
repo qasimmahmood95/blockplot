@@ -536,15 +536,25 @@ finishing work on what exists, in this order:
    is strictly better than checking, and every check there is an admission that
    a value should have been projected. What remains checkable but unchecked is
    noted below.
-2. **Visual-regression snapshots.** The other half of the same gap: two labels
-   painted at identical coordinates at every range and both scales, shipped and
-   invisible to every check the repo has. Open question worth settling before
-   starting: since M15 the charts are server-rendered SVG, so most of what pixel
-   baselines would catch — overlapping labels, sub-4px axis type, a tick count
-   the narrow variant cannot fit — is checkable as *geometry* in `dist/`, with
-   no browser, no baselines and no cross-platform font rendering to reconcile.
-   Pixel snapshots would still cover CSS and layout, and would need a pinned
-   container image to be reproducible between this environment and the runner.
+2. **Visual regressions in the charts** — **done as geometry, not as pixels.**
+   The two that shipped were labels painted at identical coordinates at every
+   range and both scales, and 4.6px axis type on phones. Both are visual and
+   neither needs a picture: since M15 the charts are server-rendered SVG, so
+   where every label sits and how big it is are facts in `dist/`.
+   `tests/rendered/charts.test.ts` checks both width variants exist at their
+   declared widths, that no label overlaps another, that none is drawn outside
+   its box, and that nominal type times the narrow container's scale stays above
+   6px. Each was confirmed red under the change it exists to catch — widening
+   `NARROW_WIDTH` to 760 reports "4.0px", an overcrowded axis names the pairs
+   sharing a pixel, a shrunk `marginLeft` names the labels off the edge.
+
+   Preferred to screenshot diffing on the merits, not only on cost: a diff
+   answers "did anything change", which on a site whose data moves every six
+   hours is answered "yes" every run, and its baselines would have to be
+   reconciled between a container's font rendering and the runner's. **Still
+   open:** colour, spacing, weight and anything living in CSS rather than in the
+   SVG. Pixel snapshots are the tool for those, and would want a pinned
+   container image to be reproducible.
 3. **Wire `downsample.ts`** — `/performance` at ~34 KB gz of SVG is the best
    case, blocked on the crosshair reading the same array.
 4. **Offset dates in the series codec** — measured at 3,270 bytes gz on
@@ -588,18 +598,18 @@ Three items from M15/M16 that are real and unscheduled:
   atomicity risk is sharpest, since its regime bands and its tables come from
   the same file.
 
-The first of the two quality gates this list carried is now built (item 1
-above). The second — visual-regression snapshots — is still open, and still
-justified by this repo's own history rather than by principle: two silent visual
-regressions shipped in one session (4.6px axis type on phones, and a printed
-chart contradicting its own labels) with lint, typecheck, unit tests and
-Lighthouse all green on both.
+Both quality gates this list carried are now built (items 1 and 2 above), each
+justified by this repo's own history rather than by principle. `npm run
+test:rendered` is 129 checks over `dist/`.
 
 What the rendered gate does **not** cover yet, measured by mutating the source
 and watching it stay green:
 
 - **Nine of eleven page types have no claim checks.** Only `/holding-periods`,
-  `/real-returns` and the overview heatmap are covered.
+  `/real-returns` and the overview heatmap are covered. The chart-geometry
+  checks are universal, so every page with an SVG has those.
+- **Nothing outside the SVG is checked visually.** Colour, spacing, weight and
+  everything in CSS is uncovered; a theme token going wrong would not fail here.
 - **Drift-capable literals still in prose**: `methodology.astro`'s `0.019%`
   against `1.285%` — a one-off measurement of a past decision rather than a
   claim about current data, so arguably fine where it is, but nothing says so.
