@@ -11,10 +11,37 @@ const run = (points: P[], width: number): readonly P[] => envelopeByPixel(points
 const ramp = (n: number): P[] => Array.from({ length: n }, (_, i) => ({ x: i, y: i }));
 
 describe('envelopeByPixel', () => {
-  it('leaves a series that is already under two points per pixel alone', () => {
-    const points = ramp(100);
+  it('leaves a series under the threshold alone, and pins where that is', () => {
+    // Returns the same array, not a copy. Both bounds asserted, because the
+    // threshold is a real fidelity choice and nothing else pins it: review
+    // moved it from 1 to 2 and to 4 with the whole suite still green, while it
+    // changes what `/performance` draws by hundreds of points.
+    const points = ramp(200);
     expect(run(points, 100)).toBe(points);
-    expect(run(points, 50)).toBe(points);
+    expect(run(points, 99)).not.toBe(points);
+  });
+
+  it('drops nothing from a bucket of two', () => {
+    // A bucket contributes its first, last, lowest and highest point; with two
+    // in it those are the same two, so the series comes back whole. Thinning
+    // only bites where a bucket holds enough points that some are neither an end
+    // nor an extreme — which real series do, unevenly, because they have
+    // weekends missing and a weekly section before a daily one.
+    expect(run(ramp(150), 100)).toHaveLength(150);
+    expect(run(ramp(1500), 100).length).toBeLessThan(1500);
+  });
+
+  it('keeps the point a bucket enters on, not just its extremes', () => {
+    // The line has to enter each bucket where it did before. Dropping the
+    // bucket's first point changes the drawn path and was caught by nothing:
+    // every other assertion here holds without it.
+    const points = Array.from({ length: 1000 }, (_, i) => ({ x: i, y: Math.sin(i / 3) }));
+    const out = run(points, 100);
+    expect(out[0]).toBe(points[0]);
+    // Measured, not bounded loosely: 286 points on this series, and 243 with
+    // the bucket-entry points dropped. A range wide enough to span both is a
+    // range that pins nothing, which is what the first version of this did.
+    expect(out).toHaveLength(286);
   });
 
   it('thins one that is over', () => {

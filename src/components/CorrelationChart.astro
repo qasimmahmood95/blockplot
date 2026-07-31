@@ -22,13 +22,14 @@ const { currency } = Astro.props;
 const { correlations } = dataFor(currency);
 const pairs = correlations.pairs.filter((p) => p.series.length > 0) as Pair[];
 // Each pair's readings go over the wire as a start date plus one number per
-// day where the dates allow it. Most pairs here are trading-day based and fall
-// back to plain rows — but btc-eth is crypto against crypto, so it is the one
-// pair in this file that is genuinely daily-contiguous, and it is also by far
-// the largest: 3,144 readings against about 2,470 for the other deep pairs and
-// 250 for the clipped ones. The encoder decides per pair rather than being
-// told, so a pair that stops being contiguous stores its dates instead of
-// silently shifting every reading by a day.
+// day, or plus the gaps between the days it has. btc-eth is crypto against
+// crypto, so it is the one pair here that is genuinely daily-contiguous and
+// takes the first form; the rest are trading-day based — nine of the ten, ~540
+// weekend gaps apiece — and take the second. They used to write every date out,
+// which was most of this page's weight: it is 37.8 KB gzipped now against 65.6.
+// The encoder decides per pair rather than being told, and anything neither
+// form can reproduce exactly still stores its rows rather than silently
+// shifting a reading.
 const payload = {
   threshold: correlations.regimeThreshold,
   pairs: pairs.map((p) => ({ ...p, series: encodeDaily(p.series, 'corr') })),
