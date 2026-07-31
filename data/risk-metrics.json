@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-07-30T23:37:10.200Z",
-  "asOf": "2026-07-30",
-  "windowDays": 365,
+  "fetchedAt": "2026-07-31T00:08:55.654Z",
+  "asOf": "2026-07-31",
+  "windowDays": 366,
   "rollingVolSource": "blockchain.info",
   "rollingVol": [
     {
@@ -5865,7 +5865,11 @@
       },
       {
         "date": "2026-07-30",
-        "drawdownPct": -47.89
+        "drawdownPct": -48.76
+      },
+      {
+        "date": "2026-07-31",
+        "drawdownPct": -48.02
       }
     ]
   },
@@ -5873,13 +5877,13 @@
     {
       "asset": "btc",
       "periodsPerYear": 365,
-      "observations": 365,
+      "observations": 366,
       "firstDate": "2025-07-31",
-      "lastDate": "2026-07-30",
-      "totalReturnPct": -44.83,
-      "annualizedVolPct": 43.25,
+      "lastDate": "2026-07-31",
+      "totalReturnPct": -44.97,
+      "annualizedVolPct": 43.18,
       "sharpe": -1.38,
-      "sortino": -1.79,
+      "sortino": -1.8,
       "maxDrawdownPct": -53.05
     },
     {
@@ -5887,11 +5891,11 @@
       "periodsPerYear": 365,
       "observations": 365,
       "firstDate": "2025-07-31",
-      "lastDate": "2026-07-30",
-      "totalReturnPct": -47.68,
-      "annualizedVolPct": 66.34,
-      "sharpe": -0.98,
-      "sortino": -1.33,
+      "lastDate": "2026-07-31",
+      "totalReturnPct": -48.12,
+      "annualizedVolPct": 66.33,
+      "sharpe": -0.99,
+      "sortino": -1.35,
       "maxDrawdownPct": -67.61
     },
     {
