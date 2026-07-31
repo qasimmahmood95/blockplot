@@ -31,11 +31,23 @@ describe('monthlyReturns', () => {
 });
 
 describe('yearlyReturns', () => {
-  it('compounds each calendar year\'s available months', () => {
-    expect(yearlyReturns(monthlyReturns(history))).toEqual([
+  it('measures each calendar year from the closes, not from the rounded months', () => {
+    // Same answer here, because the fixture's monthly returns are exact. On the
+    // real history they differ: compounding twelve 2 dp figures put 2013 at
+    // 5327.45% against a direct 5327.41%, and the holding-period matrix anchors
+    // on this definition so the difference would have surfaced as two pages
+    // disagreeing about the same year.
+    expect(yearlyReturns(history)).toEqual([
       { year: 2024, returnPct: 8.9 }, // 0.9 × 1.1 × 1.1 − 1
       { year: 2025, returnPct: 10 },
     ]);
+  });
+
+  it('takes a partial first year from its own first close', () => {
+    // What `monthlyReturns` does implicitly: the first month has no basis and
+    // emits nothing, so the year is measured from that month's close.
+    const partial = history.filter((d) => d.date >= '2024-01-31');
+    expect(yearlyReturns(partial)[0]).toEqual({ year: 2024, returnPct: 8.9 });
   });
 });
 

@@ -7,6 +7,7 @@ export const PAGES = [
   { page: 'real-returns', label: 'real returns' },
   { page: 'volatility', label: 'volatility & risk' },
   { page: 'cycles', label: 'halving cycles' },
+  { page: 'holding-periods', label: 'holding periods' },
   { page: 'correlation', label: 'correlation' },
   { page: 'dca', label: 'dca' },
   { page: 'flows', label: 'flows' },

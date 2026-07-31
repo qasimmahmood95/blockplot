@@ -1010,3 +1010,276 @@ export const realReturnsDatasetSchema = z
   });
 
 export type RealReturnsDataset = z.infer<typeof realReturnsDatasetSchema>;
+
+/**
+ * Versioned on-disk format of data/holding-periods.json.
+ *
+ * The cells carry both figures. Only the annual rate is comparable across the
+ * matrix — a 300% total is extraordinary over one year and ordinary over ten —
+ * but the total is what a reader feels, so the grid colours by one and states
+ * the other rather than making them choose a page.
+ */
+export const holdingDatasetSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    currency: currencySchema,
+    fetchedAt: z.string(),
+    /** Last day of history the matrix was built from. */
+    asOf: isoDate,
+    /** The shortest hold the run was willing to annualise. */
+    minAnnualiseDays: z.number().int().positive(),
+    /**
+     * The years the matrix spans, ascending. Both axes use this, so a page
+     * cannot render a row the cells do not cover.
+     *
+     * Each carries the two dates it is anchored on and whether it is a whole
+     * calendar year. Both ends of the history are partial — it began mid-2010 and
+     * the current year is year-to-date — and a cell saying "sold end of 2026" in
+     * July is false. The page reads these dates rather than assuming December.
+     */
+    years: z
+      .array(
+        z.object({
+          year: z.number().int(),
+          /** Close a hold starting in this year is bought at. */
+          basisDate: isoDate,
+          /** Close a hold ending in this year is sold at. */
+          closeDate: isoDate,
+          /** False when the year is truncated at either end. */
+          whole: z.boolean(),
+        }),
+      )
+      .min(2),
+    cells: z
+      .array(
+        z.object({
+          buyYear: z.number().int(),
+          sellYear: z.number().int(),
+          totalPct: z.number(),
+          annualPct: z.number().nullable(),
+          days: z.number().int().positive(),
+        }),
+      )
+      .min(1),
+    summary: z.object({
+      count: z.number().int().positive(),
+      positive: z.number().int().nonnegative(),
+      /**
+       * The extremes, each carrying its own total as well as its rate.
+       *
+       * Both, because the tile prints both: for a one-calendar-year hold the two
+       * differ visibly — +5,342% a year against a +5,327% total — and a tile
+       * showing only the rate gives a reader no way to tell that is an
+       * annualisation artefact rather than a discrepancy with the overview.
+       */
+      best: z.object({
+        buyYear: z.number().int(),
+        sellYear: z.number().int(),
+        annualPct: z.number(),
+        totalPct: z.number(),
+      }),
+      worst: z.object({
+        buyYear: z.number().int(),
+        sellYear: z.number().int(),
+        annualPct: z.number(),
+        totalPct: z.number(),
+      }),
+      longestLosing: z
+        .object({
+          buyYear: z.number().int(),
+          sellYear: z.number().int(),
+          totalPct: z.number(),
+          days: z.number().int().positive(),
+        })
+        .nullable(),
+      /** Shortest hold length, in whole years, that never ended down. */
+      safeYears: z.number().int().positive().nullable(),
+    }),
+  })
+  .superRefine((doc, ctx) => {
+    // The file's claims about itself, checked rather than trusted — each of these
+    // is a way the page could state something false while every cell looked fine.
+    const years = new Set(doc.years.map((y) => y.year));
+    const sorted = doc.years.every((y, i, a) => i === 0 || y.year > (a[i - 1]?.year ?? -Infinity));
+    if (!sorted) ctx.addIssue({ code: 'custom', message: 'years are not ascending' });
+    const seen = new Set<string>();
+    for (const cell of doc.cells) {
+      if (cell.sellYear < cell.buyYear) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `cell ${cell.buyYear}->${cell.sellYear} sells before it buys`,
+        });
+      }
+      if (!years.has(cell.buyYear) || !years.has(cell.sellYear)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `cell ${cell.buyYear}->${cell.sellYear} names a year outside the axis`,
+        });
+      }
+      const key = `${cell.buyYear}-${cell.sellYear}`;
+      if (seen.has(key)) {
+        ctx.addIssue({ code: 'custom', message: `duplicate cell ${key}` });
+      }
+      seen.add(key);
+      // A rate is either absent or measured over a year. A rate on a shorter hold
+      // is an extrapolation, and this file exists partly to keep one out.
+      if (cell.annualPct !== null && cell.days < doc.minAnnualiseDays) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `cell ${key} is annualised over ${cell.days} days, under ${doc.minAnnualiseDays}`,
+        });
+      }
+      if (cell.annualPct === null && cell.days >= doc.minAnnualiseDays) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `cell ${key} spans ${cell.days} days and has no rate`,
+        });
+      }
+    }
+    // The matrix has to be complete: every pair the axis implies must be present,
+    // or the page renders a hole a reader would read as "no data" rather than as
+    // a missing row.
+    // A year is whole only if it runs a full December to December. Deliberately
+    // not the writer's expression rewritten — it was character-identical for one
+    // commit, which cannot catch a wrong predicate, and the predicate is exactly
+    // what was wrong: a December-month test marks the current year whole on any
+    // run from the 1st to the 30th.
+    for (const y of doc.years) {
+      const whole =
+        y.basisDate === `${y.year - 1}-12-31` || y.basisDate.slice(0, 7) === `${y.year - 1}-12`
+          ? y.closeDate === `${y.year}-12-31`
+          : false;
+      if (whole !== y.whole) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `${y.year} is marked ${y.whole ? 'whole' : 'partial'} but runs ${y.basisDate} to ${y.closeDate}`,
+        });
+      }
+      if (y.closeDate > doc.asOf) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `${y.year} closes ${y.closeDate}, after the dataset's asOf ${doc.asOf}`,
+        });
+      }
+    }
+    // The summary is what the four stat tiles print, and none of it was checked:
+    // `positive: 153` on a matrix with ten losses validated cleanly and would have
+    // rendered "153/153 holds ended up · 0 ended down". Every field here is one
+    // derivation from `cells`, so the file's headline claims are now verified
+    // against the file's own contents rather than trusted.
+    const cells = doc.cells;
+    const rated = cells.filter((c) => c.annualPct !== null);
+    const positive = cells.filter((c) => c.totalPct >= 0).length;
+    if (doc.summary.count !== cells.length) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `summary.count ${doc.summary.count} but ${cells.length} cells`,
+      });
+    }
+    if (doc.summary.positive !== positive) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `summary.positive ${doc.summary.positive} but ${positive} cells are up`,
+      });
+    }
+    const same = (a: { buyYear: number; sellYear: number }, b: { buyYear: number; sellYear: number }) =>
+      a.buyYear === b.buyYear && a.sellYear === b.sellYear;
+    const pool = rated.length > 0 ? rated : cells;
+    const rate = (c: { annualPct: number | null; totalPct: number }) => c.annualPct ?? c.totalPct;
+    const extremes: [
+      string,
+      { buyYear: number; sellYear: number; annualPct: number; totalPct: number },
+      number,
+    ][] = [
+      ['best', doc.summary.best, Math.max(...pool.map(rate))],
+      ['worst', doc.summary.worst, Math.min(...pool.map(rate))],
+    ];
+    for (const [label, claimed, target] of extremes) {
+      // Looked up in `cells` rather than trusted: the summary carries only the two
+      // years and a rate, so a hold that does not exist, or one whose rate has
+      // been edited, is otherwise invisible here.
+      const cell = pool.find((c) => same(c, claimed));
+      if (!cell) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `summary.${label} names ${claimed.buyYear}→${claimed.sellYear}, which is not a rated hold`,
+        });
+      } else if (cell.annualPct !== claimed.annualPct || cell.totalPct !== claimed.totalPct) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `summary.${label} says ${claimed.annualPct}%/${claimed.totalPct}% but that hold is ${cell.annualPct}%/${cell.totalPct}%`,
+        });
+      } else if (rate(cell) !== target) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `summary.${label} ${claimed.buyYear}→${claimed.sellYear} is not the ${label === 'best' ? 'highest' : 'lowest'}-rated hold`,
+        });
+      }
+    }
+    const losing = cells.filter((c) => c.totalPct < 0);
+    if (doc.summary.longestLosing === null) {
+      if (losing.length > 0) {
+        ctx.addIssue({ code: 'custom', message: 'summary.longestLosing is null but holds lost' });
+      }
+    } else {
+      const longest = Math.max(...losing.map((c) => c.days));
+      const claimed = doc.summary.longestLosing;
+      if (claimed.totalPct >= 0 || claimed.days !== longest) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `summary.longestLosing ${claimed.buyYear}→${claimed.sellYear} is not a longest losing hold`,
+        });
+      }
+    }
+    // The shortest span in which no hold lost, recomputed. `safeYears: 1` on a
+    // matrix whose one-year holds include a −69% would otherwise validate.
+    const span = (c: { buyYear: number; sellYear: number }) => c.sellYear - c.buyYear + 1;
+    const spans = [...new Set(cells.map(span))].sort((a, b) => a - b);
+    const safe =
+      spans.find((n) => cells.filter((c) => span(c) === n).every((c) => c.totalPct >= 0)) ?? null;
+    if (doc.summary.safeYears !== safe) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `summary.safeYears ${doc.summary.safeYears} but ${safe} is the shortest span with no loss`,
+      });
+    }
+    // `days` is a subtraction of two dates this file already publishes, so a cell
+    // claiming a different span is checkable rather than trusted.
+    const anchorFor = new Map(doc.years.map((y) => [y.year, y]));
+    for (const cell of cells) {
+      const buy = anchorFor.get(cell.buyYear);
+      const sell = anchorFor.get(cell.sellYear);
+      if (!buy || !sell) continue;
+      const days = Math.round(
+        (Date.parse(`${sell.closeDate}T00:00:00Z`) - Date.parse(`${buy.basisDate}T00:00:00Z`)) /
+          86_400_000,
+      );
+      if (days !== cell.days) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `${cell.buyYear}→${cell.sellYear} says ${cell.days} days, but its anchors are ${days} apart`,
+        });
+      }
+      if (cell.annualPct === null && cell.days >= doc.minAnnualiseDays) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `${cell.buyYear}→${cell.sellYear} ran ${cell.days} days and carries no rate`,
+        });
+      }
+    }
+    const expected = (doc.years.length * (doc.years.length + 1)) / 2;
+    if (doc.cells.length !== expected) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${doc.cells.length} cells for ${doc.years.length} years — expected ${expected}`,
+      });
+    }
+    if (doc.summary.count !== doc.cells.length) {
+      ctx.addIssue({ code: 'custom', message: 'summary.count disagrees with the cells' });
+    }
+    if (doc.summary.positive > doc.summary.count) {
+      ctx.addIssue({ code: 'custom', message: 'more positive holds than holds' });
+    }
+  });
+
+export type HoldingDataset = z.infer<typeof holdingDatasetSchema>;

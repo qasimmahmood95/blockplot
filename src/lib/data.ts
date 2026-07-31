@@ -4,6 +4,7 @@ import usdPrice from '../../data/btc-price-daily.json';
 import usdHistory from '../../data/btc-price-history.json';
 import usdCorrelations from '../../data/correlations.json';
 import usdHalvings from '../../data/halving-cycles.json';
+import usdHolding from '../../data/holding-periods.json';
 import usdMonthly from '../../data/monthly-returns.json';
 import usdRisk from '../../data/risk-metrics.json';
 import usdSignals from '../../data/signals.json';
@@ -13,6 +14,7 @@ import gbpPrice from '../../data/gbp/btc-price-daily.json';
 import gbpHistory from '../../data/gbp/btc-price-history.json';
 import gbpCorrelations from '../../data/gbp/correlations.json';
 import gbpHalvings from '../../data/gbp/halving-cycles.json';
+import gbpHolding from '../../data/gbp/holding-periods.json';
 import gbpMonthly from '../../data/gbp/monthly-returns.json';
 import gbpRisk from '../../data/gbp/risk-metrics.json';
 import gbpSignals from '../../data/gbp/signals.json';
@@ -26,6 +28,7 @@ import {
   dominanceDatasetSchema,
   halvingDatasetSchema,
   historyDatasetSchema,
+  holdingDatasetSchema,
   monthlyDatasetSchema,
   networkDatasetSchema,
   priceDatasetSchema,
@@ -40,6 +43,7 @@ import type {
   CorrelationDataset,
   HalvingDataset,
   HistoryDataset,
+  HoldingDataset,
   MonthlyDataset,
   PriceDataset,
   RealReturnsDataset,
@@ -92,6 +96,7 @@ interface CurrencyData {
   benchmarksHistory: BenchmarkHistoryDataset;
   riskMetrics: RiskDataset;
   halvingCycles: HalvingDataset;
+  holdingPeriods: HoldingDataset;
   correlations: CorrelationDataset;
   btcHistory: HistoryDataset;
   monthlyReturns: MonthlyDataset;
@@ -109,6 +114,7 @@ const currencyData = (dir: string, raw: Record<keyof CurrencyData, unknown>): Cu
   ),
   riskMetrics: parseOne(`${dir}risk-metrics.json`, riskDatasetSchema, raw.riskMetrics),
   halvingCycles: parseOne(`${dir}halving-cycles.json`, halvingDatasetSchema, raw.halvingCycles),
+  holdingPeriods: parseOne(`${dir}holding-periods.json`, holdingDatasetSchema, raw.holdingPeriods),
   correlations: parseOne(`${dir}correlations.json`, correlationDatasetSchema, raw.correlations),
   btcHistory: parseOne(`${dir}btc-price-history.json`, historyDatasetSchema, raw.btcHistory),
   monthlyReturns: parseOne(`${dir}monthly-returns.json`, monthlyDatasetSchema, raw.monthlyReturns),
@@ -122,6 +128,7 @@ const BY_CURRENCY: Record<Currency, CurrencyData> = {
     benchmarksHistory: usdBenchmarkHistory,
     riskMetrics: usdRisk,
     halvingCycles: usdHalvings,
+    holdingPeriods: usdHolding,
     correlations: usdCorrelations,
     btcHistory: usdHistory,
     monthlyReturns: usdMonthly,
@@ -133,6 +140,7 @@ const BY_CURRENCY: Record<Currency, CurrencyData> = {
     benchmarksHistory: gbpBenchmarkHistory,
     riskMetrics: gbpRisk,
     halvingCycles: gbpHalvings,
+    holdingPeriods: gbpHolding,
     correlations: gbpCorrelations,
     btcHistory: gbpHistory,
     monthlyReturns: gbpMonthly,
