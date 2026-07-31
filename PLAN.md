@@ -513,18 +513,38 @@ longest losing one ran 730 days for −41.9%.
 The milestone list ends here by decision, not by exhaustion. What follows is
 finishing work on what exists, in this order:
 
-1. **A prose-vs-data gate.** Every one of M19, M20 and M21 shipped at least one
-   sentence the committed data refuted, and in every case what caught it was a
-   human reading the rendered page or a reviewer recomputing from source. Never
-   the suite. M21's was the sharpest: the anchoring convention was chosen
-   *specifically* so the diagonal would reconcile with a figure published on the
-   overview, and then the cell rendered a different quantity while a note
-   asserted the reconciliation anyway — three clauses of one sentence wrong, past
-   609 tests and a 1.00 accessibility score. The defect class is now the most
-   expensive thing about this codebase and the only one with no automated guard.
+1. ~~**A prose-vs-data gate.**~~ — **done.** Every one of M19, M20 and M21
+   shipped at least one sentence the committed data refuted, and in every case
+   what caught it was a human reading the rendered page or a reviewer
+   recomputing from source. Never the suite. M21's was the sharpest: the
+   anchoring convention was chosen *specifically* so the diagonal would
+   reconcile with a figure published on the overview, and then the cell rendered
+   a different quantity while a note asserted the reconciliation anyway — three
+   clauses of one sentence wrong, past 609 tests and a 1.00 accessibility score.
+
+   `npm run test:rendered` is a second vitest project over `dist/`, run in CI
+   after the build. What it caught in its first hour, all of it live on the
+   deployed site: five independent definitions of "signed percent, one decimal"
+   disagreeing on grouping, on the minus glyph and on how a half rounds, which
+   made `/holding-periods`'s reconciliation claim false at 2018; a cell printing
+   `+120%` in the 60-to-120 colour; the overview heatmap's bands written as
+   three separate literals; and `/performance` explaining its log default with a
+   sentence its own tiles refute in every clause.
+
+   The rule that keeps it small, recorded in `tests/rendered/dist.ts`: a claim
+   *interpolated* from `/data` cannot drift and needs no test, so interpolating
+   is strictly better than checking, and every check there is an admission that
+   a value should have been projected. What remains checkable but unchecked is
+   noted below.
 2. **Visual-regression snapshots.** The other half of the same gap: two labels
    painted at identical coordinates at every range and both scales, shipped and
-   invisible to every check the repo has.
+   invisible to every check the repo has. Open question worth settling before
+   starting: since M15 the charts are server-rendered SVG, so most of what pixel
+   baselines would catch — overlapping labels, sub-4px axis type, a tick count
+   the narrow variant cannot fit — is checkable as *geometry* in `dist/`, with
+   no browser, no baselines and no cross-platform font rendering to reconcile.
+   Pixel snapshots would still cover CSS and layout, and would need a pinned
+   container image to be reproducible between this environment and the runner.
 3. **Wire `downsample.ts`** — `/performance` at ~34 KB gz of SVG is the best
    case, blocked on the crosshair reading the same array.
 4. **Offset dates in the series codec** — measured at 3,270 bytes gz on
@@ -568,13 +588,30 @@ Three items from M15/M16 that are real and unscheduled:
   atomicity risk is sharpest, since its regime bands and its tables come from
   the same file.
 
-Two quality gates worth their own milestone eventually, both justified by this
-repo's own history rather than by principle: a test that extracts figures from
-rendered page copy and asserts them against `/data` (this project has shipped
-prose the data contradicted at least six times), and visual-regression
-snapshots (two silent visual regressions shipped in one session — 4.6px axis
-type on phones, and a printed chart contradicting its own labels — with lint,
-typecheck, unit tests and Lighthouse all green on both).
+The first of the two quality gates this list carried is now built (item 1
+above). The second — visual-regression snapshots — is still open, and still
+justified by this repo's own history rather than by principle: two silent visual
+regressions shipped in one session (4.6px axis type on phones, and a printed
+chart contradicting its own labels) with lint, typecheck, unit tests and
+Lighthouse all green on both.
+
+What the rendered gate does **not** cover yet, measured by mutating the source
+and watching it stay green:
+
+- **Nine of eleven page types have no claim checks.** Only `/holding-periods`,
+  `/real-returns` and the overview heatmap are covered.
+- **Drift-capable literals still in prose**: `methodology.astro`'s `0.019%`
+  against `1.285%` — a one-off measurement of a past decision rather than a
+  claim about current data, so arguably fine where it is, but nothing says so.
+- **A colour-band check rests on one cell in one tree.** Only one holding cell
+  currently straddles a band boundary under rounding, and its value moves every
+  six hours; when it stops straddling, that check goes quiet without saying so.
+  The unit tests pin the same rule against fixed values, which is why this is a
+  note rather than a defect.
+- **A data-induced red never blocks a deploy.** `deploy.yml` does not depend on
+  `ci.yml`, and pipeline pushes use `GITHUB_TOKEN`, which fires no workflow — so
+  a refresh that makes a page's prose false surfaces on the next unrelated PR,
+  reading as that PR's failure.
 
 ## Testing
 
