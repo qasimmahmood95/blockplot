@@ -643,6 +643,16 @@ Both quality gates this list carried are now built (items 1 and 2 above), each
 justified by this repo's own history rather than by principle. `npm run
 test:rendered` is 129 checks over `dist/`.
 
+The privacy note on `/holdings` is checked by driving `dist/` in Chromium and
+recording every request, which is the method CLAUDE.md asks for by name — until
+now the only thing enforcing it was remembering to. It pins what the note
+claims: CoinGecko on every page, mempool.space additionally and only on
+`/network`, nothing else anywhere, and neither field a reader fills appearing in
+any request's URL, body or headers. Verified by mutation — a beacon added to the
+layout fails it, and so does the entered amount appended to a request aimed at
+an *already-allowed* host, which is the shape an exfiltration would actually
+take.
+
 What the rendered gate does **not** cover yet, measured by mutating the source
 and watching it stay green:
 

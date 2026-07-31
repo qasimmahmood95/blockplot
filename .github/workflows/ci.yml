@@ -42,6 +42,9 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      # The privacy check drives a real browser. Chromium only — the claim is
+      # about what the site requests, which no engine differs on.
+      - run: npx playwright install --with-deps chromium
       - run: npm run build
       # After the build, because it reads `dist/`. This is the half of the suite
       # that checks what a page *says* against what it *shows* — every defect it

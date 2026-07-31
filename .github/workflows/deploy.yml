@@ -27,7 +27,30 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The same gate `ci.yml` runs, here as well as there, because the paths
+      # into this workflow are not all covered by it.
+      #
+      # A data refresh is the one that matters. `pipeline.yml` commits with
+      # GITHUB_TOKEN, which fires no push-triggered workflow, so it dispatches
+      # this one by hand — and `ci.yml` never sees that commit. Every six hours
+      # a dataset the rendered checks have never run against went live, and if
+      # it falsified a page's prose the red surfaced days later on somebody
+      # else's pull request.
+      #
+      # Running it here rather than gating on `ci.yml` with `workflow_run` is
+      # deliberate: `workflow_run` only fires for workflows that actually ran,
+      # and the whole problem is that CI does not run on a data push. It would
+      # have stopped every refresh from deploying at all.
+      #
+      # The cost, accepted knowingly: a red gate now blocks fresh data from
+      # reaching the site. Stale figures under true prose beats current figures
+      # under false prose.
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
       - run: npm run build
+      - run: npm run test:rendered
       - uses: actions/configure-pages@v5
         with:
           enablement: true
