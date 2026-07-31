@@ -8,6 +8,7 @@
  * `src/**` and cannot reach `.astro` — the same reason `chart-format.ts` exists,
  * and the same lesson: rules that live in a component are rules nothing tests.
  */
+import { formatPct } from './format';
 import type { HoldingDataset } from '../../pipeline/schema';
 
 export interface HoldingCellView {
@@ -30,22 +31,21 @@ const percent = new Intl.NumberFormat('en-US', {
 export const formatRate = (value: number): string =>
   `${value >= 0 ? '+' : '−'}${percent.format(Math.abs(value))}%`;
 
-const total = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
-
 /**
  * A total return, as a multiple once it stops reading as a percentage.
  *
  * The same threshold and reasoning as `/real-returns`: over a fifteen-year hold
  * BTC's total is six figures of percent, which nobody can compare at a glance.
+ *
+ * Below the threshold this is `formatPct` and nothing else. It used to be a
+ * second definition of it, and the two disagreed on 2018 — the one year where
+ * the page's reconciliation claim was checkable and false.
  */
 export const MULTIPLE_ABOVE_PCT = 10_000;
 
 export function formatTotal(value: number): string {
   if (value >= MULTIPLE_ABOVE_PCT) return `×${percent.format(1 + value / 100)}`;
-  return `${value >= 0 ? '+' : '−'}${total.format(Math.abs(value))}%`;
+  return formatPct(value);
 }
 
 /**
@@ -59,10 +59,11 @@ export function formatTotal(value: number): string {
  * and 173% a year, and the range runs from −69% to +5,342%.
  *
  * The bands are not equal quarters, and an earlier version of this comment said
- * they were. Measured at 25/60/120: 15 holds, 27, 47, 62 — 10%, 18%, 31%, 41%.
- * The matrix leans hard positive because the asset did, and flattening the bands
- * to quartiles would mean a shade stopped denoting a magnitude, which is the one
- * thing a fixed scale is for.
+ * they were. Measured at 25/60/120 on the snapshot this was written against:
+ * 15 holds, 27, 46, 63 — 10%, 18%, 30%, 42%. Those counts move with every
+ * refresh and the shape does not: the matrix leans hard positive because the
+ * asset did, and flattening the bands to quartiles would mean a shade stopped
+ * denoting a magnitude, which is the one thing a fixed scale is for.
  *
  * The negative side reuses the same numbers even though nothing reaches −120: an
  * asymmetric scale would make a −60% and a +60% look like different magnitudes,
@@ -70,9 +71,23 @@ export function formatTotal(value: number): string {
  */
 export const HEAT_STEPS = [25, 60, 120] as const;
 
+/**
+ * Banded on the rate the cell *prints*, not on the rate behind it.
+ *
+ * The note under the grid tells the reader where the bands break, and the
+ * printed figure is the reader's only access to the number — so a cell reading
+ * "+120%" in the 60-to-120 colour makes that note false to the one person
+ * checking it. It did: 2011→2026 is 119.6, which `formatRate` shows as +120%
+ * and the raw value put a band below. Rounding here the way the label rounds
+ * costs nothing and means the sentence and the picture cannot come apart.
+ *
+ * `Math.round` on the magnitude rather than on the value, because `Intl` rounds
+ * halves away from zero and `Math.round` rounds them toward +∞ — they disagree
+ * on exactly −0.5, and taking the sign out first makes them agree everywhere.
+ */
 export function heatClass(annualPct: number | null): string {
   if (annualPct === null) return '';
-  const magnitude = Math.abs(annualPct);
+  const magnitude = Math.round(Math.abs(annualPct));
   const step = magnitude >= HEAT_STEPS[2] ? 4 : magnitude >= HEAT_STEPS[1] ? 3 : magnitude >= HEAT_STEPS[0] ? 2 : 1;
   return `heat-${annualPct < 0 ? 'neg' : 'pos'}-${step}`;
 }
