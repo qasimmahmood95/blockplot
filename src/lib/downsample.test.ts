@@ -11,29 +11,37 @@ const run = (points: P[], width: number): readonly P[] => envelopeByPixel(points
 const ramp = (n: number): P[] => Array.from({ length: n }, (_, i) => ({ x: i, y: i }));
 
 describe('envelopeByPixel', () => {
-  it('leaves a series with no more points than pixels alone', () => {
-    // Returns the same array, not a copy: at one point per pixel every bucket
-    // holds one point and the keep-set is the whole series, so there is nothing
-    // to do. The threshold was two, which is not a fidelity margin — it is a
-    // "don't bother" guard, and at two it skipped `/performance` at 760px,
-    // where the series carry 888 points.
-    const points = ramp(100);
+  it('leaves a series under the threshold alone, and pins where that is', () => {
+    // Returns the same array, not a copy. Both bounds asserted, because the
+    // threshold is a real fidelity choice and nothing else pins it: review
+    // moved it from 1 to 2 and to 4 with the whole suite still green, while it
+    // changes what `/performance` draws by hundreds of points.
+    const points = ramp(200);
     expect(run(points, 100)).toBe(points);
-    expect(run(points, 200)).toBe(points);
+    expect(run(points, 99)).not.toBe(points);
   });
 
-  it('drops nothing from a bucket of two, however the threshold is set', () => {
-    // Worth pinning, because it is why lowering the guard from two to one is
-    // safe rather than merely cheap. A bucket contributes its first, last,
-    // lowest and highest point; with two in it those are the same two, so the
-    // series comes back whole. Thinning only bites where a column holds enough
-    // points that some are neither an end nor an extreme.
-    const points = ramp(150);
-    expect(run(points, 100)).toHaveLength(150);
-    // And the real series do have such columns: `/performance` at 760px keeps
-    // 3,622 of 3,756 points, and at 400px 2,895 — measured on the committed
-    // data at the preset the build draws.
+  it('drops nothing from a bucket of two', () => {
+    // A bucket contributes its first, last, lowest and highest point; with two
+    // in it those are the same two, so the series comes back whole. Thinning
+    // only bites where a bucket holds enough points that some are neither an end
+    // nor an extreme — which real series do, unevenly, because they have
+    // weekends missing and a weekly section before a daily one.
+    expect(run(ramp(150), 100)).toHaveLength(150);
     expect(run(ramp(1500), 100).length).toBeLessThan(1500);
+  });
+
+  it('keeps the point a bucket enters on, not just its extremes', () => {
+    // The line has to enter each bucket where it did before. Dropping the
+    // bucket's first point changes the drawn path and was caught by nothing:
+    // every other assertion here holds without it.
+    const points = Array.from({ length: 1000 }, (_, i) => ({ x: i, y: Math.sin(i / 3) }));
+    const out = run(points, 100);
+    expect(out[0]).toBe(points[0]);
+    // Measured, not bounded loosely: 286 points on this series, and 243 with
+    // the bucket-entry points dropped. A range wide enough to span both is a
+    // range that pins nothing, which is what the first version of this did.
+    expect(out).toHaveLength(286);
   });
 
   it('thins one that is over', () => {

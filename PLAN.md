@@ -597,7 +597,7 @@ finishing work on what exists, in this order:
    not trade at weekends: `/correlation`'s market pairs carry 2,472 rows with
    540 gaps each and were writing every date out.
 
-   Measured on the built site: **929,164 → 833,049 bytes gzipped across 25 HTML
+   Measured on the built site: **929,164 → 833,054 bytes gzipped across 25 HTML
    files (−10.3%)**, raw −22%. `/correlation` alone goes 65,571 → 37,755 gz
    (−42%) and `/performance` 75,990 → 55,730. Lossless, verified end to end:
    every one of the 36 encoded series in `dist/` decodes to strictly ascending

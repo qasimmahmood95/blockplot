@@ -54,6 +54,30 @@ export type DailySeries<K extends string> =
 const toUtc = (date: string): number => Date.parse(`${date}T00:00:00Z`);
 const toIso = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
 
+/**
+ * Whether a date survives the round trip this codec puts it through.
+ *
+ * `Date.parse` is a parser, not a validator, and it *rolls over*: it reads
+ * `2024-02-30` as 1 March. The pipeline's guard is shape-only — `isoDate` in
+ * `pipeline/schema.ts` is a `\d{4}-\d{2}-\d{2}` regex — so a rolled-over date
+ * gets into `/data` looking fine, and the strictly-ascending refinements pass
+ * because 30 February really does sort between 28 February and 1 March.
+ *
+ * That was harmless while such a series failed the contiguity check and had its
+ * dates written out verbatim. Adding the gap form made it harmful: the steps
+ * around it are whole days, so it took the compact path and came back as
+ * `2024-03-01`, duplicating the row after it. Silently shifting a reading is
+ * the one thing this file promises not to do.
+ *
+ * Formatting the parse back and comparing catches that, and with it every other
+ * input whose string is not exactly what the encoding would reproduce: a
+ * non-padded `2024-1-1`, a full ISO timestamp, an empty string, a missing key.
+ * Those went the compact path too when the series was a single row, where the
+ * contiguity check has no pair to reject.
+ */
+const reproducible = (date: unknown): boolean =>
+  typeof date === 'string' && Number.isFinite(toUtc(date)) && toIso(toUtc(date)) === date;
+
 /** True when every row is exactly one day after the one before it. */
 export function isDailyContiguous(dates: readonly string[]): boolean {
   for (let i = 1; i < dates.length; i++) {
@@ -67,8 +91,9 @@ export function isDailyContiguous(dates: readonly string[]): boolean {
  *
  * Null covers every shape the gap form cannot reproduce exactly: a date that
  * repeats, one that goes backwards, and any interval that is not a whole number
- * of days. An unparseable date gives NaN here, which is not `> 0` and not an
- * integer, so it takes the same route.
+ * of days. Dates that do not parse are already gone by here — `reproducible`
+ * rejects the whole series before this runs, which it has to, because this loop
+ * has no pair to inspect when the series is one row long.
  */
 function dailyGaps(dates: readonly string[]): number[] | null {
   const gaps: number[] = [];
@@ -84,12 +109,14 @@ export function encodeDaily<K extends string>(
   rows: readonly Record<string, unknown>[],
   key: K,
 ): DailySeries<K> {
-  const dates = rows.map((r) => r['date'] as string);
-  if (rows.length === 0) return { rows: rows as Record<K | 'date', string | number>[] };
+  const dates = rows.map((r) => r['date']);
+  if (rows.length === 0 || !dates.every(reproducible)) {
+    return { rows: rows as Record<K | 'date', string | number>[] };
+  }
   const from = dates[0] as string;
   const values = rows.map((r) => r[key] as number);
-  if (isDailyContiguous(dates)) return { from, values };
-  const gaps = dailyGaps(dates);
+  if (isDailyContiguous(dates as string[])) return { from, values };
+  const gaps = dailyGaps(dates as string[]);
   if (gaps === null) return { rows: rows as Record<K | 'date', string | number>[] };
   return { from, gaps, values };
 }
@@ -107,7 +134,11 @@ export function decodeDaily<K extends string>(
   return encoded.values.map((value, i) => {
     // The first row sits on `from`; every one after it steps by its own gap, so
     // the step read here is the one *into* this row.
-    if (i > 0) at += (encoded.gaps[i - 1] ?? 0) * DAY_MS;
+    // `gaps` is one shorter than `values`, so index i-1 always exists for i > 0.
+    // It used to read `?? 0`, a default that could never fire from anything the
+    // encoder emits and that would have quietly repeated a date if a payload
+    // were ever truncated. A missing gap is a broken payload, not a zero.
+    if (i > 0) at += (encoded.gaps[i - 1] as number) * DAY_MS;
     return { date: toIso(at), [key]: value };
   });
 }

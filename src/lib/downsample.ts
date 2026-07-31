@@ -22,20 +22,22 @@
  * column, and for every caller this codebase would have, it is not:
  *
  * - the caller knows the SVG width, but Plot draws into the plot area, which is
- *   that width less the margins — 400px becomes about 308, so a bucket is 0.77
- *   of a column and the two grids never line up;
+ *   that width less the margins — `performanceSpec` at 400px gives an x range of
+ *   [52, 384], so 332 columns take 400 buckets and the two grids never line up;
  * - the buckets here span each series' own x extent, while Plot's x scale spans
- *   the extent of *all* series together, and on this site they end on different
- *   days because their sources publish on different schedules.
+ *   the extent of *all* series together, and on this site they genuinely differ:
+ *   the five benchmark series have three distinct start dates and three distinct
+ *   end dates, because their sources publish on different schedules.
  *
  * Misaligned either way, a point that is the extreme of its pixel column need
  * not be the extreme of its bucket, so it can be dropped. Wired to
  * `/performance` and measured against the un-thinned render, column by column,
- * interpolating along each drawn segment rather than sampling its vertices: the
- * ink moved by up to **12.5px on log and 19.8px on linear at 400px**, on 69 of
- * 1,661 columns. The harness reads 0.000px wherever nothing is thinned, so
- * those are real. That bought 3.9 KB gzipped, which is not a trade worth making
- * on a chart.
+ * interpolating along each drawn segment rather than sampling its vertices: at
+ * the preset the build draws, the ink moved by up to **12.5px on log and 19.8px
+ * on linear at 400px**, for **2.3 KB gzipped**. Every row where nothing is
+ * thinned reads 0.000px, which is the control that says the harness is not what
+ * moved the line. `tests/downsample-ink.mjs` is that harness, committed so the
+ * number can be re-run rather than taken on trust.
  *
  * So this stays unwired, and the way to wire it is to make a bucket a column:
  * bucket over the *shared* x extent, into *plot-area* columns rather than SVG
@@ -49,15 +51,19 @@
  */
 
 /**
- * Below this many points per bucket there is nothing to remove.
+ * Below this many points per bucket, skip the work.
  *
- * One, not two: at one point per bucket every bucket holds a single point and
- * the keep-set is the whole series, so this only skips work. Two was a fidelity
- * margin, and a coarse one — the measurement above shows that where fidelity is
- * actually lost, it is lost to the grids not lining up, which no threshold
- * fixes.
+ * Two, and it stays two. Lowering it to one was tried on the argument that at
+ * one point per bucket every bucket holds a single point, so the keep-set is the
+ * whole series and the threshold only ever costs time — which is true of
+ * *uniformly spaced* x and of nothing on this site. The series here have
+ * weekends missing and a weekly section before a daily one, so at one point per
+ * bucket on average some buckets hold five: `/performance` at 400px keeps 3,207
+ * points at two and 2,895 at one, and at 760px 3,756 against 3,622. That is a
+ * fidelity trade of 312 and 134 points, not a no-op, and it is not one worth
+ * making while the module is unwired and the grids do not line up anyway.
  */
-const POINTS_PER_PIXEL = 1;
+const POINTS_PER_PIXEL = 2;
 
 export function envelopeByPixel<T>(
   points: readonly T[],

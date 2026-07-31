@@ -22,8 +22,10 @@ const initial = options.find((o) => o.selected) ?? options[0];
 const rebased = initial ? rebaseCovering(assets, initial.start) : null;
 
 // Only the rows go over the wire, compacted where the dates allow. The BTC
-// series is daily-contiguous for its recent 730 days and weekly before, so it
-// falls back to plain rows; the codec decides per series rather than being told.
+// series is daily for its recent 730 days and weekly before, so it is not
+// contiguous and goes as a start date plus the gaps; the benchmarks are
+// trading-day based and do the same. All five took the plain-rows path until
+// the codec learned the gap form, which is 20 KB gzipped of this page.
 //
 // Built from `assets`, which `toAssetSeries` has already put in display order,
 // rather than from the file: the file is in the order the pipeline wrote it, and

@@ -80,10 +80,32 @@ describe('encodeDaily / decodeDaily', () => {
     expect(JSON.stringify(encoded).length).toBeLessThan(JSON.stringify(rows).length / 2);
   });
 
-  it('falls back to the rows for dates the gap form cannot reproduce', () => {
-    // Each of these decodes to something other than what went in, so none of
-    // them may take the compact path.
-    const cases = [
+  it('falls back to the rows for dates the compact forms cannot reproduce', () => {
+    // Each of these decodes to something other than what went in, so none may
+    // take a compact path. Both halves are asserted: a fallback that silently
+    // mangled its input would be worse than no fallback.
+    //
+    // The first is the one that matters, and it is why the guard formats the
+    // parse back rather than merely checking it parsed. `Date.parse` rolls
+    // 2024-02-30 over to 1 March; `pipeline/schema.ts`'s date guard is a
+    // shape-only regex that accepts it, and the strictly-ascending refinements
+    // pass because 30 February really does sort between the 28th and 1 March.
+    // The steps either side are whole days, so it took the gap form and came
+    // back as 2024-03-01 — duplicating the row after it.
+    //
+    // The single-row cases are the other half of the same hole: with one row
+    // there is no pair for the contiguity or gap checks to reject, so an
+    // unparseable date reached the decoder and threw on `toIso(NaN)`.
+    const cases: Record<string, unknown>[][] = [
+      [
+        { date: '2024-02-28', price: 1 },
+        { date: '2024-02-30', price: 2 },
+        { date: '2024-03-02', price: 3 },
+      ],
+      [
+        { date: '2024-13-01', price: 1 },
+        { date: '2025-01-02', price: 2 },
+      ],
       [
         { date: '2024-01-03', price: 1 },
         { date: '2024-01-01', price: 2 },
@@ -96,10 +118,15 @@ describe('encodeDaily / decodeDaily', () => {
         { date: '2024-01-01', price: 1 },
         { date: 'not-a-date', price: 2 },
       ],
+      [{ date: '2024-1-1', price: 1 }],
+      [{ date: '2024-01-01T00:00:00Z', price: 1 }],
+      [{ date: '', price: 1 }],
+      [{ date: undefined, price: 1 }],
+      [{ price: 1 }],
     ];
     for (const rows of cases) {
-      expect(encodeDaily(rows, 'price')).toEqual({ rows });
-      expect(decodeDaily(encodeDaily(rows, 'price'), 'price')).toEqual(rows);
+      expect(encodeDaily(rows, 'price'), JSON.stringify(rows)).toEqual({ rows });
+      expect(decodeDaily(encodeDaily(rows, 'price'), 'price'), JSON.stringify(rows)).toEqual(rows);
     }
   });
 
