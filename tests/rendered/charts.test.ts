@@ -26,7 +26,7 @@
  * What this still does not cover: colour, spacing, weight, and anything living
  * in CSS rather than in the SVG. PLAN.md keeps that open.
  */
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { assertFresh, page, routes } from './dist';
 
@@ -44,6 +44,26 @@ assertFresh();
  */
 const hasRealReturns = (segment: string): boolean =>
   existsSync(new URL(`../../data/${segment}real-returns.json`, import.meta.url));
+
+/**
+ * Whether `/network` has a fee series to draw this run.
+ *
+ * The other designed absence, and a partial one: `network.json` is rewritten
+ * whole on each run from three sibling blockchain.com endpoints, and
+ * `transaction-fees` failing while the other two succeed omits `feePerTx`
+ * rather than emitting it empty — the pipeline says so, and `NetworkCharts`
+ * drops the section. That takes the page from six SVGs to four, which a written
+ * -down count reads as a defect on the next unrelated push.
+ */
+const networkCharts = (): number => {
+  // One file for both trees: chain statistics are the chain's, and only the fee
+  // tiles are denominated.
+  const file = JSON.parse(
+    readFileSync(new URL('../../data/network.json', import.meta.url), 'utf8'),
+  ) as { feePerTx?: { series?: unknown[] } };
+  // The same expression `NetworkCharts.astro` renders from.
+  return (file.feePerTx?.series?.length ?? 0) > 0 ? 6 : 4;
+};
 
 /**
  * The two rendered widths, as literals.
@@ -89,6 +109,8 @@ interface Line {
   y: number;
   size: number;
   anchor: string;
+  /** True for a tick label, false for a label a mark drew. See `linesOf`. */
+  axis: boolean;
 }
 
 /**
@@ -120,6 +142,34 @@ const fontSizeOf = (el: Element): number => {
     node = node.parentElement;
   }
   throw new Error('no font-size anywhere up the chain');
+};
+
+/**
+ * Whether a label is an axis tick rather than something a mark drew.
+ *
+ * By where its size comes from, which is exact here rather than a heuristic:
+ * Plot sets `font-size` only on the `<svg>` root, so a tick label inherits it
+ * from there, and every `Plot.text` mark in `src/lib/specs/` passes an explicit
+ * `fontSize` that lands on the mark's own group. Verified across all eight
+ * chart pages — 345 labels with no size below the root, 14 with one, and the 14
+ * are exactly the end-of-line series labels.
+ *
+ * The distinction matters because the two behave completely differently under a
+ * data refresh. A tick's position is Plot's decision and it lays them out to
+ * fit; a series label's y *is* a data value, so two of them drift together and
+ * apart on their own — measured over the committed history, some pair lands
+ * within a pixel on 12.9% of days. Checking those would redden an unchanged
+ * diff every eight days or so, which is the failure that teaches people to
+ * ignore a gate. PLAN.md carries the overlap itself as an open spec defect.
+ */
+const isAxisLabel = (el: Element): boolean => {
+  let node: Element | null = el;
+  while (node && node.tagName.toLowerCase() !== 'svg') {
+    if ((node.getAttribute('font-size') ?? '') !== '') return false;
+    if (/(?:^|;)\s*font-size\s*:/.test(node.getAttribute('style') ?? '')) return false;
+    node = node.parentElement;
+  }
+  return true;
 };
 
 /** An attribute as SVG resolves it: from the node, or the nearest ancestor. */
@@ -187,13 +237,16 @@ const linesOf = (svg: Element): Line[] => {
   for (const text of svg.querySelectorAll('text')) {
     const size = fontSizeOf(text);
     const anchor = inherited(text, 'text-anchor') ?? 'start';
+    const axis = isAxisLabel(text);
     const at = position(text);
     const spans = [...text.querySelectorAll('tspan')];
     const em = (value: string | null): number =>
       value === null ? 0 : value.endsWith('em') ? Number.parseFloat(value) * size : Number.parseFloat(value);
     if (spans.length === 0) {
       const label = (text.textContent ?? '').trim();
-      if (label !== '') out.push({ text: label, x: at.x, y: at.y + em(text.getAttribute('y')), size, anchor });
+      if (label !== '') {
+        out.push({ text: label, x: at.x, y: at.y + em(text.getAttribute('y')), size, anchor, axis });
+      }
       continue;
     }
     let dy = 0;
@@ -206,17 +259,35 @@ const linesOf = (svg: Element): Line[] => {
       dy = yAttr !== null ? em(yAttr) : dy + em(span.getAttribute('dy'));
       const label = (span.textContent ?? '').trim();
       if (label === '') continue;
-      out.push({ text: label, x: at.x + Number(span.getAttribute('x') ?? 0), y: at.y + dy, size, anchor });
+      out.push({
+        text: label,
+        x: at.x + Number(span.getAttribute('x') ?? 0),
+        y: at.y + dy,
+        size,
+        anchor,
+        axis,
+      });
     }
   }
   return out;
 };
 
-/** The box a label occupies, near enough to compare two of them. */
+/**
+ * The box a label occupies, near enough to compare two of them.
+ *
+ * Horizontally 0.62em per character, which is an estimate. Vertically the ink
+ * rather than the em box: digits and capitals reach about 0.72em above the
+ * baseline and nothing in these labels descends. A full em was measurably too
+ * tall — on a log y axis d3 blanks tick labels above a mantissa cutoff that
+ * steps down as the span grows, and just before each step the two labels below
+ * it are at their tightest: 0.30px apart on `/performance`'s real history, and
+ * −0.60px over a sweep of reachable `/real-returns` domains. Charging the em box
+ * for space the glyphs do not use turned that into a red on data alone.
+ */
 const box = (line: Line): { left: number; right: number; top: number; bottom: number } => {
   const width = line.text.length * line.size * 0.62;
   const left = line.anchor === 'end' ? line.x - width : line.anchor === 'middle' ? line.x - width / 2 : line.x;
-  return { left, right: left + width, top: line.y - line.size * 0.8, bottom: line.y + line.size * 0.2 };
+  return { left, right: left + width, top: line.y - line.size * 0.72, bottom: line.y + line.size * 0.02 };
 };
 
 const chartRoutes = routes().filter((route) => page(route).querySelector('svg') !== null);
@@ -234,15 +305,16 @@ describe('server-rendered charts', () => {
     //
     // Two per chart, narrow and wide. Pinned per route so losing one of a
     // page's three charts fails rather than thinning the sample. `/real-returns`
-    // is the one entry read from the data rather than written down, because its
-    // absence is a designed state; see `hasRealReturns`.
+    // `/real-returns` and `/network` are the two entries read from the data
+    // rather than written down, because their absence is a designed state; see
+    // `hasRealReturns` and `networkCharts`.
     const expected: Record<string, number> = {
       '/': 2,
       '/correlation/': 2,
       '/cycles/': 2,
       '/dca/': 2,
       '/flows/': 4,
-      '/network/': 6,
+      '/network/': networkCharts(),
       '/performance/': 2,
       '/volatility/': 4,
       '/gbp/': 2,
@@ -250,7 +322,7 @@ describe('server-rendered charts', () => {
       '/gbp/cycles/': 2,
       '/gbp/dca/': 2,
       '/gbp/flows/': 4,
-      '/gbp/network/': 6,
+      '/gbp/network/': networkCharts(),
       '/gbp/performance/': 2,
       '/gbp/volatility/': 4,
     };
@@ -304,18 +376,19 @@ describe('server-rendered charts', () => {
     // 5.9px apart and are 13.6px wide, overlapping by more than half, and were
     // green. This compares boxes.
     //
-    // Scoped to the axes, by the shape an axis has in the markup rather than by
-    // a margin the markup does not carry: a row of ≥3 labels sharing a baseline
-    // is an x axis, a column of ≥3 sharing an x with `text-anchor: end` is a y
-    // axis. That deliberately leaves out the end-of-line series labels on
-    // `/volatility`, `/cycles` and `/performance`, whose y *is* a data value and
-    // which therefore drift together and apart on their own — measured at 28.8%
-    // of days with some pair within 4px on `/volatility`. Those want dodging in
-    // the spec, and PLAN.md carries that as an open defect; a check that goes
-    // red on a data refresh with an unchanged diff would be worse than none.
+    // Scoped to the axes — see `isAxisLabel` for why the series labels are out
+    // and what PLAN.md carries in their place. Within the axes, grouped by the
+    // shape an axis has rather than by a margin the markup does not carry: a
+    // row of labels sharing a baseline is an x axis, a column sharing an x with
+    // `text-anchor: end` is a y axis. The earlier version of this grouped *all*
+    // labels that way, which let three series labels on a long-enough `/cycles`
+    // round to one y and be compared as though they were an axis.
     const overlaps: string[] = [];
     for (const svg of page(route).querySelectorAll('svg')) {
-      const lines = linesOf(svg);
+      const lines = linesOf(svg).filter((line) => line.axis);
+      // The scope must not be able to empty silently. Every chart here has two
+      // axes; the fewest ticks any of them carries is well above this.
+      expect(lines.length, 'axis labels found').toBeGreaterThan(3);
       const rows = new Map<number, Line[]>();
       const columns = new Map<number, Line[]>();
       for (const line of lines) {
@@ -352,13 +425,18 @@ describe('server-rendered charts', () => {
     expect([...new Set(overlaps)]).toEqual([]);
   });
 
-  it.each(chartRoutes)('%s draws no two labels at the same point', (route) => {
-    // The backstop the scoping above needs: two different labels at one spot is
-    // one printed over the other whatever mark drew them, and no data condition
-    // makes it legitimate.
+  it.each(chartRoutes)('%s draws no two tick labels at the same point', (route) => {
+    // The backstop the box comparison needs, for a stack the grouping above
+    // cannot see — two ticks from *different* axes landing on one another.
+    //
+    // Axis labels only, on the same reasoning: at 1px this looked like a
+    // safe universal rule, and it is not. The series labels all share an x
+    // exactly, so for them it reduces to "two lines within 0.1 of each other",
+    // which every crossing produces — replayed over the committed history, 12.9%
+    // of days would have failed here, most recently 2026-07-04.
     const stacked: string[] = [];
     for (const svg of page(route).querySelectorAll('svg')) {
-      const lines = linesOf(svg);
+      const lines = linesOf(svg).filter((line) => line.axis);
       for (let i = 0; i < lines.length; i += 1) {
         for (let j = i + 1; j < lines.length; j += 1) {
           const a = lines[i] as Line;
@@ -377,16 +455,22 @@ describe('server-rendered charts', () => {
     // A label half outside the box is clipped, which reads as a truncated
     // number rather than as a bug. Both axes: the first version bounded only
     // left and right, so rotated date labels running off the bottom were green.
-    // Slack is generous because the width is estimated from character count —
-    // the tightest true margin on the site is 13.4px, and the failure this is
-    // for is tens of pixels out.
-    const SLACK = 12;
+    //
+    // The allowance is a share of the label rather than a fixed distance,
+    // because the width is estimated from character count and so the error
+    // grows with the label. A flat 12px failed at eleven characters: the y axis
+    // on `/` and `/dca` is ours to format, and `"$10,000,000"` — BTC above $10M
+    // — overflows the fixed margin by 14px purely as estimation error, while
+    // `"$1,000,000"` clears it. As a share, that is 19% against the 27–77% the
+    // real clipping regressions produce.
+    const share = (line: Line): number => Math.max(8, line.text.length * line.size * 0.62 * 0.25);
     const strayed: string[] = [];
     for (const svg of page(route).querySelectorAll('svg')) {
       const width = Number(svg.getAttribute('width'));
       const height = Number(svg.getAttribute('height'));
       for (const line of linesOf(svg)) {
         const at = box(line);
+        const SLACK = share(line);
         if (at.left < -SLACK || at.right > width + SLACK) {
           strayed.push(`"${line.text}" spans ${at.left.toFixed(0)}–${at.right.toFixed(0)} of ${width}`);
         }
