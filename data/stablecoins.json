@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "source": "defillama",
-  "fetchedAt": "2026-08-04T08:49:17.971Z",
+  "fetchedAt": "2026-08-04T14:32:08.641Z",
   "keepDays": 460,
   "change30dPct": -0.88,
   "series": [
@@ -1819,31 +1819,31 @@
     },
     {
       "date": "2026-07-29",
-      "totalUsd": 306604424899
+      "totalUsd": 306506781609
     },
     {
       "date": "2026-07-30",
-      "totalUsd": 306363557836
+      "totalUsd": 306265923968
     },
     {
       "date": "2026-07-31",
-      "totalUsd": 305611173355
+      "totalUsd": 305513539335
     },
     {
       "date": "2026-08-01",
-      "totalUsd": 305650613601
+      "totalUsd": 305552950977
     },
     {
       "date": "2026-08-02",
-      "totalUsd": 305557917130
+      "totalUsd": 305460293011
     },
     {
       "date": "2026-08-03",
-      "totalUsd": 305458471394
+      "totalUsd": 305360820420
     },
     {
       "date": "2026-08-04",
-      "totalUsd": 305788648357
+      "totalUsd": 305773998801
     }
   ]
 }
