@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-08-06T03:19:55.339Z",
+  "fetchedAt": "2026-08-06T08:47:55.265Z",
   "asOf": "2026-08-06",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -1464,6 +1464,10 @@
         {
           "date": "2026-08-05",
           "volPct": 29.27
+        },
+        {
+          "date": "2026-08-06",
+          "volPct": 29.44
         }
       ]
     },
@@ -2925,6 +2929,10 @@
         {
           "date": "2026-08-05",
           "volPct": 34.6
+        },
+        {
+          "date": "2026-08-06",
+          "volPct": 34.56
         }
       ]
     },
@@ -4385,6 +4393,10 @@
         },
         {
           "date": "2026-08-05",
+          "volPct": 42.92
+        },
+        {
+          "date": "2026-08-06",
           "volPct": 42.92
         }
       ]
@@ -5853,7 +5865,7 @@
       },
       {
         "date": "2026-08-06",
-        "drawdownPct": -48.54
+        "drawdownPct": -48.27
       }
     ]
   },
@@ -5864,22 +5876,22 @@
       "observations": 365,
       "firstDate": "2025-08-07",
       "lastDate": "2026-08-06",
-      "totalReturnPct": -44.11,
-      "annualizedVolPct": 42.71,
-      "sharpe": -1.37,
-      "sortino": -1.77,
+      "totalReturnPct": -43.81,
+      "annualizedVolPct": 42.72,
+      "sharpe": -1.35,
+      "sortino": -1.75,
       "maxDrawdownPct": -52.46
     },
     {
       "asset": "eth",
       "periodsPerYear": 365,
-      "observations": 363,
+      "observations": 365,
       "firstDate": "2025-08-07",
       "lastDate": "2026-08-06",
-      "totalReturnPct": -51.61,
-      "annualizedVolPct": 63.47,
-      "sharpe": -1.15,
-      "sortino": -1.55,
+      "totalReturnPct": -51.2,
+      "annualizedVolPct": 63.3,
+      "sharpe": -1.14,
+      "sortino": -1.53,
       "maxDrawdownPct": -67.09
     },
     {
@@ -5897,13 +5909,13 @@
     {
       "asset": "gold",
       "periodsPerYear": 252,
-      "observations": 249,
+      "observations": 251,
       "firstDate": "2025-08-07",
       "lastDate": "2026-08-06",
-      "totalReturnPct": 27.2,
-      "annualizedVolPct": 28.29,
-      "sharpe": 0.86,
-      "sortino": 1.17,
+      "totalReturnPct": 27.08,
+      "annualizedVolPct": 27.55,
+      "sharpe": 0.88,
+      "sortino": 1.16,
       "maxDrawdownPct": -25.42
     }
   ]
