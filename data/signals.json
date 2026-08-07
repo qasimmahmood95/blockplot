@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-08-07T00:08:45.375Z",
+  "fetchedAt": "2026-08-07T07:26:55.433Z",
   "asOf": "2026-08-07",
   "thresholds": {
     "volWindowDays": 90,
@@ -27,8 +27,8 @@
     "history": [
       {
         "state": "low",
-        "since": "2025-08-07",
-        "observations": 81
+        "since": "2025-08-08",
+        "observations": 80
       },
       {
         "state": "normal",
@@ -60,8 +60,8 @@
     "history": [
       {
         "state": "0",
-        "since": "2025-08-07",
-        "observations": 70
+        "since": "2025-08-08",
+        "observations": 69
       },
       {
         "state": "-10",
