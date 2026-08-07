@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-08-06T14:28:16.124Z",
-  "asOf": "2026-08-06",
+  "fetchedAt": "2026-08-07T00:08:45.375Z",
+  "asOf": "2026-08-07",
   "thresholds": {
     "volWindowDays": 90,
     "volLowPct": 35,
@@ -55,7 +55,7 @@
   "drawdown": {
     "state": "-30",
     "since": "2026-01-30",
-    "observations": 189,
+    "observations": 190,
     "pending": null,
     "history": [
       {
@@ -76,7 +76,7 @@
       {
         "state": "-30",
         "since": "2026-01-30",
-        "observations": 189
+        "observations": 190
       }
     ]
   },
