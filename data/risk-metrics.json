@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-08-07T13:18:44.460Z",
+  "fetchedAt": "2026-08-07T19:06:41.299Z",
   "asOf": "2026-08-07",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -5865,7 +5865,7 @@
       },
       {
         "date": "2026-08-07",
-        "drawdownPct": -47.75
+        "drawdownPct": -48.09
       }
     ]
   },
@@ -5876,10 +5876,10 @@
       "observations": 365,
       "firstDate": "2025-08-08",
       "lastDate": "2026-08-07",
-      "totalReturnPct": -44.53,
-      "annualizedVolPct": 43.19,
-      "sharpe": -1.37,
-      "sortino": -1.78,
+      "totalReturnPct": -44.89,
+      "annualizedVolPct": 43.18,
+      "sharpe": -1.38,
+      "sortino": -1.8,
       "maxDrawdownPct": -53.05
     },
     {
@@ -5888,10 +5888,10 @@
       "observations": 365,
       "firstDate": "2025-08-08",
       "lastDate": "2026-08-07",
-      "totalReturnPct": -51.91,
-      "annualizedVolPct": 65.38,
-      "sharpe": -1.12,
-      "sortino": -1.52,
+      "totalReturnPct": -52.34,
+      "annualizedVolPct": 65.37,
+      "sharpe": -1.14,
+      "sortino": -1.54,
       "maxDrawdownPct": -67.61
     },
     {
@@ -5912,10 +5912,10 @@
       "observations": 251,
       "firstDate": "2025-08-08",
       "lastDate": "2026-08-07",
-      "totalReturnPct": 28.29,
-      "annualizedVolPct": 29.07,
-      "sharpe": 0.86,
-      "sortino": 1.14,
+      "totalReturnPct": 27.79,
+      "annualizedVolPct": 29.02,
+      "sharpe": 0.85,
+      "sortino": 1.12,
       "maxDrawdownPct": -25.06
     }
   ]
