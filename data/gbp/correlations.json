@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-08-11T19:11:25.329Z",
-  "asOf": "2026-08-11",
+  "fetchedAt": "2026-08-12T02:29:25.093Z",
+  "asOf": "2026-08-12",
   "windowDays": 90,
   "minObs": 40,
   "regimeThreshold": 0.25,
@@ -12661,10 +12661,6 @@
       "b": "sp500",
       "series": [
         {
-          "date": "2016-10-07",
-          "corr": 0.07
-        },
-        {
           "date": "2016-10-10",
           "corr": 0.07
         },
@@ -12710,7 +12706,7 @@
         },
         {
           "date": "2016-10-25",
-          "corr": 0.04
+          "corr": 0.03
         },
         {
           "date": "2016-10-26",
@@ -12730,7 +12726,7 @@
         },
         {
           "date": "2016-11-01",
-          "corr": -0.04
+          "corr": -0.05
         },
         {
           "date": "2016-11-02",
@@ -22552,11 +22548,11 @@
       "regimes": [
         {
           "regime": "neutral",
-          "startDate": "2016-10-07",
-          "confirmedFrom": "2016-10-07",
+          "startDate": "2016-10-10",
+          "confirmedFrom": "2016-10-10",
           "endDate": "2016-12-09",
-          "observations": 45,
-          "days": 64,
+          "observations": 44,
+          "days": 61,
           "meanCorr": 0.12
         },
         {
@@ -43847,10 +43843,6 @@
       "b": "gold",
       "series": [
         {
-          "date": "2025-08-12",
-          "corr": -0.15
-        },
-        {
           "date": "2025-08-13",
           "corr": -0.14
         },
@@ -44847,8 +44839,8 @@
           "corr": 0.44
         },
         {
-          "date": "2026-08-11",
-          "corr": 0.44
+          "date": "2026-08-12",
+          "corr": 0.45
         }
       ],
       "regimes": [
@@ -44865,9 +44857,9 @@
           "regime": "positive",
           "startDate": "2026-06-05",
           "confirmedFrom": "2026-06-05",
-          "endDate": "2026-08-11",
+          "endDate": "2026-08-12",
           "observations": 46,
-          "days": 68,
+          "days": 69,
           "meanCorr": 0.37
         }
       ]
@@ -44877,10 +44869,6 @@
       "a": "eth",
       "b": "dxy",
       "series": [
-        {
-          "date": "2025-08-12",
-          "corr": 0.28
-        },
         {
           "date": "2025-08-13",
           "corr": 0.27
@@ -45878,8 +45866,8 @@
           "corr": -0.29
         },
         {
-          "date": "2026-08-11",
-          "corr": -0.29
+          "date": "2026-08-12",
+          "corr": -0.32
         }
       ],
       "regimes": [
@@ -45905,9 +45893,9 @@
           "regime": "negative",
           "startDate": "2026-07-14",
           "confirmedFrom": "2026-07-14",
-          "endDate": "2026-08-11",
+          "endDate": "2026-08-12",
           "observations": 21,
-          "days": 29,
+          "days": 30,
           "meanCorr": -0.28
         }
       ]
@@ -46949,10 +46937,6 @@
       "b": "dxy",
       "series": [
         {
-          "date": "2025-08-11",
-          "corr": 0.25
-        },
-        {
           "date": "2025-08-12",
           "corr": 0.23
         },
@@ -47951,18 +47935,13 @@
         {
           "date": "2026-08-10",
           "corr": -0.21
+        },
+        {
+          "date": "2026-08-11",
+          "corr": -0.22
         }
       ],
       "regimes": [
-        {
-          "regime": "positive",
-          "startDate": "2025-04-10",
-          "confirmedFrom": "2025-04-10",
-          "endDate": "2025-08-11",
-          "observations": 84,
-          "days": 124,
-          "meanCorr": 0.45
-        },
         {
           "regime": "neutral",
           "startDate": "2025-08-12",
@@ -47994,10 +47973,19 @@
           "regime": "negative",
           "startDate": "2026-04-29",
           "confirmedFrom": "2026-04-29",
-          "endDate": "2026-08-10",
-          "observations": 71,
-          "days": 104,
-          "meanCorr": -0.36
+          "endDate": "2026-07-28",
+          "observations": 62,
+          "days": 91,
+          "meanCorr": -0.38
+        },
+        {
+          "regime": "neutral",
+          "startDate": "2026-07-29",
+          "confirmedFrom": "2026-07-29",
+          "endDate": "2026-08-11",
+          "observations": 10,
+          "days": 14,
+          "meanCorr": -0.21
         }
       ]
     },
@@ -48006,10 +47994,6 @@
       "a": "gold",
       "b": "dxy",
       "series": [
-        {
-          "date": "2025-08-12",
-          "corr": -0.39
-        },
         {
           "date": "2025-08-13",
           "corr": -0.39
@@ -49007,7 +48991,7 @@
           "corr": -0.43
         },
         {
-          "date": "2026-08-11",
+          "date": "2026-08-12",
           "corr": -0.43
         }
       ],
@@ -49052,9 +49036,9 @@
           "regime": "negative",
           "startDate": "2026-06-17",
           "confirmedFrom": "2026-06-17",
-          "endDate": "2026-08-11",
+          "endDate": "2026-08-12",
           "observations": 38,
-          "days": 56,
+          "days": 57,
           "meanCorr": -0.48
         }
       ]
