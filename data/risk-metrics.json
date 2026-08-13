@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-08-13T07:44:15.749Z",
+  "fetchedAt": "2026-08-13T13:26:22.898Z",
   "asOf": "2026-08-13",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -1464,6 +1464,10 @@
         {
           "date": "2026-08-12",
           "volPct": 28.39
+        },
+        {
+          "date": "2026-08-13",
+          "volPct": 27.08
         }
       ]
     },
@@ -2925,6 +2929,10 @@
         {
           "date": "2026-08-12",
           "volPct": 34.47
+        },
+        {
+          "date": "2026-08-13",
+          "volPct": 34.1
         }
       ]
     },
@@ -4386,6 +4394,10 @@
         {
           "date": "2026-08-12",
           "volPct": 43.37
+        },
+        {
+          "date": "2026-08-13",
+          "volPct": 43.34
         }
       ]
     }
@@ -5853,7 +5865,7 @@
       },
       {
         "date": "2026-08-13",
-        "drawdownPct": -48.83
+        "drawdownPct": -49.04
       }
     ]
   },
@@ -5864,10 +5876,10 @@
       "observations": 365,
       "firstDate": "2025-08-14",
       "lastDate": "2026-08-13",
-      "totalReturnPct": -48.28,
+      "totalReturnPct": -48.5,
       "annualizedVolPct": 43.02,
-      "sharpe": -1.54,
-      "sortino": -1.99,
+      "sharpe": -1.55,
+      "sortino": -2,
       "maxDrawdownPct": -53.05
     },
     {
@@ -5876,10 +5888,10 @@
       "observations": 365,
       "firstDate": "2025-08-14",
       "lastDate": "2026-08-13",
-      "totalReturnPct": -58.34,
+      "totalReturnPct": -58.51,
       "annualizedVolPct": 64.28,
       "sharpe": -1.37,
-      "sortino": -1.82,
+      "sortino": -1.83,
       "maxDrawdownPct": -67.61
     },
     {
@@ -5900,10 +5912,10 @@
       "observations": 251,
       "firstDate": "2025-08-14",
       "lastDate": "2026-08-13",
-      "totalReturnPct": 32.8,
-      "annualizedVolPct": 28.77,
-      "sharpe": 0.99,
-      "sortino": 1.31,
+      "totalReturnPct": 33.42,
+      "annualizedVolPct": 28.78,
+      "sharpe": 1.01,
+      "sortino": 1.33,
       "maxDrawdownPct": -25.06
     }
   ]
