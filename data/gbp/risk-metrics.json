@@ -1,18 +1,14 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-08-14T19:03:21.021Z",
-  "asOf": "2026-08-14",
+  "fetchedAt": "2026-08-15T01:39:45.415Z",
+  "asOf": "2026-08-15",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
   "rollingVol": [
     {
       "windowDays": 30,
       "series": [
-        {
-          "date": "2025-08-15",
-          "volPct": 27.08
-        },
         {
           "date": "2025-08-16",
           "volPct": 27.03
@@ -1475,10 +1471,6 @@
       "windowDays": 90,
       "series": [
         {
-          "date": "2025-08-15",
-          "volPct": 29.74
-        },
-        {
           "date": "2025-08-16",
           "volPct": 29.78
         },
@@ -2939,10 +2931,6 @@
     {
       "windowDays": 365,
       "series": [
-        {
-          "date": "2025-08-15",
-          "volPct": 45.24
-        },
         {
           "date": "2025-08-16",
           "volPct": 45.17
@@ -4408,196 +4396,192 @@
     "troughDate": "2026-07-01",
     "series": [
       {
-        "date": "2025-08-15",
+        "date": "2025-08-16",
         "drawdownPct": 0
       },
       {
-        "date": "2025-08-16",
-        "drawdownPct": -0.84
-      },
-      {
         "date": "2025-08-17",
-        "drawdownPct": -0.84
+        "drawdownPct": 0
       },
       {
         "date": "2025-08-18",
-        "drawdownPct": -0.62
+        "drawdownPct": 0
       },
       {
         "date": "2025-08-19",
-        "drawdownPct": -1.5
+        "drawdownPct": -0.89
       },
       {
         "date": "2025-08-20",
-        "drawdownPct": -4.08
+        "drawdownPct": -3.48
       },
       {
         "date": "2025-08-21",
-        "drawdownPct": -2.73
+        "drawdownPct": -2.12
       },
       {
         "date": "2025-08-22",
-        "drawdownPct": -3.97
+        "drawdownPct": -3.37
       },
       {
         "date": "2025-08-23",
-        "drawdownPct": -0.22
+        "drawdownPct": 0
       },
       {
         "date": "2025-08-24",
-        "drawdownPct": -2.26
+        "drawdownPct": -2.04
       },
       {
         "date": "2025-08-25",
-        "drawdownPct": -3.85
+        "drawdownPct": -3.64
       },
       {
         "date": "2025-08-26",
-        "drawdownPct": -6.53
+        "drawdownPct": -6.32
       },
       {
         "date": "2025-08-27",
-        "drawdownPct": -4.82
+        "drawdownPct": -4.61
       },
       {
         "date": "2025-08-28",
-        "drawdownPct": -5.78
+        "drawdownPct": -5.57
       },
       {
         "date": "2025-08-29",
-        "drawdownPct": -4.21
+        "drawdownPct": -3.99
       },
       {
         "date": "2025-08-30",
-        "drawdownPct": -7.76
+        "drawdownPct": -7.56
       },
       {
         "date": "2025-08-31",
-        "drawdownPct": -7.71
+        "drawdownPct": -7.51
       },
       {
         "date": "2025-09-01",
-        "drawdownPct": -8.37
+        "drawdownPct": -8.17
       },
       {
         "date": "2025-09-02",
-        "drawdownPct": -6.54
+        "drawdownPct": -6.34
       },
       {
         "date": "2025-09-03",
-        "drawdownPct": -4.95
+        "drawdownPct": -4.74
       },
       {
         "date": "2025-09-04",
-        "drawdownPct": -4.83
+        "drawdownPct": -4.62
       },
       {
         "date": "2025-09-05",
-        "drawdownPct": -5.92
+        "drawdownPct": -5.71
       },
       {
         "date": "2025-09-06",
-        "drawdownPct": -6
+        "drawdownPct": -5.79
       },
       {
         "date": "2025-09-07",
-        "drawdownPct": -6.46
+        "drawdownPct": -6.25
       },
       {
         "date": "2025-09-08",
-        "drawdownPct": -5.94
+        "drawdownPct": -5.73
       },
       {
         "date": "2025-09-09",
-        "drawdownPct": -5.34
+        "drawdownPct": -5.13
       },
       {
         "date": "2025-09-10",
-        "drawdownPct": -5.65
+        "drawdownPct": -5.44
       },
       {
         "date": "2025-09-11",
-        "drawdownPct": -3.4
+        "drawdownPct": -3.19
       },
       {
         "date": "2025-09-12",
-        "drawdownPct": -2.29
-      },
-      {
-        "date": "2025-09-13",
-        "drawdownPct": -1.84
-      },
-      {
-        "date": "2025-09-14",
-        "drawdownPct": -2.02
-      },
-      {
-        "date": "2025-09-15",
-        "drawdownPct": -3.06
-      },
-      {
-        "date": "2025-09-16",
-        "drawdownPct": -3.16
-      },
-      {
-        "date": "2025-09-17",
-        "drawdownPct": -1.99
-      },
-      {
-        "date": "2025-09-18",
         "drawdownPct": -2.08
       },
       {
+        "date": "2025-09-13",
+        "drawdownPct": -1.62
+      },
+      {
+        "date": "2025-09-14",
+        "drawdownPct": -1.8
+      },
+      {
+        "date": "2025-09-15",
+        "drawdownPct": -2.84
+      },
+      {
+        "date": "2025-09-16",
+        "drawdownPct": -2.95
+      },
+      {
+        "date": "2025-09-17",
+        "drawdownPct": -1.77
+      },
+      {
+        "date": "2025-09-18",
+        "drawdownPct": -1.86
+      },
+      {
         "date": "2025-09-19",
-        "drawdownPct": -0.45
+        "drawdownPct": -0.23
       },
       {
         "date": "2025-09-20",
-        "drawdownPct": -1.73
+        "drawdownPct": -1.52
       },
       {
         "date": "2025-09-21",
-        "drawdownPct": -1.59
+        "drawdownPct": -1.37
       },
       {
         "date": "2025-09-22",
-        "drawdownPct": -2.21
+        "drawdownPct": -2
       },
       {
         "date": "2025-09-23",
-        "drawdownPct": -4.49
+        "drawdownPct": -4.28
       },
       {
         "date": "2025-09-24",
-        "drawdownPct": -4.75
+        "drawdownPct": -4.54
       },
       {
         "date": "2025-09-25",
-        "drawdownPct": -3.31
+        "drawdownPct": -3.09
       },
       {
         "date": "2025-09-26",
-        "drawdownPct": -6.34
+        "drawdownPct": -6.14
       },
       {
         "date": "2025-09-27",
-        "drawdownPct": -5.98
+        "drawdownPct": -5.77
       },
       {
         "date": "2025-09-28",
-        "drawdownPct": -6.34
+        "drawdownPct": -6.13
       },
       {
         "date": "2025-09-29",
-        "drawdownPct": -4.42
+        "drawdownPct": -4.21
       },
       {
         "date": "2025-09-30",
-        "drawdownPct": -2.62
+        "drawdownPct": -2.4
       },
       {
         "date": "2025-10-01",
-        "drawdownPct": -3.02
+        "drawdownPct": -2.8
       },
       {
         "date": "2025-10-02",
@@ -5865,7 +5849,11 @@
       },
       {
         "date": "2026-08-14",
-        "drawdownPct": -50.11
+        "drawdownPct": -49.66
+      },
+      {
+        "date": "2026-08-15",
+        "drawdownPct": -50.01
       }
     ]
   },
@@ -5874,46 +5862,46 @@
       "asset": "btc",
       "periodsPerYear": 365,
       "observations": 365,
-      "firstDate": "2025-08-15",
-      "lastDate": "2026-08-14",
-      "totalReturnPct": -46.84,
-      "annualizedVolPct": 42.34,
-      "sharpe": -1.5,
-      "sortino": -1.93,
+      "firstDate": "2025-08-16",
+      "lastDate": "2026-08-15",
+      "totalReturnPct": -46.28,
+      "annualizedVolPct": 42.32,
+      "sharpe": -1.47,
+      "sortino": -1.9,
       "maxDrawdownPct": -52.46
     },
     {
       "asset": "eth",
       "periodsPerYear": 365,
-      "observations": 365,
-      "firstDate": "2025-08-15",
-      "lastDate": "2026-08-14",
-      "totalReturnPct": -57.73,
-      "annualizedVolPct": 62.21,
-      "sharpe": -1.39,
-      "sortino": -1.85,
+      "observations": 364,
+      "firstDate": "2025-08-16",
+      "lastDate": "2026-08-15",
+      "totalReturnPct": -57.38,
+      "annualizedVolPct": 62.29,
+      "sharpe": -1.38,
+      "sortino": -1.83,
       "maxDrawdownPct": -67.09
     },
     {
       "asset": "sp500",
       "periodsPerYear": 252,
       "observations": 250,
-      "firstDate": "2025-08-15",
-      "lastDate": "2026-08-13",
-      "totalReturnPct": 21.49,
-      "annualizedVolPct": 12.57,
-      "sharpe": 1.57,
-      "sortino": 2.32,
+      "firstDate": "2025-08-18",
+      "lastDate": "2026-08-14",
+      "totalReturnPct": 20.75,
+      "annualizedVolPct": 12.58,
+      "sharpe": 1.52,
+      "sortino": 2.25,
       "maxDrawdownPct": -8.17
     },
     {
       "asset": "gold",
       "periodsPerYear": 252,
-      "observations": 251,
-      "firstDate": "2025-08-15",
+      "observations": 250,
+      "firstDate": "2025-08-18",
       "lastDate": "2026-08-14",
       "totalReturnPct": 33.05,
-      "annualizedVolPct": 27.44,
+      "annualizedVolPct": 27.5,
       "sharpe": 1.05,
       "sortino": 1.39,
       "maxDrawdownPct": -25.42
