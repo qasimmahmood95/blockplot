@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-08-15T06:49:24.463Z",
+  "fetchedAt": "2026-08-15T12:50:19.906Z",
   "asOf": "2026-08-15",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -1464,6 +1464,10 @@
         {
           "date": "2026-08-14",
           "volPct": 22.74
+        },
+        {
+          "date": "2026-08-15",
+          "volPct": 22.52
         }
       ]
     },
@@ -2924,6 +2928,10 @@
         },
         {
           "date": "2026-08-14",
+          "volPct": 33.16
+        },
+        {
+          "date": "2026-08-15",
           "volPct": 33.16
         }
       ]
@@ -4386,6 +4394,10 @@
         {
           "date": "2026-08-14",
           "volPct": 42.72
+        },
+        {
+          "date": "2026-08-15",
+          "volPct": 42.56
         }
       ]
     }
@@ -5853,7 +5865,7 @@
       },
       {
         "date": "2026-08-15",
-        "drawdownPct": -49.98
+        "drawdownPct": -50.07
       }
     ]
   },
@@ -5864,20 +5876,20 @@
       "observations": 365,
       "firstDate": "2025-08-16",
       "lastDate": "2026-08-15",
-      "totalReturnPct": -46.25,
-      "annualizedVolPct": 42.32,
-      "sharpe": -1.47,
+      "totalReturnPct": -46.35,
+      "annualizedVolPct": 42.33,
+      "sharpe": -1.48,
       "sortino": -1.9,
       "maxDrawdownPct": -52.46
     },
     {
       "asset": "eth",
       "periodsPerYear": 365,
-      "observations": 364,
+      "observations": 365,
       "firstDate": "2025-08-16",
       "lastDate": "2026-08-15",
-      "totalReturnPct": -57.43,
-      "annualizedVolPct": 62.29,
+      "totalReturnPct": -57.49,
+      "annualizedVolPct": 62.21,
       "sharpe": -1.38,
       "sortino": -1.83,
       "maxDrawdownPct": -67.09
