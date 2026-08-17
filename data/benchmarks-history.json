@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-08-17T12:56:42.585Z",
+  "fetchedAt": "2026-08-17T18:49:12.800Z",
   "dailyDays": 730,
   "olderResolution": "weekly-last",
   "series": [
@@ -13219,7 +13219,7 @@
         },
         {
           "date": "2026-08-17",
-          "close": 4434.5
+          "close": 4458
         }
       ]
     },
@@ -16905,7 +16905,7 @@
         },
         {
           "date": "2026-08-17",
-          "close": 99.457
+          "close": 99.643
         }
       ]
     },
@@ -21247,7 +21247,7 @@
         },
         {
           "date": "2026-08-17",
-          "close": 1897.39
+          "close": 1908.4
         }
       ]
     }
