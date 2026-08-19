@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "fetchedAt": "2026-08-19T12:59:19.210Z",
+  "fetchedAt": "2026-08-19T18:44:27.259Z",
   "asOf": "2026-08-16",
   "keepDays": 730,
   "hashRate": {
@@ -8752,8 +8752,8 @@
   "fees": {
     "source": "mempool.space",
     "tiers": {
-      "fastestFee": 3,
-      "halfHourFee": 2,
+      "fastestFee": 1,
+      "halfHourFee": 1,
       "hourFee": 1,
       "economyFee": 1,
       "minimumFee": 1
