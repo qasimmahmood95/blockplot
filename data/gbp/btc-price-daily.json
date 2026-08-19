@@ -2,21 +2,17 @@
   "schemaVersion": 1,
   "source": "coingecko",
   "currency": "gbp",
-  "fetchedAt": "2026-08-18T18:48:11.372Z",
+  "fetchedAt": "2026-08-19T01:42:04.996Z",
   "rangeDays": "365",
   "stats": {
-    "latestDate": "2026-08-18",
-    "latestPrice": 47862.967581244266,
-    "change7dPct": 1.09,
-    "change30dPct": -0.68,
+    "latestDate": "2026-08-19",
+    "latestPrice": 47614.92443948746,
+    "change7dPct": 1.36,
+    "change30dPct": -0.9,
     "rangeHigh": 93054.68921157354,
     "rangeHighDate": "2025-10-07"
   },
   "series": [
-    {
-      "date": "2025-08-19",
-      "price": 86025.52976112299
-    },
     {
       "date": "2025-08-20",
       "price": 83769.62628659993
@@ -1471,7 +1467,11 @@
     },
     {
       "date": "2026-08-18",
-      "price": 47862.967581244266
+      "price": 47652.950092028506
+    },
+    {
+      "date": "2026-08-19",
+      "price": 47614.92443948746
     }
   ]
 }
