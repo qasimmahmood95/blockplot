@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-08-20T01:40:37.963Z",
+  "fetchedAt": "2026-08-20T06:56:21.137Z",
   "dailyDays": 730,
   "olderResolution": "weekly-last",
   "series": [
@@ -9546,10 +9546,6 @@
       "sourceSeries": "GC=F",
       "rows": [
         {
-          "date": "2016-08-19",
-          "close": 1024.14
-        },
-        {
           "date": "2016-08-26",
           "close": 1000.23
         },
@@ -13226,8 +13222,12 @@
           "close": 3227.86
         },
         {
+          "date": "2026-08-19",
+          "close": 3311.74
+        },
+        {
           "date": "2026-08-20",
-          "close": 3349.5
+          "close": 3343.5
         }
       ]
     },
@@ -13235,10 +13235,6 @@
       "asset": "dxy",
       "sourceSeries": "DX-Y.NYB",
       "rows": [
-        {
-          "date": "2016-08-19",
-          "close": 94.51
-        },
         {
           "date": "2016-08-26",
           "close": 95.57
@@ -16909,7 +16905,7 @@
         },
         {
           "date": "2026-08-20",
-          "close": 98.821
+          "close": 98.76
         }
       ]
     },
@@ -21251,7 +21247,7 @@
         },
         {
           "date": "2026-08-20",
-          "close": 1662.34
+          "close": 1661.75
         }
       ]
     }
