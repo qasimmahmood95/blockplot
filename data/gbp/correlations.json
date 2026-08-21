@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-08-21T13:00:23.821Z",
+  "fetchedAt": "2026-08-21T18:46:50.547Z",
   "asOf": "2026-08-21",
   "windowDays": 90,
   "minObs": 40,
@@ -45931,7 +45931,7 @@
         },
         {
           "date": "2026-08-21",
-          "corr": -0.47
+          "corr": -0.46
         }
       ],
       "regimes": [
@@ -49051,7 +49051,7 @@
         },
         {
           "date": "2026-08-21",
-          "corr": -0.46
+          "corr": -0.45
         }
       ],
       "regimes": [

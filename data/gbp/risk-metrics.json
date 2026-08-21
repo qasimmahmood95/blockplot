@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-08-21T13:00:23.821Z",
+  "fetchedAt": "2026-08-21T18:46:50.547Z",
   "asOf": "2026-08-21",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -1467,7 +1467,7 @@
         },
         {
           "date": "2026-08-21",
-          "volPct": 36.31
+          "volPct": 36.16
         }
       ]
     },
@@ -2932,7 +2932,7 @@
         },
         {
           "date": "2026-08-21",
-          "volPct": 37.23
+          "volPct": 37.18
         }
       ]
     },
@@ -4397,7 +4397,7 @@
         },
         {
           "date": "2026-08-21",
-          "volPct": 43.36
+          "volPct": 43.35
         }
       ]
     }
@@ -5865,7 +5865,7 @@
       },
       {
         "date": "2026-08-21",
-        "drawdownPct": -39.25
+        "drawdownPct": -39.46
       }
     ]
   },
@@ -5876,10 +5876,10 @@
       "observations": 365,
       "firstDate": "2025-08-22",
       "lastDate": "2026-08-21",
-      "totalReturnPct": -32.6,
-      "annualizedVolPct": 44.12,
-      "sharpe": -0.9,
-      "sortino": -1.21,
+      "totalReturnPct": -32.82,
+      "annualizedVolPct": 44.04,
+      "sharpe": -0.91,
+      "sortino": -1.22,
       "maxDrawdownPct": -52.46
     },
     {
@@ -5888,10 +5888,10 @@
       "observations": 365,
       "firstDate": "2025-08-22",
       "lastDate": "2026-08-21",
-      "totalReturnPct": -51.02,
-      "annualizedVolPct": 62.38,
-      "sharpe": -1.15,
-      "sortino": -1.55,
+      "totalReturnPct": -50.77,
+      "annualizedVolPct": 62.41,
+      "sharpe": -1.14,
+      "sortino": -1.54,
       "maxDrawdownPct": -67.09
     },
     {
@@ -5912,10 +5912,10 @@
       "observations": 251,
       "firstDate": "2025-08-22",
       "lastDate": "2026-08-21",
-      "totalReturnPct": 35.09,
-      "annualizedVolPct": 27.6,
-      "sharpe": 1.1,
-      "sortino": 1.46,
+      "totalReturnPct": 36.25,
+      "annualizedVolPct": 27.69,
+      "sharpe": 1.13,
+      "sortino": 1.51,
       "maxDrawdownPct": -25.42
     }
   ]
