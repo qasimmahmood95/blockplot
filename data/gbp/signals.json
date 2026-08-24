@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-08-23T18:38:34.062Z",
-  "asOf": "2026-08-23",
+  "fetchedAt": "2026-08-24T01:46:32.880Z",
+  "asOf": "2026-08-24",
   "thresholds": {
     "volWindowDays": 90,
     "volLowPct": 35,
@@ -31,8 +31,8 @@
     "history": [
       {
         "state": "low",
-        "since": "2025-08-24",
-        "observations": 54
+        "since": "2025-08-25",
+        "observations": 53
       },
       {
         "state": "normal",
@@ -49,13 +49,13 @@
   "drawdown": {
     "state": "-30",
     "since": "2026-01-26",
-    "observations": 210,
+    "observations": 211,
     "pending": null,
     "history": [
       {
         "state": "0",
-        "since": "2025-08-24",
-        "observations": 53
+        "since": "2025-08-25",
+        "observations": 52
       },
       {
         "state": "-10",
@@ -70,7 +70,7 @@
       {
         "state": "-30",
         "since": "2026-01-26",
-        "observations": 210
+        "observations": 211
       }
     ]
   },
@@ -78,8 +78,8 @@
     "date": "2025-10-07",
     "price": 93082.19321148824,
     "latestDate": "2026-08-23",
-    "latestPrice": 56473.63432606097,
-    "fromAthPct": -39.33,
+    "latestPrice": 56441.944932630344,
+    "fromAthPct": -39.36,
     "daysSince": 320,
     "isNew": false
   },
@@ -87,7 +87,7 @@
     "halvingDate": "2024-04-20",
     "peakMultiple": 1.8146,
     "peakDay": 535,
-    "latestMultiple": 1.1009,
+    "latestMultiple": 1.1003,
     "latestDay": 855,
     "isNew": false
   },
