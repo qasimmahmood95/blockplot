@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-08-24T07:11:03.528Z",
+  "fetchedAt": "2026-08-24T13:03:17.801Z",
   "asOf": "2026-08-24",
   "windowDays": 90,
   "minObs": 40,
@@ -12688,6 +12688,10 @@
         {
           "date": "2026-08-22",
           "corr": 0.88
+        },
+        {
+          "date": "2026-08-23",
+          "corr": 0.89
         }
       ],
       "regimes": [
@@ -12704,9 +12708,9 @@
           "regime": "positive",
           "startDate": "2018-01-16",
           "confirmedFrom": "2018-01-16",
-          "endDate": "2026-08-22",
-          "observations": 3141,
-          "days": 3141,
+          "endDate": "2026-08-23",
+          "observations": 3142,
+          "days": 3142,
           "meanCorr": 0.83
         }
       ]
@@ -44930,7 +44934,7 @@
         },
         {
           "date": "2026-08-24",
-          "corr": 0.5
+          "corr": 0.51
         }
       ],
       "regimes": [
