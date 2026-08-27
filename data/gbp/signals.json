@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-08-26T19:55:51.472Z",
-  "asOf": "2026-08-26",
+  "fetchedAt": "2026-08-27T08:49:28.329Z",
+  "asOf": "2026-08-27",
   "thresholds": {
     "volWindowDays": 90,
     "volLowPct": 35,
@@ -17,22 +17,22 @@
   },
   "rawSpans": {
     "vol": 6,
-    "drawdown": 34
+    "drawdown": 36
   },
   "vol": {
     "state": "low",
     "since": "2026-07-18",
-    "observations": 40,
+    "observations": 41,
     "pending": {
       "state": "normal",
       "since": "2026-08-20",
-      "observations": 7
+      "observations": 8
     },
     "history": [
       {
         "state": "low",
-        "since": "2025-08-27",
-        "observations": 51
+        "since": "2025-08-28",
+        "observations": 50
       },
       {
         "state": "normal",
@@ -42,20 +42,20 @@
       {
         "state": "low",
         "since": "2026-07-18",
-        "observations": 40
+        "observations": 41
       }
     ]
   },
   "drawdown": {
     "state": "-30",
     "since": "2026-01-26",
-    "observations": 213,
+    "observations": 214,
     "pending": null,
     "history": [
       {
         "state": "0",
-        "since": "2025-08-27",
-        "observations": 50
+        "since": "2025-08-28",
+        "observations": 49
       },
       {
         "state": "-10",
@@ -70,32 +70,32 @@
       {
         "state": "-30",
         "since": "2026-01-26",
-        "observations": 213
+        "observations": 214
       }
     ]
   },
   "ath": {
     "date": "2025-10-07",
     "price": 93082.19321148824,
-    "latestDate": "2026-08-26",
-    "latestPrice": 57609.4644167278,
-    "fromAthPct": -38.11,
-    "daysSince": 323,
+    "latestDate": "2026-08-27",
+    "latestPrice": 58179.53102595338,
+    "fromAthPct": -37.5,
+    "daysSince": 324,
     "isNew": false
   },
   "cycle": {
     "halvingDate": "2024-04-20",
     "peakMultiple": 1.8146,
     "peakDay": 535,
-    "latestMultiple": 1.1231,
-    "latestDay": 858,
+    "latestMultiple": 1.1342,
+    "latestDay": 859,
     "isNew": false
   },
   "dominance": {
-    "latestPct": 59.25,
-    "latestDate": "2026-08-26",
-    "changePp": 2.75,
+    "latestPct": 59.17,
+    "latestDate": "2026-08-27",
+    "changePp": 2.8,
     "overDays": 30,
-    "fromDate": "2026-07-27"
+    "fromDate": "2026-07-28"
   }
 }
