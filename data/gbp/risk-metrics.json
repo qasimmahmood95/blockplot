@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-08-31T05:07:13.380Z",
+  "fetchedAt": "2026-08-31T13:23:06.555Z",
   "asOf": "2026-08-31",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -1464,6 +1464,10 @@
         {
           "date": "2026-08-30",
           "volPct": 43.34
+        },
+        {
+          "date": "2026-08-31",
+          "volPct": 41.54
         }
       ]
     },
@@ -2925,6 +2929,10 @@
         {
           "date": "2026-08-30",
           "volPct": 40.32
+        },
+        {
+          "date": "2026-08-31",
+          "volPct": 39.8
         }
       ]
     },
@@ -4385,6 +4393,10 @@
         },
         {
           "date": "2026-08-30",
+          "volPct": 43.56
+        },
+        {
+          "date": "2026-08-31",
           "volPct": 43.56
         }
       ]
@@ -5853,7 +5865,7 @@
       },
       {
         "date": "2026-08-31",
-        "drawdownPct": -38.41
+        "drawdownPct": -38.11
       }
     ]
   },
@@ -5864,10 +5876,10 @@
       "observations": 365,
       "firstDate": "2025-09-01",
       "lastDate": "2026-08-31",
-      "totalReturnPct": -28.38,
+      "totalReturnPct": -28.03,
       "annualizedVolPct": 43.36,
-      "sharpe": -0.77,
-      "sortino": -1.03,
+      "sharpe": -0.76,
+      "sortino": -1.02,
       "maxDrawdownPct": -52.46
     },
     {
@@ -5876,10 +5888,10 @@
       "observations": 363,
       "firstDate": "2025-09-01",
       "lastDate": "2026-08-31",
-      "totalReturnPct": -43.88,
+      "totalReturnPct": -43.17,
       "annualizedVolPct": 62.35,
-      "sharpe": -0.93,
-      "sortino": -1.28,
+      "sharpe": -0.91,
+      "sortino": -1.25,
       "maxDrawdownPct": -66.19
     },
     {
@@ -5900,10 +5912,10 @@
       "observations": 251,
       "firstDate": "2025-09-02",
       "lastDate": "2026-08-31",
-      "totalReturnPct": 24.52,
-      "annualizedVolPct": 27.57,
-      "sharpe": 0.8,
-      "sortino": 1.06,
+      "totalReturnPct": 25.2,
+      "annualizedVolPct": 27.58,
+      "sharpe": 0.82,
+      "sortino": 1.08,
       "maxDrawdownPct": -25.42
     }
   ]
