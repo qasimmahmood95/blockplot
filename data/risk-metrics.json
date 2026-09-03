@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-09-03T04:03:28.549Z",
+  "fetchedAt": "2026-09-03T11:01:30.557Z",
   "asOf": "2026-09-03",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -1464,6 +1464,10 @@
         {
           "date": "2026-09-02",
           "volPct": 42.92
+        },
+        {
+          "date": "2026-09-03",
+          "volPct": 42.95
         }
       ]
     },
@@ -2925,6 +2929,10 @@
         {
           "date": "2026-09-02",
           "volPct": 37.32
+        },
+        {
+          "date": "2026-09-03",
+          "volPct": 37.31
         }
       ]
     },
@@ -4386,6 +4394,10 @@
         {
           "date": "2026-09-02",
           "volPct": 44.21
+        },
+        {
+          "date": "2026-09-03",
+          "volPct": 44.17
         }
       ]
     }
@@ -5873,12 +5885,12 @@
     {
       "asset": "eth",
       "periodsPerYear": 365,
-      "observations": 364,
+      "observations": 365,
       "firstDate": "2025-09-04",
       "lastDate": "2026-09-03",
-      "totalReturnPct": -44.08,
-      "annualizedVolPct": 64.11,
-      "sharpe": -0.91,
+      "totalReturnPct": -44.28,
+      "annualizedVolPct": 64.03,
+      "sharpe": -0.92,
       "sortino": -1.25,
       "maxDrawdownPct": -66.81
     },
@@ -5897,13 +5909,13 @@
     {
       "asset": "gold",
       "periodsPerYear": 252,
-      "observations": 251,
+      "observations": 252,
       "firstDate": "2025-09-04",
-      "lastDate": "2026-09-02",
-      "totalReturnPct": 22.45,
-      "annualizedVolPct": 29.14,
-      "sharpe": 0.7,
-      "sortino": 0.92,
+      "lastDate": "2026-09-03",
+      "totalReturnPct": 25.37,
+      "annualizedVolPct": 29.17,
+      "sharpe": 0.78,
+      "sortino": 1.03,
       "maxDrawdownPct": -25.06
     }
   ]
