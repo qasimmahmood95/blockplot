@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-09-06T04:11:29.169Z",
+  "fetchedAt": "2026-09-06T10:43:03.245Z",
   "keepDays": 460,
   "ethQuoteDivergence": {
-    "days": 3221,
+    "days": 3222,
     "medianPct": 0.182,
     "p95Pct": 0.713,
     "maxPct": 2.91,
@@ -5692,8 +5692,12 @@
           "close": 1817.10400390625
         },
         {
+          "date": "2026-09-05",
+          "close": 1835.2705078125
+        },
+        {
           "date": "2026-09-06",
-          "close": 1859.199951171875
+          "close": 1853.02001953125
         }
       ]
     }
