@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "source": "blockchain.info",
   "currency": "gbp",
-  "fetchedAt": "2026-09-06T20:17:15.673Z",
+  "fetchedAt": "2026-09-07T04:10:29.718Z",
   "asOf": "2026-09-06",
   "cycles": [
     {
@@ -5525,7 +5525,7 @@
         },
         {
           "day": 57,
-          "multiple": 0.8766
+          "multiple": 0.8773
         },
         {
           "day": 58,
@@ -20157,7 +20157,7 @@
         },
         {
           "day": 869,
-          "multiple": 1.152
+          "multiple": 1.1503
         }
       ]
     }
