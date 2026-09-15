@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-09-15T04:32:48.872Z",
+  "fetchedAt": "2026-09-15T11:32:11.215Z",
   "asOf": "2026-09-15",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -1464,6 +1464,10 @@
         {
           "date": "2026-09-14",
           "volPct": 47.5
+        },
+        {
+          "date": "2026-09-15",
+          "volPct": 47.59
         }
       ]
     },
@@ -2925,6 +2929,10 @@
         {
           "date": "2026-09-14",
           "volPct": 36.31
+        },
+        {
+          "date": "2026-09-15",
+          "volPct": 36.37
         }
       ]
     },
@@ -4386,6 +4394,10 @@
         {
           "date": "2026-09-14",
           "volPct": 44.49
+        },
+        {
+          "date": "2026-09-15",
+          "volPct": 44.52
         }
       ]
     }
@@ -5853,7 +5865,7 @@
       },
       {
         "date": "2026-09-15",
-        "drawdownPct": -37.78
+        "drawdownPct": -38.3
       }
     ]
   },
@@ -5864,22 +5876,22 @@
       "observations": 365,
       "firstDate": "2025-09-16",
       "lastDate": "2026-09-15",
-      "totalReturnPct": -32.72,
-      "annualizedVolPct": 44.28,
-      "sharpe": -0.9,
-      "sortino": -1.21,
+      "totalReturnPct": -33.28,
+      "annualizedVolPct": 44.26,
+      "sharpe": -0.92,
+      "sortino": -1.24,
       "maxDrawdownPct": -53.05
     },
     {
       "asset": "eth",
       "periodsPerYear": 365,
-      "observations": 364,
+      "observations": 365,
       "firstDate": "2025-09-16",
       "lastDate": "2026-09-15",
-      "totalReturnPct": -44.63,
-      "annualizedVolPct": 64.13,
-      "sharpe": -0.93,
-      "sortino": -1.27,
+      "totalReturnPct": -45,
+      "annualizedVolPct": 64.07,
+      "sharpe": -0.94,
+      "sortino": -1.28,
       "maxDrawdownPct": -66.62
     },
     {
@@ -5900,10 +5912,10 @@
       "observations": 251,
       "firstDate": "2025-09-16",
       "lastDate": "2026-09-15",
-      "totalReturnPct": 17.77,
-      "annualizedVolPct": 29.35,
-      "sharpe": 0.56,
-      "sortino": 0.74,
+      "totalReturnPct": 17.21,
+      "annualizedVolPct": 29.36,
+      "sharpe": 0.55,
+      "sortino": 0.72,
       "maxDrawdownPct": -25.06
     }
   ]
