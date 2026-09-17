@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "source": "blockchain.info",
   "currency": "gbp",
-  "fetchedAt": "2026-09-17T04:34:09.364Z",
+  "fetchedAt": "2026-09-17T11:26:44.829Z",
   "series": [
     {
       "date": "2010-08-18",
@@ -23499,6 +23499,10 @@
     {
       "date": "2026-09-16",
       "price": 56189.94500594531
+    },
+    {
+      "date": "2026-09-17",
+      "price": 56994.98204814187
     }
   ]
 }
