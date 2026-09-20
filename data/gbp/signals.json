@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-09-20T15:53:37.091Z",
+  "fetchedAt": "2026-09-20T20:38:54.745Z",
   "asOf": "2026-09-20",
   "thresholds": {
     "volWindowDays": 90,
@@ -79,8 +79,8 @@
     "date": "2025-10-07",
     "price": 93082.19321148824,
     "latestDate": "2026-09-20",
-    "latestPrice": 60671.96098120705,
-    "fromAthPct": -34.82,
+    "latestPrice": 60685.778378895906,
+    "fromAthPct": -34.8,
     "daysSince": 348,
     "isNew": false
   },
@@ -88,14 +88,14 @@
     "halvingDate": "2024-04-20",
     "peakMultiple": 1.8146,
     "peakDay": 535,
-    "latestMultiple": 1.1828,
+    "latestMultiple": 1.183,
     "latestDay": 883,
     "isNew": false
   },
   "dominance": {
-    "latestPct": 58.92,
+    "latestPct": 58.72,
     "latestDate": "2026-09-20",
-    "changePp": -0.27,
+    "changePp": -0.47,
     "overDays": 30,
     "fromDate": "2026-08-21"
   }
