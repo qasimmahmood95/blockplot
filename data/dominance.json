@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "source": "coingecko",
-  "fetchedAt": "2026-09-20T20:38:54.745Z",
+  "fetchedAt": "2026-09-21T04:32:47.637Z",
   "series": [
     {
       "date": "2026-07-26",
@@ -449,6 +449,14 @@
       "ethDominancePct": 11.59,
       "stablecoinSharePct": 9.28,
       "volume24hUsd": 76592530754
+    },
+    {
+      "date": "2026-09-21",
+      "btcDominancePct": 58.16,
+      "totalMcapUsd": 2797609746587,
+      "ethDominancePct": 11.56,
+      "stablecoinSharePct": 9.18,
+      "volume24hUsd": 82174092852
     }
   ]
 }
