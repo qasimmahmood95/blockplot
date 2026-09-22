@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-09-22T11:22:14.137Z",
+  "fetchedAt": "2026-09-22T16:44:12.011Z",
   "asOf": "2026-09-22",
   "windowDays": 90,
   "minObs": 40,
@@ -46087,7 +46087,7 @@
         },
         {
           "date": "2026-09-22",
-          "corr": -0.36
+          "corr": -0.37
         }
       ],
       "regimes": [
@@ -46107,7 +46107,7 @@
           "endDate": "2026-09-22",
           "observations": 50,
           "days": 71,
-          "meanCorr": -0.36
+          "meanCorr": -0.37
         }
       ]
     },
