@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-09-28T04:58:59.323Z",
+  "fetchedAt": "2026-09-28T13:34:37.718Z",
   "asOf": "2026-09-28",
   "windowDays": 90,
   "minObs": 40,
@@ -12820,6 +12820,10 @@
         {
           "date": "2026-09-26",
           "corr": 0.87
+        },
+        {
+          "date": "2026-09-27",
+          "corr": 0.87
         }
       ],
       "regimes": [
@@ -12836,9 +12840,9 @@
           "regime": "positive",
           "startDate": "2018-01-16",
           "confirmedFrom": "2018-01-16",
-          "endDate": "2026-09-26",
-          "observations": 3176,
-          "days": 3176,
+          "endDate": "2026-09-27",
+          "observations": 3177,
+          "days": 3177,
           "meanCorr": 0.82
         }
       ]
@@ -45084,7 +45088,7 @@
         },
         {
           "date": "2026-09-28",
-          "corr": 0.47
+          "corr": 0.45
         }
       ],
       "regimes": [
