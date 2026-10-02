@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-10-02T05:14:33.845Z",
+  "fetchedAt": "2026-10-02T12:18:38.635Z",
   "asOf": "2026-10-02",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -1464,6 +1464,10 @@
         {
           "date": "2026-10-01",
           "volPct": 41.36
+        },
+        {
+          "date": "2026-10-02",
+          "volPct": 41.16
         }
       ]
     },
@@ -2925,6 +2929,10 @@
         {
           "date": "2026-10-01",
           "volPct": 38.22
+        },
+        {
+          "date": "2026-10-02",
+          "volPct": 38.2
         }
       ]
     },
@@ -4386,6 +4394,10 @@
         {
           "date": "2026-10-01",
           "volPct": 45.2
+        },
+        {
+          "date": "2026-10-02",
+          "volPct": 45.05
         }
       ]
     }
@@ -5853,7 +5865,7 @@
       },
       {
         "date": "2026-10-02",
-        "drawdownPct": -30.6
+        "drawdownPct": -30.68
       }
     ]
   },
@@ -5864,22 +5876,22 @@
       "observations": 365,
       "firstDate": "2025-10-03",
       "lastDate": "2026-10-02",
-      "totalReturnPct": -28.17,
-      "annualizedVolPct": 44.92,
+      "totalReturnPct": -28.25,
+      "annualizedVolPct": 44.91,
       "sharpe": -0.74,
-      "sortino": -1.01,
+      "sortino": -1.02,
       "maxDrawdownPct": -53.05
     },
     {
       "asset": "eth",
       "periodsPerYear": 365,
-      "observations": 364,
+      "observations": 365,
       "firstDate": "2025-10-03",
       "lastDate": "2026-10-02",
-      "totalReturnPct": -39.45,
-      "annualizedVolPct": 63.69,
-      "sharpe": -0.79,
-      "sortino": -1.09,
+      "totalReturnPct": -39.12,
+      "annualizedVolPct": 63.6,
+      "sharpe": -0.78,
+      "sortino": -1.08,
       "maxDrawdownPct": -66.62
     },
     {
@@ -5900,7 +5912,7 @@
       "observations": 251,
       "firstDate": "2025-10-03",
       "lastDate": "2026-10-02",
-      "totalReturnPct": 7.8,
+      "totalReturnPct": 7.71,
       "annualizedVolPct": 29.32,
       "sharpe": 0.26,
       "sortino": 0.34,
