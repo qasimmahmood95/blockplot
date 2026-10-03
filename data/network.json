@@ -1,17 +1,13 @@
 {
   "schemaVersion": 1,
-  "fetchedAt": "2026-10-02T22:03:37.490Z",
-  "asOf": "2026-10-01",
+  "fetchedAt": "2026-10-03T04:57:26.771Z",
+  "asOf": "2026-10-02",
   "keepDays": 730,
   "hashRate": {
     "unit": "EH/s",
-    "average7d": 975.8,
-    "change30dPct": 5.73,
+    "average7d": 982.4,
+    "change30dPct": 8.01,
     "series": [
-      {
-        "date": "2024-10-02",
-        "value": 681.16
-      },
       {
         "date": "2024-10-03",
         "value": 694.35
@@ -2915,18 +2911,18 @@
       {
         "date": "2026-10-01",
         "value": 897.52
+      },
+      {
+        "date": "2026-10-02",
+        "value": 930.51
       }
     ]
   },
   "txCount": {
     "unit": "tx/day",
-    "average30d": 692920,
-    "change30dPct": -3.08,
+    "average30d": 693331,
+    "change30dPct": -0.29,
     "series": [
-      {
-        "date": "2024-10-02",
-        "value": 590981
-      },
       {
         "date": "2024-10-03",
         "value": 582777
@@ -5830,19 +5826,19 @@
       {
         "date": "2026-10-01",
         "value": 535739
+      },
+      {
+        "date": "2026-10-02",
+        "value": 593742
       }
     ]
   },
   "feePerTx": {
     "unit": "sats/tx",
-    "average30d": 440,
-    "change30dPct": 19.71,
-    "percentile": 49,
+    "average30d": 444,
+    "change30dPct": 16.04,
+    "percentile": 40,
     "series": [
-      {
-        "date": "2024-10-02",
-        "value": 1162
-      },
       {
         "date": "2024-10-03",
         "value": 1311
@@ -8746,14 +8742,18 @@
       {
         "date": "2026-10-01",
         "value": 792
+      },
+      {
+        "date": "2026-10-02",
+        "value": 649
       }
     ]
   },
   "fees": {
     "source": "mempool.space",
     "tiers": {
-      "fastestFee": 3,
-      "halfHourFee": 3,
+      "fastestFee": 1,
+      "halfHourFee": 1,
       "hourFee": 1,
       "economyFee": 1,
       "minimumFee": 1
