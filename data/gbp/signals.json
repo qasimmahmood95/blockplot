@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-10-03T16:05:10.685Z",
+  "fetchedAt": "2026-10-03T20:55:13.839Z",
   "asOf": "2026-10-03",
   "thresholds": {
     "volWindowDays": 90,
@@ -88,9 +88,9 @@
     "isNew": false
   },
   "dominance": {
-    "latestPct": 58.7,
+    "latestPct": 58.61,
     "latestDate": "2026-10-03",
-    "changePp": -0.69,
+    "changePp": -0.78,
     "overDays": 30,
     "fromDate": "2026-09-03"
   }
