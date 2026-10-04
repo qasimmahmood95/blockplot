@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-10-03T20:55:13.839Z",
+  "fetchedAt": "2026-10-04T05:30:07.460Z",
   "dailyDays": 730,
   "olderResolution": "weekly-last",
   "series": [
@@ -18390,10 +18390,6 @@
           "close": 1987.15
         },
         {
-          "date": "2024-10-03",
-          "close": 1789.72
-        },
-        {
           "date": "2024-10-04",
           "close": 1840.33
         },
@@ -21310,8 +21306,8 @@
           "close": 2015.37
         },
         {
-          "date": "2026-10-03",
-          "close": 2031.34
+          "date": "2026-10-04",
+          "close": 2038.11
         }
       ]
     }
