@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "source": "blockchain.info",
   "currency": "gbp",
-  "fetchedAt": "2026-10-05T14:18:18.681Z",
+  "fetchedAt": "2026-10-05T23:56:59.672Z",
   "asOf": "2026-10-05",
   "months": [
     {
@@ -973,7 +973,7 @@
     {
       "year": 2026,
       "month": 10,
-      "returnPct": 4.06
+      "returnPct": 3.9
     }
   ],
   "years": [
@@ -1043,7 +1043,7 @@
     },
     {
       "year": 2026,
-      "returnPct": -0.25
+      "returnPct": -0.41
     }
   ]
 }
