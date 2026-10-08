@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-10-08T13:13:48.795Z",
+  "fetchedAt": "2026-10-08T23:11:52.864Z",
   "asOf": "2026-10-08",
   "windowDays": 90,
   "minObs": 40,
@@ -45083,7 +45083,7 @@
         },
         {
           "date": "2026-10-08",
-          "corr": 0.5
+          "corr": 0.48
         }
       ],
       "regimes": [
@@ -46132,7 +46132,7 @@
         },
         {
           "date": "2026-10-08",
-          "corr": -0.43
+          "corr": -0.41
         }
       ],
       "regimes": [
