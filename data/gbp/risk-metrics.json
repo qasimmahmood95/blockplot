@@ -1,18 +1,14 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-10-08T23:11:52.864Z",
-  "asOf": "2026-10-08",
+  "fetchedAt": "2026-10-09T05:45:21.390Z",
+  "asOf": "2026-10-09",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
   "rollingVol": [
     {
       "windowDays": 30,
       "series": [
-        {
-          "date": "2025-10-09",
-          "volPct": 30.03
-        },
         {
           "date": "2025-10-10",
           "volPct": 30.16
@@ -1475,10 +1471,6 @@
       "windowDays": 90,
       "series": [
         {
-          "date": "2025-10-09",
-          "volPct": 29.62
-        },
-        {
           "date": "2025-10-10",
           "volPct": 29.54
         },
@@ -2940,10 +2932,6 @@
       "windowDays": 365,
       "series": [
         {
-          "date": "2025-10-09",
-          "volPct": 43.88
-        },
-        {
           "date": "2025-10-10",
           "volPct": 43.82
         },
@@ -4403,1469 +4391,1469 @@
     }
   ],
   "drawdown": {
-    "maxDrawdownPct": -52.04,
-    "peakDate": "2025-10-09",
+    "maxDrawdownPct": -51.73,
+    "peakDate": "2025-10-10",
     "troughDate": "2026-07-01",
     "series": [
       {
-        "date": "2025-10-09",
+        "date": "2025-10-10",
         "drawdownPct": 0
       },
       {
-        "date": "2025-10-10",
-        "drawdownPct": -0.66
-      },
-      {
         "date": "2025-10-11",
-        "drawdownPct": -7.74
+        "drawdownPct": -7.13
       },
       {
         "date": "2025-10-12",
-        "drawdownPct": -10.05
+        "drawdownPct": -9.45
       },
       {
         "date": "2025-10-13",
-        "drawdownPct": -6.44
+        "drawdownPct": -5.82
       },
       {
         "date": "2025-10-14",
-        "drawdownPct": -5.8
+        "drawdownPct": -5.18
       },
       {
         "date": "2025-10-15",
-        "drawdownPct": -8.19
+        "drawdownPct": -7.58
       },
       {
         "date": "2025-10-16",
-        "drawdownPct": -10.5
+        "drawdownPct": -9.91
       },
       {
         "date": "2025-10-17",
-        "drawdownPct": -12.71
+        "drawdownPct": -12.13
       },
       {
         "date": "2025-10-18",
-        "drawdownPct": -14.07
+        "drawdownPct": -13.5
       },
       {
         "date": "2025-10-19",
-        "drawdownPct": -13.43
+        "drawdownPct": -12.86
       },
       {
         "date": "2025-10-20",
-        "drawdownPct": -12.16
+        "drawdownPct": -11.58
       },
       {
         "date": "2025-10-21",
-        "drawdownPct": -10.4
+        "drawdownPct": -9.81
       },
       {
         "date": "2025-10-22",
-        "drawdownPct": -11.95
+        "drawdownPct": -11.37
       },
       {
         "date": "2025-10-23",
-        "drawdownPct": -12.55
+        "drawdownPct": -11.98
       },
       {
         "date": "2025-10-24",
-        "drawdownPct": -10.29
+        "drawdownPct": -9.7
       },
       {
         "date": "2025-10-25",
-        "drawdownPct": -9.54
-      },
-      {
-        "date": "2025-10-26",
-        "drawdownPct": -9.05
-      },
-      {
-        "date": "2025-10-27",
-        "drawdownPct": -7.06
-      },
-      {
-        "date": "2025-10-28",
-        "drawdownPct": -6.84
-      },
-      {
-        "date": "2025-10-29",
-        "drawdownPct": -7.36
-      },
-      {
-        "date": "2025-10-30",
-        "drawdownPct": -9.11
-      },
-      {
-        "date": "2025-10-31",
-        "drawdownPct": -10.32
-      },
-      {
-        "date": "2025-11-01",
-        "drawdownPct": -9.37
-      },
-      {
-        "date": "2025-11-02",
         "drawdownPct": -8.95
       },
       {
+        "date": "2025-10-26",
+        "drawdownPct": -8.45
+      },
+      {
+        "date": "2025-10-27",
+        "drawdownPct": -6.45
+      },
+      {
+        "date": "2025-10-28",
+        "drawdownPct": -6.22
+      },
+      {
+        "date": "2025-10-29",
+        "drawdownPct": -6.75
+      },
+      {
+        "date": "2025-10-30",
+        "drawdownPct": -8.51
+      },
+      {
+        "date": "2025-10-31",
+        "drawdownPct": -9.73
+      },
+      {
+        "date": "2025-11-01",
+        "drawdownPct": -8.77
+      },
+      {
+        "date": "2025-11-02",
+        "drawdownPct": -8.35
+      },
+      {
         "date": "2025-11-03",
-        "drawdownPct": -8.8
+        "drawdownPct": -8.2
       },
       {
         "date": "2025-11-04",
-        "drawdownPct": -11.67
+        "drawdownPct": -11.08
       },
       {
         "date": "2025-11-05",
-        "drawdownPct": -15.66
+        "drawdownPct": -15.1
       },
       {
         "date": "2025-11-06",
-        "drawdownPct": -14
+        "drawdownPct": -13.43
       },
       {
         "date": "2025-11-07",
-        "drawdownPct": -16.33
+        "drawdownPct": -15.78
       },
       {
         "date": "2025-11-08",
-        "drawdownPct": -14.74
+        "drawdownPct": -14.17
       },
       {
         "date": "2025-11-09",
-        "drawdownPct": -15.48
+        "drawdownPct": -14.93
       },
       {
         "date": "2025-11-10",
-        "drawdownPct": -13.97
+        "drawdownPct": -13.4
       },
       {
         "date": "2025-11-11",
-        "drawdownPct": -12.63
+        "drawdownPct": -12.05
       },
       {
         "date": "2025-11-12",
-        "drawdownPct": -14.8
+        "drawdownPct": -14.23
       },
       {
         "date": "2025-11-13",
-        "drawdownPct": -16.37
+        "drawdownPct": -15.82
       },
       {
         "date": "2025-11-14",
-        "drawdownPct": -18.1
+        "drawdownPct": -17.56
       },
       {
         "date": "2025-11-15",
-        "drawdownPct": -21.97
+        "drawdownPct": -21.46
       },
       {
         "date": "2025-11-16",
-        "drawdownPct": -21.47
+        "drawdownPct": -20.95
       },
       {
         "date": "2025-11-17",
-        "drawdownPct": -22.53
+        "drawdownPct": -22.02
       },
       {
         "date": "2025-11-18",
-        "drawdownPct": -24.01
+        "drawdownPct": -23.5
       },
       {
         "date": "2025-11-19",
-        "drawdownPct": -23.24
+        "drawdownPct": -22.74
       },
       {
         "date": "2025-11-20",
-        "drawdownPct": -24.13
+        "drawdownPct": -23.63
       },
       {
         "date": "2025-11-21",
-        "drawdownPct": -28.24
+        "drawdownPct": -27.77
       },
       {
         "date": "2025-11-22",
-        "drawdownPct": -29.51
+        "drawdownPct": -29.04
       },
       {
         "date": "2025-11-23",
-        "drawdownPct": -29.85
+        "drawdownPct": -29.39
       },
       {
         "date": "2025-11-24",
-        "drawdownPct": -28.28
+        "drawdownPct": -27.81
       },
       {
         "date": "2025-11-25",
-        "drawdownPct": -27.21
+        "drawdownPct": -26.72
       },
       {
         "date": "2025-11-26",
-        "drawdownPct": -28.24
+        "drawdownPct": -27.77
       },
       {
         "date": "2025-11-27",
-        "drawdownPct": -25.85
-      },
-      {
-        "date": "2025-11-28",
-        "drawdownPct": -25.08
-      },
-      {
-        "date": "2025-11-29",
-        "drawdownPct": -25.42
-      },
-      {
-        "date": "2025-11-30",
-        "drawdownPct": -25.48
-      },
-      {
-        "date": "2025-12-01",
-        "drawdownPct": -26.16
-      },
-      {
-        "date": "2025-12-02",
-        "drawdownPct": -29.14
-      },
-      {
-        "date": "2025-12-03",
-        "drawdownPct": -25.62
-      },
-      {
-        "date": "2025-12-04",
-        "drawdownPct": -24.07
-      },
-      {
-        "date": "2025-12-05",
-        "drawdownPct": -25.16
-      },
-      {
-        "date": "2025-12-06",
-        "drawdownPct": -27.48
-      },
-      {
-        "date": "2025-12-07",
-        "drawdownPct": -27.51
-      },
-      {
-        "date": "2025-12-08",
-        "drawdownPct": -26.46
-      },
-      {
-        "date": "2025-12-09",
-        "drawdownPct": -26.25
-      },
-      {
-        "date": "2025-12-10",
-        "drawdownPct": -24.5
-      },
-      {
-        "date": "2025-12-11",
-        "drawdownPct": -25.5
-      },
-      {
-        "date": "2025-12-12",
-        "drawdownPct": -25.04
-      },
-      {
-        "date": "2025-12-13",
-        "drawdownPct": -26.87
-      },
-      {
-        "date": "2025-12-14",
-        "drawdownPct": -26.88
-      },
-      {
-        "date": "2025-12-15",
-        "drawdownPct": -28.59
-      },
-      {
-        "date": "2025-12-16",
-        "drawdownPct": -30.28
-      },
-      {
-        "date": "2025-12-17",
-        "drawdownPct": -28.73
-      },
-      {
-        "date": "2025-12-18",
-        "drawdownPct": -30.26
-      },
-      {
-        "date": "2025-12-19",
-        "drawdownPct": -30.71
-      },
-      {
-        "date": "2025-12-20",
-        "drawdownPct": -28.57
-      },
-      {
-        "date": "2025-12-21",
-        "drawdownPct": -28.36
-      },
-      {
-        "date": "2025-12-22",
-        "drawdownPct": -28.45
-      },
-      {
-        "date": "2025-12-23",
-        "drawdownPct": -28.95
-      },
-      {
-        "date": "2025-12-24",
-        "drawdownPct": -29.75
-      },
-      {
-        "date": "2025-12-25",
-        "drawdownPct": -29.68
-      },
-      {
-        "date": "2025-12-26",
-        "drawdownPct": -29.94
-      },
-      {
-        "date": "2025-12-27",
-        "drawdownPct": -29.85
-      },
-      {
-        "date": "2025-12-28",
-        "drawdownPct": -29.41
-      },
-      {
-        "date": "2025-12-29",
-        "drawdownPct": -29.35
-      },
-      {
-        "date": "2025-12-30",
-        "drawdownPct": -29.98
-      },
-      {
-        "date": "2025-12-31",
-        "drawdownPct": -28.86
-      },
-      {
-        "date": "2026-01-01",
-        "drawdownPct": -29.49
-      },
-      {
-        "date": "2026-01-02",
-        "drawdownPct": -28.41
-      },
-      {
-        "date": "2026-01-03",
-        "drawdownPct": -27.44
-      },
-      {
-        "date": "2026-01-04",
-        "drawdownPct": -26.92
-      },
-      {
-        "date": "2026-01-05",
-        "drawdownPct": -25.91
-      },
-      {
-        "date": "2026-01-06",
-        "drawdownPct": -24.69
-      },
-      {
-        "date": "2026-01-07",
-        "drawdownPct": -24.72
-      },
-      {
-        "date": "2026-01-08",
-        "drawdownPct": -26.36
-      },
-      {
-        "date": "2026-01-09",
-        "drawdownPct": -26.45
-      },
-      {
-        "date": "2026-01-10",
-        "drawdownPct": -26.83
-      },
-      {
-        "date": "2026-01-11",
-        "drawdownPct": -26.94
-      },
-      {
-        "date": "2026-01-12",
-        "drawdownPct": -26.92
-      },
-      {
-        "date": "2026-01-13",
-        "drawdownPct": -26.53
-      },
-      {
-        "date": "2026-01-14",
-        "drawdownPct": -23.03
-      },
-      {
-        "date": "2026-01-15",
-        "drawdownPct": -21.61
-      },
-      {
-        "date": "2026-01-16",
-        "drawdownPct": -22.65
-      },
-      {
-        "date": "2026-01-17",
-        "drawdownPct": -22.71
-      },
-      {
-        "date": "2026-01-18",
-        "drawdownPct": -23.29
-      },
-      {
-        "date": "2026-01-19",
-        "drawdownPct": -24.56
-      },
-      {
-        "date": "2026-01-20",
         "drawdownPct": -25.37
       },
       {
+        "date": "2025-11-28",
+        "drawdownPct": -24.59
+      },
+      {
+        "date": "2025-11-29",
+        "drawdownPct": -24.93
+      },
+      {
+        "date": "2025-11-30",
+        "drawdownPct": -24.99
+      },
+      {
+        "date": "2025-12-01",
+        "drawdownPct": -25.67
+      },
+      {
+        "date": "2025-12-02",
+        "drawdownPct": -28.67
+      },
+      {
+        "date": "2025-12-03",
+        "drawdownPct": -25.13
+      },
+      {
+        "date": "2025-12-04",
+        "drawdownPct": -23.57
+      },
+      {
+        "date": "2025-12-05",
+        "drawdownPct": -24.66
+      },
+      {
+        "date": "2025-12-06",
+        "drawdownPct": -27
+      },
+      {
+        "date": "2025-12-07",
+        "drawdownPct": -27.03
+      },
+      {
+        "date": "2025-12-08",
+        "drawdownPct": -25.97
+      },
+      {
+        "date": "2025-12-09",
+        "drawdownPct": -25.76
+      },
+      {
+        "date": "2025-12-10",
+        "drawdownPct": -24.01
+      },
+      {
+        "date": "2025-12-11",
+        "drawdownPct": -25.01
+      },
+      {
+        "date": "2025-12-12",
+        "drawdownPct": -24.54
+      },
+      {
+        "date": "2025-12-13",
+        "drawdownPct": -26.39
+      },
+      {
+        "date": "2025-12-14",
+        "drawdownPct": -26.39
+      },
+      {
+        "date": "2025-12-15",
+        "drawdownPct": -28.12
+      },
+      {
+        "date": "2025-12-16",
+        "drawdownPct": -29.82
+      },
+      {
+        "date": "2025-12-17",
+        "drawdownPct": -28.26
+      },
+      {
+        "date": "2025-12-18",
+        "drawdownPct": -29.8
+      },
+      {
+        "date": "2025-12-19",
+        "drawdownPct": -30.25
+      },
+      {
+        "date": "2025-12-20",
+        "drawdownPct": -28.1
+      },
+      {
+        "date": "2025-12-21",
+        "drawdownPct": -27.89
+      },
+      {
+        "date": "2025-12-22",
+        "drawdownPct": -27.97
+      },
+      {
+        "date": "2025-12-23",
+        "drawdownPct": -28.48
+      },
+      {
+        "date": "2025-12-24",
+        "drawdownPct": -29.29
+      },
+      {
+        "date": "2025-12-25",
+        "drawdownPct": -29.21
+      },
+      {
+        "date": "2025-12-26",
+        "drawdownPct": -29.48
+      },
+      {
+        "date": "2025-12-27",
+        "drawdownPct": -29.39
+      },
+      {
+        "date": "2025-12-28",
+        "drawdownPct": -28.94
+      },
+      {
+        "date": "2025-12-29",
+        "drawdownPct": -28.89
+      },
+      {
+        "date": "2025-12-30",
+        "drawdownPct": -29.52
+      },
+      {
+        "date": "2025-12-31",
+        "drawdownPct": -28.39
+      },
+      {
+        "date": "2026-01-01",
+        "drawdownPct": -29.03
+      },
+      {
+        "date": "2026-01-02",
+        "drawdownPct": -27.94
+      },
+      {
+        "date": "2026-01-03",
+        "drawdownPct": -26.96
+      },
+      {
+        "date": "2026-01-04",
+        "drawdownPct": -26.44
+      },
+      {
+        "date": "2026-01-05",
+        "drawdownPct": -25.42
+      },
+      {
+        "date": "2026-01-06",
+        "drawdownPct": -24.19
+      },
+      {
+        "date": "2026-01-07",
+        "drawdownPct": -24.22
+      },
+      {
+        "date": "2026-01-08",
+        "drawdownPct": -25.88
+      },
+      {
+        "date": "2026-01-09",
+        "drawdownPct": -25.96
+      },
+      {
+        "date": "2026-01-10",
+        "drawdownPct": -26.35
+      },
+      {
+        "date": "2026-01-11",
+        "drawdownPct": -26.46
+      },
+      {
+        "date": "2026-01-12",
+        "drawdownPct": -26.44
+      },
+      {
+        "date": "2026-01-13",
+        "drawdownPct": -26.04
+      },
+      {
+        "date": "2026-01-14",
+        "drawdownPct": -22.52
+      },
+      {
+        "date": "2026-01-15",
+        "drawdownPct": -21.09
+      },
+      {
+        "date": "2026-01-16",
+        "drawdownPct": -22.14
+      },
+      {
+        "date": "2026-01-17",
+        "drawdownPct": -22.2
+      },
+      {
+        "date": "2026-01-18",
+        "drawdownPct": -22.79
+      },
+      {
+        "date": "2026-01-19",
+        "drawdownPct": -24.06
+      },
+      {
+        "date": "2026-01-20",
+        "drawdownPct": -24.87
+      },
+      {
         "date": "2026-01-21",
-        "drawdownPct": -28.6
+        "drawdownPct": -28.13
       },
       {
         "date": "2026-01-22",
-        "drawdownPct": -27.74
+        "drawdownPct": -27.26
       },
       {
         "date": "2026-01-23",
-        "drawdownPct": -28.28
+        "drawdownPct": -27.8
       },
       {
         "date": "2026-01-24",
-        "drawdownPct": -28.24
+        "drawdownPct": -27.77
       },
       {
         "date": "2026-01-25",
-        "drawdownPct": -28.54
+        "drawdownPct": -28.07
       },
       {
         "date": "2026-01-26",
-        "drawdownPct": -31.17
+        "drawdownPct": -30.71
       },
       {
         "date": "2026-01-27",
-        "drawdownPct": -30.36
-      },
-      {
-        "date": "2026-01-28",
         "drawdownPct": -29.9
       },
       {
+        "date": "2026-01-28",
+        "drawdownPct": -29.44
+      },
+      {
         "date": "2026-01-29",
-        "drawdownPct": -30
+        "drawdownPct": -29.54
       },
       {
         "date": "2026-01-30",
-        "drawdownPct": -33.32
+        "drawdownPct": -32.88
       },
       {
         "date": "2026-01-31",
-        "drawdownPct": -33.75
+        "drawdownPct": -33.31
       },
       {
         "date": "2026-02-01",
-        "drawdownPct": -38.04
+        "drawdownPct": -37.63
       },
       {
         "date": "2026-02-02",
-        "drawdownPct": -39.04
+        "drawdownPct": -38.64
       },
       {
         "date": "2026-02-03",
-        "drawdownPct": -37.68
+        "drawdownPct": -37.27
       },
       {
         "date": "2026-02-04",
-        "drawdownPct": -40.24
+        "drawdownPct": -39.84
       },
       {
         "date": "2026-02-05",
-        "drawdownPct": -41.65
+        "drawdownPct": -41.27
       },
       {
         "date": "2026-02-06",
-        "drawdownPct": -49.92
+        "drawdownPct": -49.58
       },
       {
         "date": "2026-02-07",
-        "drawdownPct": -43.94
+        "drawdownPct": -43.57
       },
       {
         "date": "2026-02-08",
-        "drawdownPct": -44.76
+        "drawdownPct": -44.39
       },
       {
         "date": "2026-02-09",
-        "drawdownPct": -44.13
+        "drawdownPct": -43.76
       },
       {
         "date": "2026-02-10",
-        "drawdownPct": -44.38
+        "drawdownPct": -44.02
       },
       {
         "date": "2026-02-11",
-        "drawdownPct": -45.44
+        "drawdownPct": -45.08
       },
       {
         "date": "2026-02-12",
-        "drawdownPct": -46.64
+        "drawdownPct": -46.29
       },
       {
         "date": "2026-02-13",
-        "drawdownPct": -47.22
+        "drawdownPct": -46.87
       },
       {
         "date": "2026-02-14",
-        "drawdownPct": -45.16
+        "drawdownPct": -44.8
       },
       {
         "date": "2026-02-15",
-        "drawdownPct": -44.4
+        "drawdownPct": -44.03
       },
       {
         "date": "2026-02-16",
-        "drawdownPct": -45.34
+        "drawdownPct": -44.98
       },
       {
         "date": "2026-02-17",
-        "drawdownPct": -44.87
-      },
-      {
-        "date": "2026-02-18",
-        "drawdownPct": -46.05
-      },
-      {
-        "date": "2026-02-19",
-        "drawdownPct": -46.46
-      },
-      {
-        "date": "2026-02-20",
-        "drawdownPct": -46.14
-      },
-      {
-        "date": "2026-02-21",
-        "drawdownPct": -45.32
-      },
-      {
-        "date": "2026-02-22",
-        "drawdownPct": -45.3
-      },
-      {
-        "date": "2026-02-23",
-        "drawdownPct": -47.62
-      },
-      {
-        "date": "2026-02-24",
-        "drawdownPct": -47.97
-      },
-      {
-        "date": "2026-02-25",
-        "drawdownPct": -48.63
-      },
-      {
-        "date": "2026-02-26",
-        "drawdownPct": -45.71
-      },
-      {
-        "date": "2026-02-27",
-        "drawdownPct": -45.68
-      },
-      {
-        "date": "2026-02-28",
-        "drawdownPct": -46.97
-      },
-      {
-        "date": "2026-03-01",
-        "drawdownPct": -46.07
-      },
-      {
-        "date": "2026-03-02",
-        "drawdownPct": -46.69
-      },
-      {
-        "date": "2026-03-03",
-        "drawdownPct": -43.96
-      },
-      {
-        "date": "2026-03-04",
-        "drawdownPct": -44.68
-      },
-      {
-        "date": "2026-03-05",
-        "drawdownPct": -40.97
-      },
-      {
-        "date": "2026-03-06",
-        "drawdownPct": -42.39
-      },
-      {
-        "date": "2026-03-07",
-        "drawdownPct": -44.6
-      },
-      {
-        "date": "2026-03-08",
-        "drawdownPct": -45.26
-      },
-      {
-        "date": "2026-03-09",
-        "drawdownPct": -46.38
-      },
-      {
-        "date": "2026-03-10",
-        "drawdownPct": -44.85
-      },
-      {
-        "date": "2026-03-11",
-        "drawdownPct": -43.53
-      },
-      {
-        "date": "2026-03-12",
-        "drawdownPct": -43.3
-      },
-      {
-        "date": "2026-03-13",
-        "drawdownPct": -42.46
-      },
-      {
-        "date": "2026-03-14",
-        "drawdownPct": -42.11
-      },
-      {
-        "date": "2026-03-15",
-        "drawdownPct": -41.86
-      },
-      {
-        "date": "2026-03-16",
-        "drawdownPct": -40.47
-      },
-      {
-        "date": "2026-03-17",
-        "drawdownPct": -39.31
-      },
-      {
-        "date": "2026-03-18",
-        "drawdownPct": -39.73
-      },
-      {
-        "date": "2026-03-19",
-        "drawdownPct": -41.94
-      },
-      {
-        "date": "2026-03-20",
-        "drawdownPct": -43.28
-      },
-      {
-        "date": "2026-03-21",
-        "drawdownPct": -42.8
-      },
-      {
-        "date": "2026-03-22",
         "drawdownPct": -44.51
       },
       {
-        "date": "2026-03-23",
-        "drawdownPct": -45.11
+        "date": "2026-02-18",
+        "drawdownPct": -45.7
       },
       {
-        "date": "2026-03-24",
-        "drawdownPct": -42.45
+        "date": "2026-02-19",
+        "drawdownPct": -46.1
       },
       {
-        "date": "2026-03-25",
-        "drawdownPct": -42.9
+        "date": "2026-02-20",
+        "drawdownPct": -45.79
       },
       {
-        "date": "2026-03-26",
-        "drawdownPct": -42.04
+        "date": "2026-02-21",
+        "drawdownPct": -44.96
       },
       {
-        "date": "2026-03-27",
-        "drawdownPct": -43.9
+        "date": "2026-02-22",
+        "drawdownPct": -44.94
       },
       {
-        "date": "2026-03-28",
-        "drawdownPct": -45.85
-      },
-      {
-        "date": "2026-03-29",
-        "drawdownPct": -45.63
-      },
-      {
-        "date": "2026-03-30",
-        "drawdownPct": -45.96
-      },
-      {
-        "date": "2026-03-31",
-        "drawdownPct": -45.4
-      },
-      {
-        "date": "2026-04-01",
-        "drawdownPct": -44.57
-      },
-      {
-        "date": "2026-04-02",
-        "drawdownPct": -44.22
-      },
-      {
-        "date": "2026-04-03",
-        "drawdownPct": -45.07
-      },
-      {
-        "date": "2026-04-04",
-        "drawdownPct": -45.13
-      },
-      {
-        "date": "2026-04-05",
-        "drawdownPct": -44.85
-      },
-      {
-        "date": "2026-04-06",
-        "drawdownPct": -43.48
-      },
-      {
-        "date": "2026-04-07",
-        "drawdownPct": -43.79
-      },
-      {
-        "date": "2026-04-08",
-        "drawdownPct": -42.33
-      },
-      {
-        "date": "2026-04-09",
-        "drawdownPct": -42.94
-      },
-      {
-        "date": "2026-04-10",
-        "drawdownPct": -42.45
-      },
-      {
-        "date": "2026-04-11",
-        "drawdownPct": -41.2
-      },
-      {
-        "date": "2026-04-12",
-        "drawdownPct": -40.9
-      },
-      {
-        "date": "2026-04-13",
-        "drawdownPct": -42.92
-      },
-      {
-        "date": "2026-04-14",
-        "drawdownPct": -40.49
-      },
-      {
-        "date": "2026-04-15",
-        "drawdownPct": -40.55
-      },
-      {
-        "date": "2026-04-16",
-        "drawdownPct": -40.11
-      },
-      {
-        "date": "2026-04-17",
-        "drawdownPct": -39.83
-      },
-      {
-        "date": "2026-04-18",
-        "drawdownPct": -38.22
-      },
-      {
-        "date": "2026-04-19",
-        "drawdownPct": -39.12
-      },
-      {
-        "date": "2026-04-20",
-        "drawdownPct": -40.75
-      },
-      {
-        "date": "2026-04-21",
-        "drawdownPct": -39.17
-      },
-      {
-        "date": "2026-04-22",
-        "drawdownPct": -38.71
-      },
-      {
-        "date": "2026-04-23",
-        "drawdownPct": -37.2
-      },
-      {
-        "date": "2026-04-24",
-        "drawdownPct": -37.11
-      },
-      {
-        "date": "2026-04-25",
-        "drawdownPct": -37.77
-      },
-      {
-        "date": "2026-04-26",
-        "drawdownPct": -37.72
-      },
-      {
-        "date": "2026-04-27",
-        "drawdownPct": -37.17
-      },
-      {
-        "date": "2026-04-28",
-        "drawdownPct": -37.73
-      },
-      {
-        "date": "2026-04-29",
-        "drawdownPct": -38.75
-      },
-      {
-        "date": "2026-04-30",
-        "drawdownPct": -39.18
-      },
-      {
-        "date": "2026-05-01",
-        "drawdownPct": -39.27
-      },
-      {
-        "date": "2026-05-02",
-        "drawdownPct": -37.75
-      },
-      {
-        "date": "2026-05-03",
-        "drawdownPct": -37.2
-      },
-      {
-        "date": "2026-05-04",
-        "drawdownPct": -37.17
-      },
-      {
-        "date": "2026-05-05",
-        "drawdownPct": -36.06
-      },
-      {
-        "date": "2026-05-06",
-        "drawdownPct": -35.58
-      },
-      {
-        "date": "2026-05-07",
-        "drawdownPct": -35.18
-      },
-      {
-        "date": "2026-05-08",
-        "drawdownPct": -36.26
-      },
-      {
-        "date": "2026-05-09",
-        "drawdownPct": -36.12
-      },
-      {
-        "date": "2026-05-10",
-        "drawdownPct": -35.66
-      },
-      {
-        "date": "2026-05-11",
-        "drawdownPct": -34.63
-      },
-      {
-        "date": "2026-05-12",
-        "drawdownPct": -34.56
-      },
-      {
-        "date": "2026-05-13",
-        "drawdownPct": -35.42
-      },
-      {
-        "date": "2026-05-14",
-        "drawdownPct": -36.37
-      },
-      {
-        "date": "2026-05-15",
-        "drawdownPct": -34.21
-      },
-      {
-        "date": "2026-05-16",
-        "drawdownPct": -35.83
-      },
-      {
-        "date": "2026-05-17",
-        "drawdownPct": -36.35
-      },
-      {
-        "date": "2026-05-18",
-        "drawdownPct": -37.29
-      },
-      {
-        "date": "2026-05-19",
-        "drawdownPct": -37.77
-      },
-      {
-        "date": "2026-05-20",
-        "drawdownPct": -37.91
-      },
-      {
-        "date": "2026-05-21",
-        "drawdownPct": -37.42
-      },
-      {
-        "date": "2026-05-22",
-        "drawdownPct": -37.34
-      },
-      {
-        "date": "2026-05-23",
-        "drawdownPct": -39.01
-      },
-      {
-        "date": "2026-05-24",
-        "drawdownPct": -38.33
-      },
-      {
-        "date": "2026-05-25",
-        "drawdownPct": -38.14
-      },
-      {
-        "date": "2026-05-26",
-        "drawdownPct": -37.81
-      },
-      {
-        "date": "2026-05-27",
-        "drawdownPct": -38.79
-      },
-      {
-        "date": "2026-05-28",
-        "drawdownPct": -39.87
-      },
-      {
-        "date": "2026-05-29",
-        "drawdownPct": -40.53
-      },
-      {
-        "date": "2026-05-30",
-        "drawdownPct": -40.65
-      },
-      {
-        "date": "2026-05-31",
-        "drawdownPct": -40.5
-      },
-      {
-        "date": "2026-06-01",
-        "drawdownPct": -40.74
-      },
-      {
-        "date": "2026-06-02",
-        "drawdownPct": -42.61
-      },
-      {
-        "date": "2026-06-03",
-        "drawdownPct": -46.2
-      },
-      {
-        "date": "2026-06-04",
-        "drawdownPct": -48.41
-      },
-      {
-        "date": "2026-06-05",
-        "drawdownPct": -48.63
-      },
-      {
-        "date": "2026-06-06",
-        "drawdownPct": -50.93
-      },
-      {
-        "date": "2026-06-07",
-        "drawdownPct": -50.53
-      },
-      {
-        "date": "2026-06-08",
-        "drawdownPct": -48.67
-      },
-      {
-        "date": "2026-06-09",
-        "drawdownPct": -48.99
-      },
-      {
-        "date": "2026-06-10",
-        "drawdownPct": -50.04
-      },
-      {
-        "date": "2026-06-11",
-        "drawdownPct": -50.13
-      },
-      {
-        "date": "2026-06-12",
-        "drawdownPct": -48.59
-      },
-      {
-        "date": "2026-06-13",
-        "drawdownPct": -48.61
-      },
-      {
-        "date": "2026-06-14",
-        "drawdownPct": -48.08
-      },
-      {
-        "date": "2026-06-15",
-        "drawdownPct": -46.92
-      },
-      {
-        "date": "2026-06-16",
-        "drawdownPct": -46.4
-      },
-      {
-        "date": "2026-06-17",
-        "drawdownPct": -46.93
-      },
-      {
-        "date": "2026-06-18",
-        "drawdownPct": -47.19
-      },
-      {
-        "date": "2026-06-19",
-        "drawdownPct": -48.47
-      },
-      {
-        "date": "2026-06-20",
-        "drawdownPct": -47.99
-      },
-      {
-        "date": "2026-06-21",
-        "drawdownPct": -47.26
-      },
-      {
-        "date": "2026-06-22",
-        "drawdownPct": -48.24
-      },
-      {
-        "date": "2026-06-23",
-        "drawdownPct": -47.55
-      },
-      {
-        "date": "2026-06-24",
-        "drawdownPct": -48.38
-      },
-      {
-        "date": "2026-06-25",
-        "drawdownPct": -49.76
-      },
-      {
-        "date": "2026-06-26",
-        "drawdownPct": -51.01
-      },
-      {
-        "date": "2026-06-27",
-        "drawdownPct": -50.77
-      },
-      {
-        "date": "2026-06-28",
-        "drawdownPct": -50.75
-      },
-      {
-        "date": "2026-06-29",
-        "drawdownPct": -51.25
-      },
-      {
-        "date": "2026-06-30",
-        "drawdownPct": -50.67
-      },
-      {
-        "date": "2026-07-01",
-        "drawdownPct": -52.04
-      },
-      {
-        "date": "2026-07-02",
-        "drawdownPct": -51.14
-      },
-      {
-        "date": "2026-07-03",
-        "drawdownPct": -50.08
-      },
-      {
-        "date": "2026-07-04",
-        "drawdownPct": -49.22
-      },
-      {
-        "date": "2026-07-05",
-        "drawdownPct": -48.78
-      },
-      {
-        "date": "2026-07-06",
-        "drawdownPct": -48.34
-      },
-      {
-        "date": "2026-07-07",
-        "drawdownPct": -48.17
-      },
-      {
-        "date": "2026-07-08",
-        "drawdownPct": -48.56
-      },
-      {
-        "date": "2026-07-09",
-        "drawdownPct": -49.62
-      },
-      {
-        "date": "2026-07-10",
-        "drawdownPct": -48.96
-      },
-      {
-        "date": "2026-07-11",
-        "drawdownPct": -48.22
-      },
-      {
-        "date": "2026-07-12",
-        "drawdownPct": -48.34
-      },
-      {
-        "date": "2026-07-13",
-        "drawdownPct": -48.38
-      },
-      {
-        "date": "2026-07-14",
-        "drawdownPct": -49.55
-      },
-      {
-        "date": "2026-07-15",
-        "drawdownPct": -47.44
-      },
-      {
-        "date": "2026-07-16",
-        "drawdownPct": -48.07
-      },
-      {
-        "date": "2026-07-17",
-        "drawdownPct": -48.53
-      },
-      {
-        "date": "2026-07-18",
-        "drawdownPct": -48.44
-      },
-      {
-        "date": "2026-07-19",
-        "drawdownPct": -47.76
-      },
-      {
-        "date": "2026-07-20",
-        "drawdownPct": -47.91
-      },
-      {
-        "date": "2026-07-21",
+        "date": "2026-02-23",
         "drawdownPct": -47.27
       },
       {
-        "date": "2026-07-22",
-        "drawdownPct": -46.05
+        "date": "2026-02-24",
+        "drawdownPct": -47.63
       },
       {
-        "date": "2026-07-23",
-        "drawdownPct": -46.35
+        "date": "2026-02-25",
+        "drawdownPct": -48.29
       },
       {
-        "date": "2026-07-24",
-        "drawdownPct": -47.07
+        "date": "2026-02-26",
+        "drawdownPct": -45.36
       },
       {
-        "date": "2026-07-25",
-        "drawdownPct": -47.85
+        "date": "2026-02-27",
+        "drawdownPct": -45.32
       },
       {
-        "date": "2026-07-26",
-        "drawdownPct": -47.77
+        "date": "2026-02-28",
+        "drawdownPct": -46.62
       },
       {
-        "date": "2026-07-27",
-        "drawdownPct": -46.8
+        "date": "2026-03-01",
+        "drawdownPct": -45.71
       },
       {
-        "date": "2026-07-28",
-        "drawdownPct": -48.02
+        "date": "2026-03-02",
+        "drawdownPct": -46.34
       },
       {
-        "date": "2026-07-29",
-        "drawdownPct": -47.88
+        "date": "2026-03-03",
+        "drawdownPct": -43.59
       },
       {
-        "date": "2026-07-30",
-        "drawdownPct": -48.25
+        "date": "2026-03-04",
+        "drawdownPct": -44.31
       },
       {
-        "date": "2026-07-31",
-        "drawdownPct": -47.7
+        "date": "2026-03-05",
+        "drawdownPct": -40.58
       },
       {
-        "date": "2026-08-01",
-        "drawdownPct": -49.25
+        "date": "2026-03-06",
+        "drawdownPct": -42.01
       },
       {
-        "date": "2026-08-02",
-        "drawdownPct": -49.56
+        "date": "2026-03-07",
+        "drawdownPct": -44.24
       },
       {
-        "date": "2026-08-03",
-        "drawdownPct": -48.89
+        "date": "2026-03-08",
+        "drawdownPct": -44.9
       },
       {
-        "date": "2026-08-04",
-        "drawdownPct": -48.83
+        "date": "2026-03-09",
+        "drawdownPct": -46.03
       },
       {
-        "date": "2026-08-05",
-        "drawdownPct": -48.47
+        "date": "2026-03-10",
+        "drawdownPct": -44.48
       },
       {
-        "date": "2026-08-06",
-        "drawdownPct": -47.99
+        "date": "2026-03-11",
+        "drawdownPct": -43.16
       },
       {
-        "date": "2026-08-07",
-        "drawdownPct": -48.2
+        "date": "2026-03-12",
+        "drawdownPct": -42.92
       },
       {
-        "date": "2026-08-08",
-        "drawdownPct": -47.7
+        "date": "2026-03-13",
+        "drawdownPct": -42.08
       },
       {
-        "date": "2026-08-09",
-        "drawdownPct": -47.83
+        "date": "2026-03-14",
+        "drawdownPct": -41.73
       },
       {
-        "date": "2026-08-10",
-        "drawdownPct": -47.93
+        "date": "2026-03-15",
+        "drawdownPct": -41.48
       },
       {
-        "date": "2026-08-11",
-        "drawdownPct": -48.67
+        "date": "2026-03-16",
+        "drawdownPct": -40.08
       },
       {
-        "date": "2026-08-12",
-        "drawdownPct": -49.07
+        "date": "2026-03-17",
+        "drawdownPct": -38.91
       },
       {
-        "date": "2026-08-13",
-        "drawdownPct": -49.05
+        "date": "2026-03-18",
+        "drawdownPct": -39.33
       },
       {
-        "date": "2026-08-14",
-        "drawdownPct": -49.2
+        "date": "2026-03-19",
+        "drawdownPct": -41.56
       },
       {
-        "date": "2026-08-15",
-        "drawdownPct": -49.56
+        "date": "2026-03-20",
+        "drawdownPct": -42.91
       },
       {
-        "date": "2026-08-16",
-        "drawdownPct": -49.56
+        "date": "2026-03-21",
+        "drawdownPct": -42.43
       },
       {
-        "date": "2026-08-17",
-        "drawdownPct": -49.75
+        "date": "2026-03-22",
+        "drawdownPct": -44.14
       },
       {
-        "date": "2026-08-18",
-        "drawdownPct": -48.31
+        "date": "2026-03-23",
+        "drawdownPct": -44.75
       },
       {
-        "date": "2026-08-19",
-        "drawdownPct": -48.27
+        "date": "2026-03-24",
+        "drawdownPct": -42.07
       },
       {
-        "date": "2026-08-20",
-        "drawdownPct": -44.87
+        "date": "2026-03-25",
+        "drawdownPct": -42.53
       },
       {
-        "date": "2026-08-21",
-        "drawdownPct": -42.03
+        "date": "2026-03-26",
+        "drawdownPct": -41.66
       },
       {
-        "date": "2026-08-22",
-        "drawdownPct": -37.82
+        "date": "2026-03-27",
+        "drawdownPct": -43.53
       },
       {
-        "date": "2026-08-23",
-        "drawdownPct": -38.8
+        "date": "2026-03-28",
+        "drawdownPct": -45.5
       },
       {
-        "date": "2026-08-24",
-        "drawdownPct": -38.21
+        "date": "2026-03-29",
+        "drawdownPct": -45.27
       },
       {
-        "date": "2026-08-25",
-        "drawdownPct": -37.19
+        "date": "2026-03-30",
+        "drawdownPct": -45.6
       },
       {
-        "date": "2026-08-26",
-        "drawdownPct": -37.55
+        "date": "2026-03-31",
+        "drawdownPct": -45.04
       },
       {
-        "date": "2026-08-27",
-        "drawdownPct": -36.93
+        "date": "2026-04-01",
+        "drawdownPct": -44.21
       },
       {
-        "date": "2026-08-28",
+        "date": "2026-04-02",
+        "drawdownPct": -43.85
+      },
+      {
+        "date": "2026-04-03",
+        "drawdownPct": -44.71
+      },
+      {
+        "date": "2026-04-04",
+        "drawdownPct": -44.76
+      },
+      {
+        "date": "2026-04-05",
+        "drawdownPct": -44.49
+      },
+      {
+        "date": "2026-04-06",
+        "drawdownPct": -43.1
+      },
+      {
+        "date": "2026-04-07",
+        "drawdownPct": -43.42
+      },
+      {
+        "date": "2026-04-08",
+        "drawdownPct": -41.95
+      },
+      {
+        "date": "2026-04-09",
+        "drawdownPct": -42.57
+      },
+      {
+        "date": "2026-04-10",
+        "drawdownPct": -42.07
+      },
+      {
+        "date": "2026-04-11",
+        "drawdownPct": -40.81
+      },
+      {
+        "date": "2026-04-12",
+        "drawdownPct": -40.51
+      },
+      {
+        "date": "2026-04-13",
+        "drawdownPct": -42.54
+      },
+      {
+        "date": "2026-04-14",
+        "drawdownPct": -40.1
+      },
+      {
+        "date": "2026-04-15",
+        "drawdownPct": -40.16
+      },
+      {
+        "date": "2026-04-16",
+        "drawdownPct": -39.71
+      },
+      {
+        "date": "2026-04-17",
+        "drawdownPct": -39.43
+      },
+      {
+        "date": "2026-04-18",
+        "drawdownPct": -37.81
+      },
+      {
+        "date": "2026-04-19",
+        "drawdownPct": -38.72
+      },
+      {
+        "date": "2026-04-20",
+        "drawdownPct": -40.35
+      },
+      {
+        "date": "2026-04-21",
+        "drawdownPct": -38.77
+      },
+      {
+        "date": "2026-04-22",
+        "drawdownPct": -38.31
+      },
+      {
+        "date": "2026-04-23",
+        "drawdownPct": -36.79
+      },
+      {
+        "date": "2026-04-24",
+        "drawdownPct": -36.69
+      },
+      {
+        "date": "2026-04-25",
+        "drawdownPct": -37.36
+      },
+      {
+        "date": "2026-04-26",
+        "drawdownPct": -37.31
+      },
+      {
+        "date": "2026-04-27",
+        "drawdownPct": -36.76
+      },
+      {
+        "date": "2026-04-28",
+        "drawdownPct": -37.32
+      },
+      {
+        "date": "2026-04-29",
+        "drawdownPct": -38.35
+      },
+      {
+        "date": "2026-04-30",
+        "drawdownPct": -38.78
+      },
+      {
+        "date": "2026-05-01",
+        "drawdownPct": -38.87
+      },
+      {
+        "date": "2026-05-02",
+        "drawdownPct": -37.34
+      },
+      {
+        "date": "2026-05-03",
+        "drawdownPct": -36.78
+      },
+      {
+        "date": "2026-05-04",
+        "drawdownPct": -36.76
+      },
+      {
+        "date": "2026-05-05",
+        "drawdownPct": -35.63
+      },
+      {
+        "date": "2026-05-06",
+        "drawdownPct": -35.16
+      },
+      {
+        "date": "2026-05-07",
+        "drawdownPct": -34.75
+      },
+      {
+        "date": "2026-05-08",
+        "drawdownPct": -35.84
+      },
+      {
+        "date": "2026-05-09",
+        "drawdownPct": -35.7
+      },
+      {
+        "date": "2026-05-10",
+        "drawdownPct": -35.24
+      },
+      {
+        "date": "2026-05-11",
+        "drawdownPct": -34.2
+      },
+      {
+        "date": "2026-05-12",
+        "drawdownPct": -34.13
+      },
+      {
+        "date": "2026-05-13",
+        "drawdownPct": -34.99
+      },
+      {
+        "date": "2026-05-14",
+        "drawdownPct": -35.95
+      },
+      {
+        "date": "2026-05-15",
+        "drawdownPct": -33.78
+      },
+      {
+        "date": "2026-05-16",
+        "drawdownPct": -35.4
+      },
+      {
+        "date": "2026-05-17",
         "drawdownPct": -35.93
       },
       {
-        "date": "2026-08-29",
-        "drawdownPct": -37.89
+        "date": "2026-05-18",
+        "drawdownPct": -36.87
       },
       {
-        "date": "2026-08-30",
-        "drawdownPct": -37.37
+        "date": "2026-05-19",
+        "drawdownPct": -37.36
       },
       {
-        "date": "2026-08-31",
-        "drawdownPct": -37.82
+        "date": "2026-05-20",
+        "drawdownPct": -37.5
       },
       {
-        "date": "2026-09-01",
-        "drawdownPct": -37.06
+        "date": "2026-05-21",
+        "drawdownPct": -37
       },
       {
-        "date": "2026-09-02",
-        "drawdownPct": -37.75
+        "date": "2026-05-22",
+        "drawdownPct": -36.92
       },
       {
-        "date": "2026-09-03",
-        "drawdownPct": -37.91
+        "date": "2026-05-23",
+        "drawdownPct": -38.61
       },
       {
-        "date": "2026-09-04",
-        "drawdownPct": -34.88
+        "date": "2026-05-24",
+        "drawdownPct": -37.93
       },
       {
-        "date": "2026-09-05",
-        "drawdownPct": -36.16
+        "date": "2026-05-25",
+        "drawdownPct": -37.73
       },
       {
-        "date": "2026-09-06",
-        "drawdownPct": -35.98
+        "date": "2026-05-26",
+        "drawdownPct": -37.4
       },
       {
-        "date": "2026-09-07",
-        "drawdownPct": -35.64
+        "date": "2026-05-27",
+        "drawdownPct": -38.39
       },
       {
-        "date": "2026-09-08",
-        "drawdownPct": -36.7
+        "date": "2026-05-28",
+        "drawdownPct": -39.48
       },
       {
-        "date": "2026-09-09",
-        "drawdownPct": -37.3
+        "date": "2026-05-29",
+        "drawdownPct": -40.14
       },
       {
-        "date": "2026-09-10",
-        "drawdownPct": -37.23
+        "date": "2026-05-30",
+        "drawdownPct": -40.26
       },
       {
-        "date": "2026-09-11",
-        "drawdownPct": -38.56
+        "date": "2026-05-31",
+        "drawdownPct": -40.11
       },
       {
-        "date": "2026-09-12",
-        "drawdownPct": -38.04
+        "date": "2026-06-01",
+        "drawdownPct": -40.35
       },
       {
-        "date": "2026-09-13",
-        "drawdownPct": -38.07
+        "date": "2026-06-02",
+        "drawdownPct": -42.23
       },
       {
-        "date": "2026-09-14",
-        "drawdownPct": -38.28
+        "date": "2026-06-03",
+        "drawdownPct": -45.85
       },
       {
-        "date": "2026-09-15",
+        "date": "2026-06-04",
+        "drawdownPct": -48.07
+      },
+      {
+        "date": "2026-06-05",
+        "drawdownPct": -48.29
+      },
+      {
+        "date": "2026-06-06",
+        "drawdownPct": -50.6
+      },
+      {
+        "date": "2026-06-07",
+        "drawdownPct": -50.2
+      },
+      {
+        "date": "2026-06-08",
+        "drawdownPct": -48.33
+      },
+      {
+        "date": "2026-06-09",
+        "drawdownPct": -48.65
+      },
+      {
+        "date": "2026-06-10",
+        "drawdownPct": -49.71
+      },
+      {
+        "date": "2026-06-11",
+        "drawdownPct": -49.8
+      },
+      {
+        "date": "2026-06-12",
+        "drawdownPct": -48.25
+      },
+      {
+        "date": "2026-06-13",
+        "drawdownPct": -48.27
+      },
+      {
+        "date": "2026-06-14",
+        "drawdownPct": -47.74
+      },
+      {
+        "date": "2026-06-15",
+        "drawdownPct": -46.57
+      },
+      {
+        "date": "2026-06-16",
+        "drawdownPct": -46.04
+      },
+      {
+        "date": "2026-06-17",
+        "drawdownPct": -46.58
+      },
+      {
+        "date": "2026-06-18",
+        "drawdownPct": -46.84
+      },
+      {
+        "date": "2026-06-19",
+        "drawdownPct": -48.13
+      },
+      {
+        "date": "2026-06-20",
+        "drawdownPct": -47.64
+      },
+      {
+        "date": "2026-06-21",
+        "drawdownPct": -46.91
+      },
+      {
+        "date": "2026-06-22",
+        "drawdownPct": -47.9
+      },
+      {
+        "date": "2026-06-23",
+        "drawdownPct": -47.2
+      },
+      {
+        "date": "2026-06-24",
+        "drawdownPct": -48.04
+      },
+      {
+        "date": "2026-06-25",
+        "drawdownPct": -49.42
+      },
+      {
+        "date": "2026-06-26",
+        "drawdownPct": -50.69
+      },
+      {
+        "date": "2026-06-27",
+        "drawdownPct": -50.45
+      },
+      {
+        "date": "2026-06-28",
+        "drawdownPct": -50.42
+      },
+      {
+        "date": "2026-06-29",
+        "drawdownPct": -50.93
+      },
+      {
+        "date": "2026-06-30",
+        "drawdownPct": -50.35
+      },
+      {
+        "date": "2026-07-01",
+        "drawdownPct": -51.73
+      },
+      {
+        "date": "2026-07-02",
+        "drawdownPct": -50.82
+      },
+      {
+        "date": "2026-07-03",
+        "drawdownPct": -49.75
+      },
+      {
+        "date": "2026-07-04",
+        "drawdownPct": -48.89
+      },
+      {
+        "date": "2026-07-05",
+        "drawdownPct": -48.44
+      },
+      {
+        "date": "2026-07-06",
+        "drawdownPct": -48
+      },
+      {
+        "date": "2026-07-07",
+        "drawdownPct": -47.82
+      },
+      {
+        "date": "2026-07-08",
+        "drawdownPct": -48.22
+      },
+      {
+        "date": "2026-07-09",
+        "drawdownPct": -49.29
+      },
+      {
+        "date": "2026-07-10",
+        "drawdownPct": -48.62
+      },
+      {
+        "date": "2026-07-11",
+        "drawdownPct": -47.88
+      },
+      {
+        "date": "2026-07-12",
+        "drawdownPct": -48
+      },
+      {
+        "date": "2026-07-13",
+        "drawdownPct": -48.04
+      },
+      {
+        "date": "2026-07-14",
+        "drawdownPct": -49.22
+      },
+      {
+        "date": "2026-07-15",
+        "drawdownPct": -47.09
+      },
+      {
+        "date": "2026-07-16",
+        "drawdownPct": -47.73
+      },
+      {
+        "date": "2026-07-17",
+        "drawdownPct": -48.19
+      },
+      {
+        "date": "2026-07-18",
+        "drawdownPct": -48.1
+      },
+      {
+        "date": "2026-07-19",
+        "drawdownPct": -47.41
+      },
+      {
+        "date": "2026-07-20",
+        "drawdownPct": -47.57
+      },
+      {
+        "date": "2026-07-21",
+        "drawdownPct": -46.92
+      },
+      {
+        "date": "2026-07-22",
+        "drawdownPct": -45.7
+      },
+      {
+        "date": "2026-07-23",
+        "drawdownPct": -45.99
+      },
+      {
+        "date": "2026-07-24",
+        "drawdownPct": -46.72
+      },
+      {
+        "date": "2026-07-25",
+        "drawdownPct": -47.51
+      },
+      {
+        "date": "2026-07-26",
+        "drawdownPct": -47.43
+      },
+      {
+        "date": "2026-07-27",
+        "drawdownPct": -46.45
+      },
+      {
+        "date": "2026-07-28",
+        "drawdownPct": -47.68
+      },
+      {
+        "date": "2026-07-29",
+        "drawdownPct": -47.54
+      },
+      {
+        "date": "2026-07-30",
+        "drawdownPct": -47.9
+      },
+      {
+        "date": "2026-07-31",
+        "drawdownPct": -47.36
+      },
+      {
+        "date": "2026-08-01",
+        "drawdownPct": -48.92
+      },
+      {
+        "date": "2026-08-02",
+        "drawdownPct": -49.23
+      },
+      {
+        "date": "2026-08-03",
+        "drawdownPct": -48.55
+      },
+      {
+        "date": "2026-08-04",
+        "drawdownPct": -48.49
+      },
+      {
+        "date": "2026-08-05",
+        "drawdownPct": -48.13
+      },
+      {
+        "date": "2026-08-06",
+        "drawdownPct": -47.64
+      },
+      {
+        "date": "2026-08-07",
+        "drawdownPct": -47.86
+      },
+      {
+        "date": "2026-08-08",
+        "drawdownPct": -47.36
+      },
+      {
+        "date": "2026-08-09",
+        "drawdownPct": -47.49
+      },
+      {
+        "date": "2026-08-10",
+        "drawdownPct": -47.59
+      },
+      {
+        "date": "2026-08-11",
+        "drawdownPct": -48.33
+      },
+      {
+        "date": "2026-08-12",
+        "drawdownPct": -48.73
+      },
+      {
+        "date": "2026-08-13",
+        "drawdownPct": -48.71
+      },
+      {
+        "date": "2026-08-14",
+        "drawdownPct": -48.87
+      },
+      {
+        "date": "2026-08-15",
+        "drawdownPct": -49.23
+      },
+      {
+        "date": "2026-08-16",
+        "drawdownPct": -49.22
+      },
+      {
+        "date": "2026-08-17",
+        "drawdownPct": -49.42
+      },
+      {
+        "date": "2026-08-18",
+        "drawdownPct": -47.97
+      },
+      {
+        "date": "2026-08-19",
+        "drawdownPct": -47.93
+      },
+      {
+        "date": "2026-08-20",
+        "drawdownPct": -44.51
+      },
+      {
+        "date": "2026-08-21",
+        "drawdownPct": -41.65
+      },
+      {
+        "date": "2026-08-22",
+        "drawdownPct": -37.41
+      },
+      {
+        "date": "2026-08-23",
+        "drawdownPct": -38.39
+      },
+      {
+        "date": "2026-08-24",
+        "drawdownPct": -37.8
+      },
+      {
+        "date": "2026-08-25",
+        "drawdownPct": -36.78
+      },
+      {
+        "date": "2026-08-26",
         "drawdownPct": -37.14
       },
       {
+        "date": "2026-08-27",
+        "drawdownPct": -36.51
+      },
+      {
+        "date": "2026-08-28",
+        "drawdownPct": -35.51
+      },
+      {
+        "date": "2026-08-29",
+        "drawdownPct": -37.48
+      },
+      {
+        "date": "2026-08-30",
+        "drawdownPct": -36.95
+      },
+      {
+        "date": "2026-08-31",
+        "drawdownPct": -37.4
+      },
+      {
+        "date": "2026-09-01",
+        "drawdownPct": -36.65
+      },
+      {
+        "date": "2026-09-02",
+        "drawdownPct": -37.34
+      },
+      {
+        "date": "2026-09-03",
+        "drawdownPct": -37.5
+      },
+      {
+        "date": "2026-09-04",
+        "drawdownPct": -34.45
+      },
+      {
+        "date": "2026-09-05",
+        "drawdownPct": -35.74
+      },
+      {
+        "date": "2026-09-06",
+        "drawdownPct": -35.56
+      },
+      {
+        "date": "2026-09-07",
+        "drawdownPct": -35.21
+      },
+      {
+        "date": "2026-09-08",
+        "drawdownPct": -36.28
+      },
+      {
+        "date": "2026-09-09",
+        "drawdownPct": -36.89
+      },
+      {
+        "date": "2026-09-10",
+        "drawdownPct": -36.81
+      },
+      {
+        "date": "2026-09-11",
+        "drawdownPct": -38.15
+      },
+      {
+        "date": "2026-09-12",
+        "drawdownPct": -37.63
+      },
+      {
+        "date": "2026-09-13",
+        "drawdownPct": -37.66
+      },
+      {
+        "date": "2026-09-14",
+        "drawdownPct": -37.87
+      },
+      {
+        "date": "2026-09-15",
+        "drawdownPct": -36.73
+      },
+      {
         "date": "2026-09-16",
-        "drawdownPct": -39.1
+        "drawdownPct": -38.7
       },
       {
         "date": "2026-09-17",
-        "drawdownPct": -38.28
+        "drawdownPct": -37.88
       },
       {
         "date": "2026-09-18",
-        "drawdownPct": -37.95
+        "drawdownPct": -37.54
       },
       {
         "date": "2026-09-19",
-        "drawdownPct": -34.29
+        "drawdownPct": -33.86
       },
       {
         "date": "2026-09-20",
-        "drawdownPct": -34.22
+        "drawdownPct": -33.79
       },
       {
         "date": "2026-09-21",
-        "drawdownPct": -34.31
+        "drawdownPct": -33.87
       },
       {
         "date": "2026-09-22",
-        "drawdownPct": -29.74
+        "drawdownPct": -29.28
       },
       {
         "date": "2026-09-23",
-        "drawdownPct": -29.62
+        "drawdownPct": -29.16
       },
       {
         "date": "2026-09-24",
-        "drawdownPct": -30.8
+        "drawdownPct": -30.34
       },
       {
         "date": "2026-09-25",
-        "drawdownPct": -30.97
+        "drawdownPct": -30.52
       },
       {
         "date": "2026-09-26",
-        "drawdownPct": -31.22
+        "drawdownPct": -30.76
       },
       {
         "date": "2026-09-27",
-        "drawdownPct": -30.82
+        "drawdownPct": -30.36
       },
       {
         "date": "2026-09-28",
-        "drawdownPct": -30.97
+        "drawdownPct": -30.52
       },
       {
         "date": "2026-09-29",
-        "drawdownPct": -31.68
+        "drawdownPct": -31.23
       },
       {
         "date": "2026-09-30",
-        "drawdownPct": -31.75
+        "drawdownPct": -31.3
       },
       {
         "date": "2026-10-01",
-        "drawdownPct": -31.53
+        "drawdownPct": -31.08
       },
       {
         "date": "2026-10-02",
-        "drawdownPct": -30.32
+        "drawdownPct": -29.86
       },
       {
         "date": "2026-10-03",
-        "drawdownPct": -30.6
+        "drawdownPct": -30.14
       },
       {
         "date": "2026-10-04",
-        "drawdownPct": -30.63
+        "drawdownPct": -30.17
       },
       {
         "date": "2026-10-05",
-        "drawdownPct": -29.1
+        "drawdownPct": -28.63
       },
       {
         "date": "2026-10-06",
-        "drawdownPct": -29.96
+        "drawdownPct": -29.5
       },
       {
         "date": "2026-10-07",
-        "drawdownPct": -29.77
+        "drawdownPct": -29.31
       },
       {
         "date": "2026-10-08",
-        "drawdownPct": -32.87
+        "drawdownPct": -31.18
+      },
+      {
+        "date": "2026-10-09",
+        "drawdownPct": -32.1
       }
     ]
   },
@@ -5874,48 +5862,48 @@
       "asset": "btc",
       "periodsPerYear": 365,
       "observations": 365,
-      "firstDate": "2025-10-09",
-      "lastDate": "2026-10-08",
-      "totalReturnPct": -32.87,
-      "annualizedVolPct": 44.3,
-      "sharpe": -0.9,
-      "sortino": -1.22,
-      "maxDrawdownPct": -52.04
+      "firstDate": "2025-10-10",
+      "lastDate": "2026-10-09",
+      "totalReturnPct": -32.1,
+      "annualizedVolPct": 44.17,
+      "sharpe": -0.88,
+      "sortino": -1.19,
+      "maxDrawdownPct": -51.73
     },
     {
       "asset": "eth",
       "periodsPerYear": 365,
-      "observations": 365,
-      "firstDate": "2025-10-09",
-      "lastDate": "2026-10-08",
-      "totalReturnPct": -43.04,
-      "annualizedVolPct": 61.61,
-      "sharpe": -0.92,
-      "sortino": -1.26,
-      "maxDrawdownPct": -64.2
+      "observations": 364,
+      "firstDate": "2025-10-10",
+      "lastDate": "2026-10-09",
+      "totalReturnPct": -34.6,
+      "annualizedVolPct": 60.25,
+      "sharpe": -0.71,
+      "sortino": -1,
+      "maxDrawdownPct": -63.08
     },
     {
       "asset": "sp500",
       "periodsPerYear": 252,
       "observations": 250,
-      "firstDate": "2025-10-09",
-      "lastDate": "2026-10-07",
-      "totalReturnPct": 17.3,
-      "annualizedVolPct": 12.71,
-      "sharpe": 1.27,
-      "sortino": 1.86,
+      "firstDate": "2025-10-10",
+      "lastDate": "2026-10-08",
+      "totalReturnPct": 19.19,
+      "annualizedVolPct": 12.54,
+      "sharpe": 1.42,
+      "sortino": 2.11,
       "maxDrawdownPct": -8.17
     },
     {
       "asset": "gold",
       "periodsPerYear": 252,
       "observations": 251,
-      "firstDate": "2025-10-09",
-      "lastDate": "2026-10-08",
-      "totalReturnPct": 6.07,
-      "annualizedVolPct": 27.63,
+      "firstDate": "2025-10-10",
+      "lastDate": "2026-10-09",
+      "totalReturnPct": 5.9,
+      "annualizedVolPct": 27.62,
       "sharpe": 0.21,
-      "sortino": 0.28,
+      "sortino": 0.27,
       "maxDrawdownPct": -25.54
     }
   ]
