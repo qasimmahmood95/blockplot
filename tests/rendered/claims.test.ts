@@ -406,6 +406,137 @@ describe.each(CURRENCIES)('%s: the overview heatmap', (currency) => {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * The y a drawn line reaches, per pixel, without needing Plot's scale.
+ *
+ * Several claims below are about *ordering* or *equality* of positions rather
+ * than about values, and those survive not knowing what a pixel is worth. It is
+ * the same reason these checks can be strict: no scale to re-derive means
+ * nothing to get wrong.
+ */
+const drawnLines = (route: string, svgIndex: number): { first: number; last: number }[] => {
+  const svg = [...page(route).querySelectorAll('svg')][svgIndex];
+  const out: { first: number; last: number }[] = [];
+  for (const path of svg?.querySelectorAll('path[d]') ?? []) {
+    const pts = [...(path.getAttribute('d') ?? '').matchAll(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)];
+    if (pts.length < 10) continue;
+    out.push({ first: Number(pts[0]?.[2]), last: Number(pts[pts.length - 1]?.[2]) });
+  }
+  return out;
+};
+
+/** Absolute y of a `<text>`, summing the translate chain. */
+const labelY = (el: Element): number => {
+  let y = 0;
+  let node: Element | null = el;
+  while (node && node.tagName.toLowerCase() !== 'svg') {
+    const m = /translate\(\s*[-\d.e+]+\s*[, ]\s*(-?[\d.]+(?:e[-+]?\d+)?)\s*\)/i.exec(
+      node.getAttribute('transform') ?? '',
+    );
+    if (m) y += Number(m[1]);
+    node = node.parentElement;
+  }
+  return y;
+};
+
+describe.each(CURRENCIES)('%s: /performance', (currency) => {
+  const route = `${prefixOf(currency)}/performance/`;
+
+  it('starts every series at the same height, because they are all rebased to 100', () => {
+    // "Every series is divided by its own close on the shared base date and
+    //  multiplied by 100, so the lines are directly comparable whatever their
+    //  units"
+    //
+    // Which means they all begin at 100, and 100 is one height — checkable
+    // without knowing what the axis is worth. A series rebased to the wrong
+    // date, or not rebased, starts somewhere else.
+    claim(route, 'divided by its own close on the shared base date');
+    for (const svgIndex of [0, 1]) {
+      const lines = drawnLines(route, svgIndex);
+      expect(lines.length, `svg ${svgIndex}`).toBeGreaterThan(2);
+      const starts = [...new Set(lines.map((l) => l.first.toFixed(2)))];
+      expect(starts, `svg ${svgIndex}: every line starts at the base`).toHaveLength(1);
+    }
+  });
+
+  it('ranks its tiles the way the chart ranks its lines', () => {
+    // The tiles report a final index; the chart draws where each line ends.
+    // They come from one `rebaseCovering` call and the page says so — "the tiles
+    // describe the same window the build drew, from the same function, so a
+    // figure here and the height of a line cannot disagree". Nothing was
+    // checking it, and a tile computed over a different window would still look
+    // entirely plausible.
+    //
+    // Compared as an ordering rather than by converting pixels to values: the
+    // asset with the highest index must be the line ending highest, all the way
+    // down. Pairing is by each line's own end label, so this cannot be satisfied
+    // by two lists that merely happen to be sorted.
+    const doc = page(route);
+    const tiles = [...doc.querySelectorAll('dl.stat-grid .stat')].map((stat) => ({
+      name: textOf(stat.querySelector('dt')),
+      index: Number(textOf(stat.querySelector('dd.sub')).replace(/\D+/g, '')),
+    }));
+    expect(tiles.length).toBeGreaterThan(2);
+    // The wide variant, which is the one that carries end labels.
+    const svg = [...doc.querySelectorAll('svg')][1];
+    const names = new Set(tiles.map((t) => t.name));
+    const labels = [...(svg?.querySelectorAll('text') ?? [])]
+      .filter((t) => names.has(textOf(t)))
+      .map((t) => ({ name: textOf(t), y: labelY(t) }));
+    expect(labels.length, 'an end label per tile').toBe(tiles.length);
+    const byIndex = [...tiles].sort((a, b) => b.index - a.index).map((t) => t.name);
+    const byHeight = [...labels].sort((a, b) => a.y - b.y).map((l) => l.name);
+    expect(byHeight).toEqual(byIndex);
+  });
+});
+
+describe.each(CURRENCIES)('%s: /cycles', (currency) => {
+  const route = `${prefixOf(currency)}/cycles/`;
+
+  it('starts every epoch at the same height, because each is divided by its own halving close', () => {
+    // "the daily close divided by that epoch's halving-day close"
+    //
+    // So every line starts at ×1 whatever the epoch did afterwards. An epoch
+    // normalised against the wrong day starts somewhere else, and on a log axis
+    // a wrong base is a vertical shift of the whole line — which looks like a
+    // cycle that simply performed differently.
+    claim(route, "divided by that epoch's halving-day close");
+    for (const svgIndex of [0, 1]) {
+      const lines = drawnLines(route, svgIndex);
+      expect(lines.length, `svg ${svgIndex}`).toBeGreaterThan(2);
+      expect([...new Set(lines.map((l) => l.first.toFixed(2)))], `svg ${svgIndex}`).toHaveLength(1);
+    }
+  });
+});
+
+describe.each(CURRENCIES)('%s: /volatility', (currency) => {
+  const route = `${prefixOf(currency)}/volatility/`;
+
+  it('prints one drawdown, in the tile and in the note beneath the chart', () => {
+    // The figure and its two dates appear twice on the page, from one dataset.
+    // Two renderings of one number is the shape of this project's most
+    // expensive defect — `/holding-periods` printed −69.4% where the overview
+    // printed -69.3% — so it is worth pinning wherever it recurs.
+    const doc = page(route);
+    const tile = [...doc.querySelectorAll('.stat')].find((s) =>
+      /Max drawdown/.test(textOf(s.querySelector('dt'))),
+    );
+    const figure = textOf(tile?.querySelector('dd.num'));
+    const dates = textOf(tile?.querySelector('dd.sub'));
+    const note = claim(route, 'The deepest decline was');
+    expect(note).toContain(figure);
+    for (const date of dates.split('→').map((d) => d.trim())) {
+      expect(note, `${date} from the tile`).toContain(date);
+    }
+    // And the drawdown is a fall: negative, and its peak before its trough.
+    expect(figure.startsWith('−')).toBe(true);
+    const [peak, trough] = dates.split('→').map((d) => d.trim());
+    expect(String(peak) < String(trough), `${peak} before ${trough}`).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+
 describe.each(CURRENCIES)('%s: /real-returns', (currency) => {
   const route = `${prefixOf(currency)}/real-returns/`;
 

@@ -656,9 +656,11 @@ take.
 What the rendered gate does **not** cover yet, measured by mutating the source
 and watching it stay green:
 
-- **Nine of eleven page types have no claim checks.** Only `/holding-periods`,
-  `/real-returns` and the overview heatmap are covered. The chart-geometry
-  checks are universal, so every page with an SVG has those.
+- **Six of twelve page types have no claim checks.** Covered:
+  `/holding-periods`, `/real-returns`, the overview heatmap, `/performance`,
+  `/cycles`, `/volatility`. Uncovered: `/correlation`, `/dca`, `/flows`,
+  `/network`, `/holdings`, `/methodology`. The chart-geometry and privacy
+  checks are universal, so every page has those.
 - **Nothing outside the SVG is checked visually.** Colour, spacing, weight and
   everything in CSS is uncovered; a theme token going wrong would not fail here.
   A legend or annotation drawn outside the `<svg>` but inside `.chart-frame` is
