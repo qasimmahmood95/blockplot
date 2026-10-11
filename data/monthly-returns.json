@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "source": "blockchain.info",
   "currency": "usd",
-  "fetchedAt": "2026-10-11T05:22:57.553Z",
-  "asOf": "2026-10-10",
+  "fetchedAt": "2026-10-11T12:33:27.346Z",
+  "asOf": "2026-10-11",
   "months": [
     {
       "year": 2010,
@@ -973,7 +973,7 @@
     {
       "year": 2026,
       "month": 10,
-      "returnPct": -1.28
+      "returnPct": -0.85
     }
   ],
   "years": [
@@ -1043,7 +1043,7 @@
     },
     {
       "year": 2026,
-      "returnPct": -6.63
+      "returnPct": -6.23
     }
   ]
 }
