@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-10-13T00:28:43.241Z",
+  "fetchedAt": "2026-10-13T13:59:53.270Z",
   "asOf": "2026-08-31",
-  "pricesThrough": "2026-10-12",
+  "pricesThrough": "2026-10-13",
   "deflator": {
     "source": "fred",
     "sourceSeries": "CPIAUCSL",
