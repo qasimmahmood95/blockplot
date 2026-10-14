@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-10-14T04:32:13.708Z",
-  "asOf": "2026-10-13",
+  "fetchedAt": "2026-10-14T11:36:26.190Z",
+  "asOf": "2026-10-14",
   "minAnnualiseDays": 365,
   "years": [
     {
@@ -104,7 +104,7 @@
     {
       "year": 2026,
       "basisDate": "2025-12-31",
-      "closeDate": "2026-10-13",
+      "closeDate": "2026-10-14",
       "whole": false
     }
   ],
@@ -224,9 +224,9 @@
     {
       "buyYear": 2010,
       "sellYear": 2026,
-      "totalPct": 135531606.23,
-      "annualPct": 140.13,
-      "days": 5887
+      "totalPct": 137627005.58,
+      "annualPct": 140.32,
+      "days": 5888
     },
     {
       "buyYear": 2011,
@@ -336,9 +336,9 @@
     {
       "buyYear": 2011,
       "sellYear": 2026,
-      "totalPct": 31934589.5,
-      "annualPct": 123.22,
-      "days": 5765
+      "totalPct": 32428318.46,
+      "annualPct": 123.4,
+      "days": 5766
     },
     {
       "buyYear": 2012,
@@ -441,9 +441,9 @@
     {
       "buyYear": 2012,
       "sellYear": 2026,
-      "totalPct": 2138473.66,
-      "annualPct": 96.28,
-      "days": 5400
+      "totalPct": 2171537.26,
+      "annualPct": 96.46,
+      "days": 5401
     },
     {
       "buyYear": 2013,
@@ -539,9 +539,9 @@
     {
       "buyYear": 2013,
       "sellYear": 2026,
-      "totalPct": 735141.33,
-      "annualPct": 90.78,
-      "days": 5034
+      "totalPct": 746508.59,
+      "annualPct": 90.97,
+      "days": 5035
     },
     {
       "buyYear": 2014,
@@ -630,9 +630,9 @@
     {
       "buyYear": 2014,
       "sellYear": 2026,
-      "totalPct": 13761.03,
-      "annualPct": 47.08,
-      "days": 4669
+      "totalPct": 13975.33,
+      "annualPct": 47.24,
+      "days": 4670
     },
     {
       "buyYear": 2015,
@@ -714,9 +714,9 @@
     {
       "buyYear": 2015,
       "sellYear": 2026,
-      "totalPct": 30830.18,
-      "annualPct": 62.68,
-      "days": 4304
+      "totalPct": 31308.38,
+      "annualPct": 62.87,
+      "days": 4305
     },
     {
       "buyYear": 2016,
@@ -791,9 +791,9 @@
     {
       "buyYear": 2016,
       "sellYear": 2026,
-      "totalPct": 21276.28,
-      "annualPct": 64.45,
-      "days": 3939
+      "totalPct": 21606.77,
+      "annualPct": 64.67,
+      "days": 3940
     },
     {
       "buyYear": 2017,
@@ -861,9 +861,9 @@
     {
       "buyYear": 2017,
       "sellYear": 2026,
-      "totalPct": 7830.29,
-      "annualPct": 56.37,
-      "days": 3573
+      "totalPct": 7952.9,
+      "annualPct": 56.59,
+      "days": 3574
     },
     {
       "buyYear": 2018,
@@ -924,9 +924,9 @@
     {
       "buyYear": 2018,
       "sellYear": 2026,
-      "totalPct": 561.39,
-      "annualPct": 24,
-      "days": 3208
+      "totalPct": 571.62,
+      "annualPct": 24.21,
+      "days": 3209
     },
     {
       "buyYear": 2019,
@@ -980,9 +980,9 @@
     {
       "buyYear": 2019,
       "sellYear": 2026,
-      "totalPct": 1943.67,
-      "annualPct": 47.35,
-      "days": 2843
+      "totalPct": 1975.27,
+      "annualPct": 47.62,
+      "days": 2844
     },
     {
       "buyYear": 2020,
@@ -1029,9 +1029,9 @@
     {
       "buyYear": 2020,
       "sellYear": 2026,
-      "totalPct": 1028.68,
-      "annualPct": 42.94,
-      "days": 2478
+      "totalPct": 1046.13,
+      "annualPct": 43.24,
+      "days": 2479
     },
     {
       "buyYear": 2021,
@@ -1071,9 +1071,9 @@
     {
       "buyYear": 2021,
       "sellYear": 2026,
-      "totalPct": 191.9,
-      "annualPct": 20.35,
-      "days": 2112
+      "totalPct": 196.41,
+      "annualPct": 20.66,
+      "days": 2113
     },
     {
       "buyYear": 2022,
@@ -1106,9 +1106,9 @@
     {
       "buyYear": 2022,
       "sellYear": 2026,
-      "totalPct": 76.49,
-      "annualPct": 12.61,
-      "days": 1747
+      "totalPct": 79.22,
+      "annualPct": 12.96,
+      "days": 1748
     },
     {
       "buyYear": 2023,
@@ -1134,9 +1134,9 @@
     {
       "buyYear": 2023,
       "sellYear": 2026,
-      "totalPct": 347.1,
-      "annualPct": 48.56,
-      "days": 1382
+      "totalPct": 354.01,
+      "annualPct": 49.12,
+      "days": 1383
     },
     {
       "buyYear": 2024,
@@ -1155,9 +1155,9 @@
     {
       "buyYear": 2024,
       "sellYear": 2026,
-      "totalPct": 86.17,
-      "annualPct": 25.01,
-      "days": 1017
+      "totalPct": 89.05,
+      "annualPct": 25.67,
+      "days": 1018
     },
     {
       "buyYear": 2025,
@@ -1169,16 +1169,16 @@
     {
       "buyYear": 2025,
       "sellYear": 2026,
-      "totalPct": -16.55,
-      "annualPct": -9.65,
-      "days": 651
+      "totalPct": -15.26,
+      "annualPct": -8.86,
+      "days": 652
     },
     {
       "buyYear": 2026,
       "sellYear": 2026,
-      "totalPct": -6.02,
+      "totalPct": -4.56,
       "annualPct": null,
-      "days": 286
+      "days": 287
     }
   ],
   "summary": {
