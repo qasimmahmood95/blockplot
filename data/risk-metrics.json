@@ -1,18 +1,14 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-10-14T21:30:29.035Z",
-  "asOf": "2026-10-14",
+  "fetchedAt": "2026-10-15T04:14:36.190Z",
+  "asOf": "2026-10-15",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
   "rollingVol": [
     {
       "windowDays": 30,
       "series": [
-        {
-          "date": "2025-10-15",
-          "volPct": 42.52
-        },
         {
           "date": "2025-10-16",
           "volPct": 43.09
@@ -1475,10 +1471,6 @@
       "windowDays": 90,
       "series": [
         {
-          "date": "2025-10-15",
-          "volPct": 33.83
-        },
-        {
           "date": "2025-10-16",
           "volPct": 34.05
         },
@@ -2939,10 +2931,6 @@
     {
       "windowDays": 365,
       "series": [
-        {
-          "date": "2025-10-15",
-          "volPct": 44.19
-        },
         {
           "date": "2025-10-16",
           "volPct": 44.23
@@ -4408,52 +4396,48 @@
     "troughDate": "2026-07-01",
     "series": [
       {
-        "date": "2025-10-15",
+        "date": "2025-10-16",
         "drawdownPct": 0
       },
       {
-        "date": "2025-10-16",
-        "drawdownPct": -1.97
-      },
-      {
         "date": "2025-10-17",
-        "drawdownPct": -4.33
+        "drawdownPct": -2.41
       },
       {
         "date": "2025-10-18",
-        "drawdownPct": -5.82
+        "drawdownPct": -3.93
       },
       {
         "date": "2025-10-19",
-        "drawdownPct": -5.18
+        "drawdownPct": -3.28
       },
       {
         "date": "2025-10-20",
-        "drawdownPct": -3.9
+        "drawdownPct": -1.97
       },
       {
         "date": "2025-10-21",
-        "drawdownPct": -2.24
+        "drawdownPct": -0.28
       },
       {
         "date": "2025-10-22",
-        "drawdownPct": -4.21
+        "drawdownPct": -2.29
       },
       {
         "date": "2025-10-23",
-        "drawdownPct": -4.84
+        "drawdownPct": -2.93
       },
       {
         "date": "2025-10-24",
-        "drawdownPct": -2.62
+        "drawdownPct": -0.66
       },
       {
         "date": "2025-10-25",
-        "drawdownPct": -1.8
+        "drawdownPct": 0
       },
       {
         "date": "2025-10-26",
-        "drawdownPct": -1.27
+        "drawdownPct": 0
       },
       {
         "date": "2025-10-27",
@@ -5865,7 +5849,11 @@
       },
       {
         "date": "2026-10-14",
-        "drawdownPct": -28.55
+        "drawdownPct": -27.36
+      },
+      {
+        "date": "2026-10-15",
+        "drawdownPct": -29.35
       }
     ]
   },
@@ -5874,22 +5862,22 @@
       "asset": "btc",
       "periodsPerYear": 365,
       "observations": 365,
-      "firstDate": "2025-10-15",
-      "lastDate": "2026-10-14",
-      "totalReturnPct": -27.7,
-      "annualizedVolPct": 44.02,
-      "sharpe": -0.74,
-      "sortino": -1.02,
+      "firstDate": "2025-10-16",
+      "lastDate": "2026-10-15",
+      "totalReturnPct": -27.07,
+      "annualizedVolPct": 44.09,
+      "sharpe": -0.72,
+      "sortino": -0.99,
       "maxDrawdownPct": -48.81
     },
     {
       "asset": "eth",
       "periodsPerYear": 365,
-      "observations": 365,
-      "firstDate": "2025-10-15",
-      "lastDate": "2026-10-14",
-      "totalReturnPct": -39.31,
-      "annualizedVolPct": 61.27,
+      "observations": 364,
+      "firstDate": "2025-10-16",
+      "lastDate": "2026-10-15",
+      "totalReturnPct": -39.39,
+      "annualizedVolPct": 61.48,
       "sharpe": -0.82,
       "sortino": -1.13,
       "maxDrawdownPct": -62.37
@@ -5898,24 +5886,24 @@
       "asset": "sp500",
       "periodsPerYear": 252,
       "observations": 250,
-      "firstDate": "2025-10-15",
-      "lastDate": "2026-10-13",
-      "totalReturnPct": 17,
-      "annualizedVolPct": 12.69,
-      "sharpe": 1.25,
-      "sortino": 1.86,
+      "firstDate": "2025-10-16",
+      "lastDate": "2026-10-14",
+      "totalReturnPct": 16.44,
+      "annualizedVolPct": 12.72,
+      "sharpe": 1.21,
+      "sortino": 1.79,
       "maxDrawdownPct": -9.1
     },
     {
       "asset": "gold",
       "periodsPerYear": 252,
       "observations": 251,
-      "firstDate": "2025-10-15",
-      "lastDate": "2026-10-14",
-      "totalReturnPct": -1.77,
-      "annualizedVolPct": 29.01,
-      "sharpe": -0.06,
-      "sortino": -0.08,
+      "firstDate": "2025-10-16",
+      "lastDate": "2026-10-15",
+      "totalReturnPct": -3.23,
+      "annualizedVolPct": 28.97,
+      "sharpe": -0.11,
+      "sortino": -0.15,
       "maxDrawdownPct": -24.94
     }
   ]
