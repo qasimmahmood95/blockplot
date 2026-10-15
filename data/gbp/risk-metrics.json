@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-10-15T11:15:06.124Z",
+  "fetchedAt": "2026-10-15T16:45:37.167Z",
   "asOf": "2026-10-15",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -1467,7 +1467,7 @@
         },
         {
           "date": "2026-10-15",
-          "volPct": 40.16
+          "volPct": 40.09
         }
       ]
     },
@@ -2932,7 +2932,7 @@
         },
         {
           "date": "2026-10-15",
-          "volPct": 37.76
+          "volPct": 37.73
         }
       ]
     },
@@ -4397,7 +4397,7 @@
         },
         {
           "date": "2026-10-15",
-          "volPct": 43.64
+          "volPct": 43.63
         }
       ]
     }
@@ -5865,7 +5865,7 @@
       },
       {
         "date": "2026-10-15",
-        "drawdownPct": -28.98
+        "drawdownPct": -27.98
       }
     ]
   },
@@ -5876,10 +5876,10 @@
       "observations": 365,
       "firstDate": "2025-10-16",
       "lastDate": "2026-10-15",
-      "totalReturnPct": -26.07,
-      "annualizedVolPct": 43.37,
-      "sharpe": -0.7,
-      "sortino": -0.96,
+      "totalReturnPct": -25.03,
+      "annualizedVolPct": 43.31,
+      "sharpe": -0.67,
+      "sortino": -0.92,
       "maxDrawdownPct": -48.53
     },
     {
@@ -5888,10 +5888,10 @@
       "observations": 365,
       "firstDate": "2025-10-16",
       "lastDate": "2026-10-15",
-      "totalReturnPct": -38.51,
-      "annualizedVolPct": 59.18,
-      "sharpe": -0.82,
-      "sortino": -1.14,
+      "totalReturnPct": -36.72,
+      "annualizedVolPct": 59.13,
+      "sharpe": -0.78,
+      "sortino": -1.08,
       "maxDrawdownPct": -62.33
     },
     {
@@ -5912,10 +5912,10 @@
       "observations": 251,
       "firstDate": "2025-10-16",
       "lastDate": "2026-10-15",
-      "totalReturnPct": -1.7,
-      "annualizedVolPct": 27.51,
-      "sharpe": -0.06,
-      "sortino": -0.08,
+      "totalReturnPct": -1.82,
+      "annualizedVolPct": 27.5,
+      "sharpe": -0.07,
+      "sortino": -0.09,
       "maxDrawdownPct": -25.54
     }
   ]
