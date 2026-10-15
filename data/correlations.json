@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-10-15T04:14:36.190Z",
+  "fetchedAt": "2026-10-15T11:15:06.124Z",
   "asOf": "2026-10-15",
   "windowDays": 90,
   "minObs": 40,
@@ -12896,6 +12896,10 @@
         {
           "date": "2026-10-13",
           "corr": 0.88
+        },
+        {
+          "date": "2026-10-14",
+          "corr": 0.88
         }
       ],
       "regimes": [
@@ -12912,9 +12916,9 @@
           "regime": "positive",
           "startDate": "2018-01-16",
           "confirmedFrom": "2018-01-16",
-          "endDate": "2026-10-13",
-          "observations": 3193,
-          "days": 3193,
+          "endDate": "2026-10-14",
+          "observations": 3194,
+          "days": 3194,
           "meanCorr": 0.83
         }
       ]
@@ -22807,6 +22811,10 @@
         {
           "date": "2026-10-13",
           "corr": 0.34
+        },
+        {
+          "date": "2026-10-14",
+          "corr": 0.35
         }
       ],
       "regimes": [
@@ -22949,9 +22957,9 @@
           "regime": "positive",
           "startDate": "2025-08-01",
           "confirmedFrom": "2025-08-01",
-          "endDate": "2026-10-13",
-          "observations": 302,
-          "days": 439,
+          "endDate": "2026-10-14",
+          "observations": 303,
+          "days": 440,
           "meanCorr": 0.49
         }
       ]
@@ -32848,6 +32856,10 @@
         {
           "date": "2026-10-13",
           "corr": 0.49
+        },
+        {
+          "date": "2026-10-14",
+          "corr": 0.49
         }
       ],
       "regimes": [
@@ -33017,9 +33029,9 @@
           "regime": "positive",
           "startDate": "2026-06-05",
           "confirmedFrom": "2026-06-05",
-          "endDate": "2026-10-13",
-          "observations": 90,
-          "days": 131,
+          "endDate": "2026-10-14",
+          "observations": 91,
+          "days": 132,
           "meanCorr": 0.46
         }
       ]
@@ -42916,6 +42928,10 @@
         {
           "date": "2026-10-13",
           "corr": -0.3
+        },
+        {
+          "date": "2026-10-14",
+          "corr": -0.31
         }
       ],
       "regimes": [
@@ -43058,9 +43074,9 @@
           "regime": "negative",
           "startDate": "2026-06-17",
           "confirmedFrom": "2026-06-17",
-          "endDate": "2026-10-13",
-          "observations": 82,
-          "days": 119,
+          "endDate": "2026-10-14",
+          "observations": 83,
+          "days": 120,
           "meanCorr": -0.36
         }
       ]
@@ -43070,10 +43086,6 @@
       "a": "eth",
       "b": "sp500",
       "series": [
-        {
-          "date": "2025-10-14",
-          "corr": 0.65
-        },
         {
           "date": "2025-10-15",
           "corr": 0.64
@@ -44073,6 +44085,10 @@
         {
           "date": "2026-10-13",
           "corr": 0.28
+        },
+        {
+          "date": "2026-10-14",
+          "corr": 0.3
         }
       ],
       "regimes": [
@@ -44080,9 +44096,9 @@
           "regime": "positive",
           "startDate": "2024-06-06",
           "confirmedFrom": "2024-06-06",
-          "endDate": "2026-10-13",
-          "observations": 590,
-          "days": 860,
+          "endDate": "2026-10-14",
+          "observations": 591,
+          "days": 861,
           "meanCorr": 0.48
         }
       ]
@@ -45089,8 +45105,12 @@
           "corr": 0.47
         },
         {
+          "date": "2026-10-14",
+          "corr": 0.47
+        },
+        {
           "date": "2026-10-15",
-          "corr": 0.46
+          "corr": 0.45
         }
       ],
       "regimes": [
@@ -45126,7 +45146,7 @@
           "startDate": "2026-06-05",
           "confirmedFrom": "2026-06-05",
           "endDate": "2026-10-15",
-          "observations": 91,
+          "observations": 92,
           "days": 133,
           "meanCorr": 0.43
         }
@@ -46134,8 +46154,12 @@
           "corr": -0.4
         },
         {
+          "date": "2026-10-14",
+          "corr": -0.41
+        },
+        {
           "date": "2026-10-15",
-          "corr": -0.36
+          "corr": -0.37
         }
       ],
       "regimes": [
@@ -46171,7 +46195,7 @@
           "startDate": "2026-06-01",
           "confirmedFrom": "2026-06-01",
           "endDate": "2026-10-15",
-          "observations": 95,
+          "observations": 96,
           "days": 137,
           "meanCorr": -0.41
         }

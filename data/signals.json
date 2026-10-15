@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-10-15T04:14:36.190Z",
+  "fetchedAt": "2026-10-15T11:15:06.124Z",
   "asOf": "2026-10-15",
   "thresholds": {
     "volWindowDays": 90,
@@ -22,7 +22,7 @@
   "vol": {
     "state": "normal",
     "since": "2026-08-20",
-    "observations": 56,
+    "observations": 57,
     "pending": null,
     "history": [
       {
@@ -48,7 +48,7 @@
       {
         "state": "normal",
         "since": "2026-08-20",
-        "observations": 56
+        "observations": 57
       }
     ]
   },
@@ -83,24 +83,24 @@
   "ath": {
     "date": "2025-10-07",
     "price": 124776.68,
-    "latestDate": "2026-10-14",
-    "latestPrice": 83093.75,
-    "fromAthPct": -33.41,
-    "daysSince": 372,
+    "latestDate": "2026-10-15",
+    "latestPrice": 81566.64,
+    "fromAthPct": -34.63,
+    "daysSince": 373,
     "isNew": false
   },
   "cycle": {
     "halvingDate": "2024-04-20",
     "peakMultiple": 1.955,
     "peakDay": 535,
-    "latestMultiple": 1.3019,
-    "latestDay": 907,
+    "latestMultiple": 1.278,
+    "latestDay": 908,
     "isNew": false
   },
   "dominance": {
-    "latestPct": 59.46,
+    "latestPct": 60.01,
     "latestDate": "2026-10-15",
-    "changePp": 0.98,
+    "changePp": 1.53,
     "overDays": 30,
     "fromDate": "2026-09-15"
   }
