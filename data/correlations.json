@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-10-16T04:10:19.238Z",
+  "fetchedAt": "2026-10-16T11:09:36.969Z",
   "asOf": "2026-10-16",
   "windowDays": 90,
   "minObs": 40,
@@ -43087,10 +43087,6 @@
       "b": "sp500",
       "series": [
         {
-          "date": "2025-10-15",
-          "corr": 0.64
-        },
-        {
           "date": "2025-10-16",
           "corr": 0.64
         },
@@ -44089,6 +44085,10 @@
         {
           "date": "2026-10-14",
           "corr": 0.3
+        },
+        {
+          "date": "2026-10-15",
+          "corr": 0.29
         }
       ],
       "regimes": [
@@ -44096,9 +44096,9 @@
           "regime": "positive",
           "startDate": "2024-06-06",
           "confirmedFrom": "2024-06-06",
-          "endDate": "2026-10-14",
-          "observations": 591,
-          "days": 861,
+          "endDate": "2026-10-15",
+          "observations": 592,
+          "days": 862,
           "meanCorr": 0.48
         }
       ]
@@ -45105,6 +45105,10 @@
           "corr": 0.47
         },
         {
+          "date": "2026-10-15",
+          "corr": 0.47
+        },
+        {
           "date": "2026-10-16",
           "corr": 0.47
         }
@@ -45142,7 +45146,7 @@
           "startDate": "2026-06-05",
           "confirmedFrom": "2026-06-05",
           "endDate": "2026-10-16",
-          "observations": 92,
+          "observations": 93,
           "days": 134,
           "meanCorr": 0.43
         }
@@ -46150,8 +46154,12 @@
           "corr": -0.41
         },
         {
+          "date": "2026-10-15",
+          "corr": -0.4
+        },
+        {
           "date": "2026-10-16",
-          "corr": -0.39
+          "corr": -0.4
         }
       ],
       "regimes": [
@@ -46187,7 +46195,7 @@
           "startDate": "2026-06-01",
           "confirmedFrom": "2026-06-01",
           "endDate": "2026-10-16",
-          "observations": 96,
+          "observations": 97,
           "days": 138,
           "meanCorr": -0.41
         }
