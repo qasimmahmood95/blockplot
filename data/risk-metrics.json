@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-10-18T10:48:04.516Z",
+  "fetchedAt": "2026-10-18T15:43:12.151Z",
   "asOf": "2026-10-18",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -5829,7 +5829,7 @@
       },
       {
         "date": "2026-10-18",
-        "drawdownPct": -28.26
+        "drawdownPct": -29.24
       }
     ]
   },
@@ -5840,10 +5840,10 @@
       "observations": 365,
       "firstDate": "2025-10-19",
       "lastDate": "2026-10-18",
-      "totalReturnPct": -23.44,
+      "totalReturnPct": -24.48,
       "annualizedVolPct": 43.96,
-      "sharpe": -0.61,
-      "sortino": -0.84,
+      "sharpe": -0.64,
+      "sortino": -0.89,
       "maxDrawdownPct": -48.81
     },
     {
@@ -5852,10 +5852,10 @@
       "observations": 365,
       "firstDate": "2025-10-19",
       "lastDate": "2026-10-18",
-      "totalReturnPct": -39.33,
+      "totalReturnPct": -40.51,
       "annualizedVolPct": 61.16,
-      "sharpe": -0.82,
-      "sortino": -1.13,
+      "sharpe": -0.85,
+      "sortino": -1.18,
       "maxDrawdownPct": -62.37
     },
     {
