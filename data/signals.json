@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-10-19T22:13:49.731Z",
-  "asOf": "2026-10-19",
+  "fetchedAt": "2026-10-20T04:28:30.299Z",
+  "asOf": "2026-10-20",
   "thresholds": {
     "volWindowDays": 90,
     "volLowPct": 35,
@@ -27,8 +27,8 @@
     "history": [
       {
         "state": "normal",
-        "since": "2025-10-20",
-        "observations": 170
+        "since": "2025-10-21",
+        "observations": 169
       },
       {
         "state": "high",
@@ -55,13 +55,13 @@
   "drawdown": {
     "state": "-20",
     "since": "2026-09-19",
-    "observations": 31,
+    "observations": 32,
     "pending": null,
     "history": [
       {
         "state": "0",
-        "since": "2025-10-20",
-        "observations": 31
+        "since": "2025-10-21",
+        "observations": 30
       },
       {
         "state": "-20",
@@ -76,7 +76,7 @@
       {
         "state": "-20",
         "since": "2026-09-19",
-        "observations": 31
+        "observations": 32
       }
     ]
   },
@@ -98,10 +98,10 @@
     "isNew": false
   },
   "dominance": {
-    "latestPct": 59.58,
-    "latestDate": "2026-10-19",
-    "changePp": 1.22,
+    "latestPct": 59.59,
+    "latestDate": "2026-10-20",
+    "changePp": 0.87,
     "overDays": 30,
-    "fromDate": "2026-09-19"
+    "fromDate": "2026-09-20"
   }
 }
