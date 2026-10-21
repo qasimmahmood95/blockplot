@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "source": "blockchain.info",
   "currency": "gbp",
-  "fetchedAt": "2026-10-21T11:34:27.137Z",
-  "asOf": "2026-10-15",
+  "fetchedAt": "2026-10-21T17:01:00.997Z",
+  "asOf": "2026-10-18",
   "months": [
     {
       "year": 2010,
@@ -158,12 +158,12 @@
     {
       "year": 2013,
       "month": 3,
-      "returnPct": 196.2
+      "returnPct": 197.18
     },
     {
       "year": 2013,
       "month": 4,
-      "returnPct": 53.33
+      "returnPct": 52.83
     },
     {
       "year": 2013,
@@ -458,12 +458,12 @@
     {
       "year": 2018,
       "month": 3,
-      "returnPct": -36.49
+      "returnPct": -36.74
     },
     {
       "year": 2018,
       "month": 4,
-      "returnPct": 40.06
+      "returnPct": 40.62
     },
     {
       "year": 2018,
@@ -973,7 +973,7 @@
     {
       "year": 2026,
       "month": 10,
-      "returnPct": -2.18
+      "returnPct": -3.05
     }
   ],
   "years": [
@@ -1043,7 +1043,7 @@
     },
     {
       "year": 2026,
-      "returnPct": -6.23
+      "returnPct": -7.06
     }
   ]
 }
