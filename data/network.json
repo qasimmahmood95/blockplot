@@ -1,21 +1,13 @@
 {
   "schemaVersion": 1,
-  "fetchedAt": "2026-10-21T21:30:03.519Z",
-  "asOf": "2026-10-19",
+  "fetchedAt": "2026-10-22T04:19:28.929Z",
+  "asOf": "2026-10-21",
   "keepDays": 730,
   "hashRate": {
     "unit": "EH/s",
-    "average7d": 1040.3,
-    "change30dPct": 12.09,
+    "average7d": 1050.4,
+    "change30dPct": 11.59,
     "series": [
-      {
-        "date": "2024-10-20",
-        "value": 791.62
-      },
-      {
-        "date": "2024-10-21",
-        "value": 782.46
-      },
       {
         "date": "2024-10-22",
         "value": 638.13
@@ -2915,22 +2907,22 @@
       {
         "date": "2026-10-19",
         "value": 1069.19
+      },
+      {
+        "date": "2026-10-20",
+        "value": 1153.05
+      },
+      {
+        "date": "2026-10-21",
+        "value": 1055.21
       }
     ]
   },
   "txCount": {
     "unit": "tx/day",
-    "average30d": 700693,
-    "change30dPct": 2.3,
+    "average30d": 703137,
+    "change30dPct": 0.91,
     "series": [
-      {
-        "date": "2024-10-20",
-        "value": 778073
-      },
-      {
-        "date": "2024-10-21",
-        "value": 835011
-      },
       {
         "date": "2024-10-22",
         "value": 700174
@@ -5830,23 +5822,23 @@
       {
         "date": "2026-10-19",
         "value": 663650
+      },
+      {
+        "date": "2026-10-20",
+        "value": 808860
+      },
+      {
+        "date": "2026-10-21",
+        "value": 709817
       }
     ]
   },
   "feePerTx": {
     "unit": "sats/tx",
-    "average30d": 427,
-    "change30dPct": -9.16,
-    "percentile": 9,
+    "average30d": 423,
+    "change30dPct": -13,
+    "percentile": 7,
     "series": [
-      {
-        "date": "2024-10-20",
-        "value": 1739
-      },
-      {
-        "date": "2024-10-21",
-        "value": 2098
-      },
       {
         "date": "2024-10-22",
         "value": 3669
@@ -8746,13 +8738,21 @@
       {
         "date": "2026-10-19",
         "value": 375
+      },
+      {
+        "date": "2026-10-20",
+        "value": 323
+      },
+      {
+        "date": "2026-10-21",
+        "value": 354
       }
     ]
   },
   "fees": {
     "source": "mempool.space",
     "tiers": {
-      "fastestFee": 1,
+      "fastestFee": 2,
       "halfHourFee": 1,
       "hourFee": 1,
       "economyFee": 1,
