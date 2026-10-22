@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-10-21T11:34:27.137Z",
-  "asOf": "2026-10-21",
+  "fetchedAt": "2026-10-22T11:34:41.457Z",
+  "asOf": "2026-10-22",
   "thresholds": {
     "volWindowDays": 90,
     "volLowPct": 35,
@@ -22,13 +22,13 @@
   "vol": {
     "state": "normal",
     "since": "2026-08-20",
-    "observations": 57,
+    "observations": 64,
     "pending": null,
     "history": [
       {
         "state": "normal",
-        "since": "2025-10-22",
-        "observations": 269
+        "since": "2025-10-23",
+        "observations": 268
       },
       {
         "state": "low",
@@ -38,20 +38,20 @@
       {
         "state": "normal",
         "since": "2026-08-20",
-        "observations": 57
+        "observations": 64
       }
     ]
   },
   "drawdown": {
     "state": "-20",
     "since": "2026-09-19",
-    "observations": 33,
+    "observations": 34,
     "pending": null,
     "history": [
       {
         "state": "0",
-        "since": "2025-10-22",
-        "observations": 52
+        "since": "2025-10-23",
+        "observations": 51
       },
       {
         "state": "-20",
@@ -66,32 +66,32 @@
       {
         "state": "-20",
         "since": "2026-09-19",
-        "observations": 33
+        "observations": 34
       }
     ]
   },
   "ath": {
     "date": "2025-10-07",
     "price": 93082.19321148824,
-    "latestDate": "2026-10-15",
-    "latestPrice": 61573.66951007775,
-    "fromAthPct": -33.85,
-    "daysSince": 373,
+    "latestDate": "2026-10-22",
+    "latestPrice": 62843.50846367958,
+    "fromAthPct": -32.49,
+    "daysSince": 380,
     "isNew": false
   },
   "cycle": {
     "halvingDate": "2024-04-20",
     "peakMultiple": 1.8146,
     "peakDay": 535,
-    "latestMultiple": 1.2003,
-    "latestDay": 908,
+    "latestMultiple": 1.2251,
+    "latestDay": 915,
     "isNew": false
   },
   "dominance": {
-    "latestPct": 59.55,
-    "latestDate": "2026-10-21",
-    "changePp": 0.61,
+    "latestPct": 60.02,
+    "latestDate": "2026-10-22",
+    "changePp": 1.18,
     "overDays": 30,
-    "fromDate": "2026-09-21"
+    "fromDate": "2026-09-22"
   }
 }
