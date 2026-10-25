@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-10-25T11:08:14.007Z",
+  "fetchedAt": "2026-10-25T15:56:43.499Z",
   "asOf": "2026-10-25",
   "thresholds": {
     "volWindowDays": 90,
@@ -17,7 +17,7 @@
   },
   "rawSpans": {
     "vol": 5,
-    "drawdown": 24
+    "drawdown": 23
   },
   "vol": {
     "state": "normal",
@@ -46,11 +46,7 @@
     "state": "-20",
     "since": "2026-09-19",
     "observations": 37,
-    "pending": {
-      "state": "-30",
-      "since": "2026-10-25",
-      "observations": 1
-    },
+    "pending": null,
     "history": [
       {
         "state": "0",
@@ -92,9 +88,9 @@
     "isNew": false
   },
   "dominance": {
-    "latestPct": 60.12,
+    "latestPct": 60.08,
     "latestDate": "2026-10-25",
-    "changePp": 1.88,
+    "changePp": 1.84,
     "overDays": 30,
     "fromDate": "2026-09-25"
   }
