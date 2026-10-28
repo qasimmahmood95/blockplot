@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-10-28T05:13:36.432Z",
+  "fetchedAt": "2026-10-28T12:34:33.424Z",
   "asOf": "2026-10-28",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -1464,6 +1464,10 @@
         {
           "date": "2026-10-27",
           "volPct": 25.01
+        },
+        {
+          "date": "2026-10-28",
+          "volPct": 25.34
         }
       ]
     },
@@ -2925,6 +2929,10 @@
         {
           "date": "2026-10-27",
           "volPct": 37.89
+        },
+        {
+          "date": "2026-10-28",
+          "volPct": 37.92
         }
       ]
     },
@@ -4386,6 +4394,10 @@
         {
           "date": "2026-10-27",
           "volPct": 44.12
+        },
+        {
+          "date": "2026-10-28",
+          "volPct": 44.14
         }
       ]
     }
@@ -5853,7 +5865,7 @@
       },
       {
         "date": "2026-10-28",
-        "drawdownPct": -28.37
+        "drawdownPct": -28.42
       }
     ]
   },
@@ -5864,7 +5876,7 @@
       "observations": 365,
       "firstDate": "2025-10-29",
       "lastDate": "2026-10-28",
-      "totalReturnPct": -28.37,
+      "totalReturnPct": -28.42,
       "annualizedVolPct": 43.88,
       "sharpe": -0.76,
       "sortino": -1.05,
@@ -5873,11 +5885,11 @@
     {
       "asset": "eth",
       "periodsPerYear": 365,
-      "observations": 364,
+      "observations": 365,
       "firstDate": "2025-10-29",
       "lastDate": "2026-10-28",
-      "totalReturnPct": -39.75,
-      "annualizedVolPct": 60.94,
+      "totalReturnPct": -40,
+      "annualizedVolPct": 60.85,
       "sharpe": -0.84,
       "sortino": -1.16,
       "maxDrawdownPct": -59.99
@@ -5900,10 +5912,10 @@
       "observations": 251,
       "firstDate": "2025-10-29",
       "lastDate": "2026-10-28",
-      "totalReturnPct": 1.21,
+      "totalReturnPct": 1.77,
       "annualizedVolPct": 27.96,
-      "sharpe": 0.04,
-      "sortino": 0.06,
+      "sharpe": 0.06,
+      "sortino": 0.08,
       "maxDrawdownPct": -24.94
     }
   ]
