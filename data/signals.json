@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-10-28T22:27:07.980Z",
-  "asOf": "2026-10-28",
+  "fetchedAt": "2026-10-29T05:24:42.434Z",
+  "asOf": "2026-10-29",
   "thresholds": {
     "volWindowDays": 90,
     "volLowPct": 35,
@@ -17,7 +17,7 @@
   },
   "rawSpans": {
     "vol": 9,
-    "drawdown": 23
+    "drawdown": 31
   },
   "vol": {
     "state": "normal",
@@ -27,8 +27,8 @@
     "history": [
       {
         "state": "normal",
-        "since": "2025-10-29",
-        "observations": 161
+        "since": "2025-10-30",
+        "observations": 160
       },
       {
         "state": "high",
@@ -54,44 +54,39 @@
   },
   "drawdown": {
     "state": "-20",
-    "since": "2026-09-19",
-    "observations": 40,
+    "since": "2026-08-24",
+    "observations": 67,
     "pending": null,
     "history": [
       {
-        "state": "-20",
-        "since": "2025-10-29",
-        "observations": 67
+        "state": "0",
+        "since": "2025-10-30",
+        "observations": 34
       },
       {
         "state": "-10",
-        "since": "2026-01-04",
-        "observations": 17
-      },
-      {
-        "state": "-20",
-        "since": "2026-01-21",
-        "observations": 11
+        "since": "2025-12-03",
+        "observations": 63
       },
       {
         "state": "-30",
-        "since": "2026-02-01",
+        "since": "2026-02-04",
+        "observations": 87
+      },
+      {
+        "state": "-20",
+        "since": "2026-05-02",
+        "observations": 21
+      },
+      {
+        "state": "-30",
+        "since": "2026-05-23",
         "observations": 93
       },
       {
         "state": "-20",
-        "since": "2026-05-05",
-        "observations": 12
-      },
-      {
-        "state": "-30",
-        "since": "2026-05-17",
-        "observations": 125
-      },
-      {
-        "state": "-20",
-        "since": "2026-09-19",
-        "observations": 40
+        "since": "2026-08-24",
+        "observations": 67
       }
     ]
   },
@@ -114,9 +109,9 @@
   },
   "dominance": {
     "latestPct": 59.45,
-    "latestDate": "2026-10-28",
-    "changePp": 1.15,
+    "latestDate": "2026-10-29",
+    "changePp": 1.12,
     "overDays": 30,
-    "fromDate": "2026-09-28"
+    "fromDate": "2026-09-29"
   }
 }
