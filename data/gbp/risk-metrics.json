@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "gbp",
-  "fetchedAt": "2026-10-30T12:36:53.454Z",
+  "fetchedAt": "2026-10-30T22:09:46.865Z",
   "asOf": "2026-10-30",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -5853,7 +5853,7 @@
       },
       {
         "date": "2026-10-30",
-        "drawdownPct": -31.42
+        "drawdownPct": -31.89
       }
     ]
   },
@@ -5864,10 +5864,10 @@
       "observations": 365,
       "firstDate": "2025-10-31",
       "lastDate": "2026-10-30",
-      "totalReturnPct": -30.26,
-      "annualizedVolPct": 43.46,
-      "sharpe": -0.83,
-      "sortino": -1.13,
+      "totalReturnPct": -30.74,
+      "annualizedVolPct": 43.55,
+      "sharpe": -0.85,
+      "sortino": -1.15,
       "maxDrawdownPct": -47.42
     },
     {
@@ -5876,22 +5876,22 @@
       "observations": 365,
       "firstDate": "2025-10-31",
       "lastDate": "2026-10-30",
-      "totalReturnPct": -43.09,
+      "totalReturnPct": -42.8,
       "annualizedVolPct": 58.95,
-      "sharpe": -0.96,
-      "sortino": -1.32,
+      "sharpe": -0.95,
+      "sortino": -1.31,
       "maxDrawdownPct": -60.52
     },
     {
       "asset": "sp500",
       "periodsPerYear": 252,
-      "observations": 249,
+      "observations": 250,
       "firstDate": "2025-10-31",
-      "lastDate": "2026-10-28",
-      "totalReturnPct": 11.66,
-      "annualizedVolPct": 12.6,
-      "sharpe": 0.89,
-      "sortino": 1.29,
+      "lastDate": "2026-10-29",
+      "totalReturnPct": 11.08,
+      "annualizedVolPct": 12.59,
+      "sharpe": 0.84,
+      "sortino": 1.22,
       "maxDrawdownPct": -8.17
     },
     {
@@ -5900,11 +5900,11 @@
       "observations": 251,
       "firstDate": "2025-10-31",
       "lastDate": "2026-10-30",
-      "totalReturnPct": -2.86,
-      "annualizedVolPct": 26.51,
-      "sharpe": -0.11,
-      "sortino": -0.14,
-      "maxDrawdownPct": -25.54
+      "totalReturnPct": -4.92,
+      "annualizedVolPct": 26.77,
+      "sharpe": -0.19,
+      "sortino": -0.25,
+      "maxDrawdownPct": -26.93
     }
   ]
 }

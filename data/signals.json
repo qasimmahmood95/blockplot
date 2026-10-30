@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-10-30T12:36:53.454Z",
+  "fetchedAt": "2026-10-30T22:09:46.865Z",
   "asOf": "2026-10-30",
   "thresholds": {
     "volWindowDays": 90,
@@ -17,7 +17,7 @@
   },
   "rawSpans": {
     "vol": 9,
-    "drawdown": 31
+    "drawdown": 32
   },
   "vol": {
     "state": "normal",
@@ -56,7 +56,11 @@
     "state": "-20",
     "since": "2026-08-24",
     "observations": 68,
-    "pending": null,
+    "pending": {
+      "state": "-30",
+      "since": "2026-10-30",
+      "observations": 1
+    },
     "history": [
       {
         "state": "0",
@@ -108,9 +112,9 @@
     "isNew": false
   },
   "dominance": {
-    "latestPct": 59.83,
+    "latestPct": 59.03,
     "latestDate": "2026-10-30",
-    "changePp": 1.47,
+    "changePp": 0.67,
     "overDays": 30,
     "fromDate": "2026-09-30"
   }
