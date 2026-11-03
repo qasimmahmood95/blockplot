@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-11-02T15:27:55.368Z",
-  "asOf": "2026-11-02",
+  "fetchedAt": "2026-11-03T00:51:22.406Z",
+  "asOf": "2026-11-03",
   "thresholds": {
     "volWindowDays": 90,
     "volLowPct": 35,
@@ -17,7 +17,7 @@
   },
   "rawSpans": {
     "vol": 9,
-    "drawdown": 33
+    "drawdown": 19
   },
   "vol": {
     "state": "normal",
@@ -27,8 +27,8 @@
     "history": [
       {
         "state": "normal",
-        "since": "2025-11-03",
-        "observations": 156
+        "since": "2025-11-04",
+        "observations": 155
       },
       {
         "state": "high",
@@ -54,39 +54,39 @@
   },
   "drawdown": {
     "state": "-20",
-    "since": "2026-08-24",
-    "observations": 71,
+    "since": "2026-08-22",
+    "observations": 74,
     "pending": null,
     "history": [
       {
         "state": "0",
-        "since": "2025-11-03",
-        "observations": 30
+        "since": "2025-11-04",
+        "observations": 20
       },
       {
         "state": "-10",
-        "since": "2025-12-03",
-        "observations": 63
+        "since": "2025-11-24",
+        "observations": 73
       },
       {
         "state": "-30",
-        "since": "2026-02-04",
-        "observations": 87
+        "since": "2026-02-05",
+        "observations": 75
       },
       {
         "state": "-20",
-        "since": "2026-05-02",
-        "observations": 21
+        "since": "2026-04-21",
+        "observations": 37
       },
       {
         "state": "-30",
-        "since": "2026-05-23",
-        "observations": 93
+        "since": "2026-05-28",
+        "observations": 86
       },
       {
         "state": "-20",
-        "since": "2026-08-24",
-        "observations": 71
+        "since": "2026-08-22",
+        "observations": 74
       }
     ]
   },
@@ -108,10 +108,10 @@
     "isNew": false
   },
   "dominance": {
-    "latestPct": 59.27,
-    "latestDate": "2026-11-02",
-    "changePp": 0.66,
+    "latestPct": 59.28,
+    "latestDate": "2026-11-03",
+    "changePp": 0.04,
     "overDays": 30,
-    "fromDate": "2026-10-03"
+    "fromDate": "2026-10-04"
   }
 }
