@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-11-04T14:14:33.697Z",
+  "fetchedAt": "2026-11-04T23:30:15.300Z",
   "asOf": "2026-11-04",
   "windowDays": 365,
   "rollingVolSource": "blockchain.info",
@@ -5793,7 +5793,7 @@
       },
       {
         "date": "2026-11-04",
-        "drawdownPct": -26.17
+        "drawdownPct": -24.05
       }
     ]
   },
@@ -5804,10 +5804,10 @@
       "observations": 365,
       "firstDate": "2025-11-05",
       "lastDate": "2026-11-04",
-      "totalReturnPct": -22.92,
-      "annualizedVolPct": 43.68,
-      "sharpe": -0.6,
-      "sortino": -0.83,
+      "totalReturnPct": -20.7,
+      "annualizedVolPct": 43.91,
+      "sharpe": -0.53,
+      "sortino": -0.74,
       "maxDrawdownPct": -44.72
     },
     {
@@ -5816,22 +5816,22 @@
       "observations": 365,
       "firstDate": "2025-11-05",
       "lastDate": "2026-11-04",
-      "totalReturnPct": -32.46,
-      "annualizedVolPct": 59.67,
-      "sharpe": -0.66,
-      "sortino": -0.93,
+      "totalReturnPct": -29.29,
+      "annualizedVolPct": 59.99,
+      "sharpe": -0.58,
+      "sortino": -0.82,
       "maxDrawdownPct": -56.32
     },
     {
       "asset": "sp500",
       "periodsPerYear": 252,
-      "observations": 249,
+      "observations": 250,
       "firstDate": "2025-11-05",
-      "lastDate": "2026-11-02",
-      "totalReturnPct": 10.96,
-      "annualizedVolPct": 12.83,
-      "sharpe": 0.82,
-      "sortino": 1.19,
+      "lastDate": "2026-11-03",
+      "totalReturnPct": 11.37,
+      "annualizedVolPct": 12.81,
+      "sharpe": 0.85,
+      "sortino": 1.23,
       "maxDrawdownPct": -9.1
     },
     {
@@ -5840,10 +5840,10 @@
       "observations": 251,
       "firstDate": "2025-11-05",
       "lastDate": "2026-11-04",
-      "totalReturnPct": 1.51,
-      "annualizedVolPct": 28.32,
-      "sharpe": 0.05,
-      "sortino": 0.07,
+      "totalReturnPct": 1.99,
+      "annualizedVolPct": 28.37,
+      "sharpe": 0.07,
+      "sortino": 0.09,
       "maxDrawdownPct": -26.69
     }
   ]
