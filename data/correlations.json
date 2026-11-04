@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-11-04T05:53:23.124Z",
+  "fetchedAt": "2026-11-04T14:14:33.697Z",
   "asOf": "2026-11-04",
   "windowDays": 90,
   "minObs": 40,
@@ -45122,8 +45122,12 @@
           "corr": 0.47
         },
         {
+          "date": "2026-11-03",
+          "corr": 0.47
+        },
+        {
           "date": "2026-11-04",
-          "corr": 0.48
+          "corr": 0.47
         }
       ],
       "regimes": [
@@ -45159,7 +45163,7 @@
           "startDate": "2026-06-05",
           "confirmedFrom": "2026-06-05",
           "endDate": "2026-11-04",
-          "observations": 105,
+          "observations": 106,
           "days": 153,
           "meanCorr": 0.44
         }
@@ -46167,6 +46171,10 @@
           "corr": -0.42
         },
         {
+          "date": "2026-11-03",
+          "corr": -0.41
+        },
+        {
           "date": "2026-11-04",
           "corr": -0.42
         }
@@ -46204,7 +46212,7 @@
           "startDate": "2026-06-01",
           "confirmedFrom": "2026-06-01",
           "endDate": "2026-11-04",
-          "observations": 109,
+          "observations": 110,
           "days": 157,
           "meanCorr": -0.41
         }
@@ -49279,7 +49287,7 @@
         },
         {
           "date": "2026-11-04",
-          "corr": -0.42
+          "corr": -0.45
         }
       ],
       "regimes": [
