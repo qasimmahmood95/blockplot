@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-11-05T19:48:14.128Z",
-  "asOf": "2026-11-05",
+  "fetchedAt": "2026-11-06T06:09:32.960Z",
+  "asOf": "2026-11-06",
   "windowDays": 90,
   "minObs": 40,
   "regimeThreshold": 0.25,
@@ -44114,10 +44114,6 @@
       "b": "gold",
       "series": [
         {
-          "date": "2025-11-06",
-          "corr": 0.18
-        },
-        {
           "date": "2025-11-07",
           "corr": 0.18
         },
@@ -45114,8 +45110,8 @@
           "corr": 0.51
         },
         {
-          "date": "2026-11-05",
-          "corr": 0.48
+          "date": "2026-11-06",
+          "corr": 0.51
         }
       ],
       "regimes": [
@@ -45150,9 +45146,9 @@
           "regime": "positive",
           "startDate": "2026-06-05",
           "confirmedFrom": "2026-06-05",
-          "endDate": "2026-11-05",
+          "endDate": "2026-11-06",
           "observations": 107,
-          "days": 154,
+          "days": 155,
           "meanCorr": 0.44
         }
       ]
@@ -45162,10 +45158,6 @@
       "a": "eth",
       "b": "dxy",
       "series": [
-        {
-          "date": "2025-11-06",
-          "corr": -0.26
-        },
         {
           "date": "2025-11-07",
           "corr": -0.27
@@ -46163,8 +46155,8 @@
           "corr": -0.44
         },
         {
-          "date": "2026-11-05",
-          "corr": -0.43
+          "date": "2026-11-06",
+          "corr": -0.45
         }
       ],
       "regimes": [
@@ -46199,9 +46191,9 @@
           "regime": "negative",
           "startDate": "2026-06-01",
           "confirmedFrom": "2026-06-01",
-          "endDate": "2026-11-05",
+          "endDate": "2026-11-06",
           "observations": 111,
-          "days": 158,
+          "days": 159,
           "meanCorr": -0.41
         }
       ]
@@ -48274,10 +48266,6 @@
       "b": "dxy",
       "series": [
         {
-          "date": "2025-11-06",
-          "corr": -0.25
-        },
-        {
           "date": "2025-11-07",
           "corr": -0.25
         },
@@ -49276,6 +49264,10 @@
         {
           "date": "2026-11-05",
           "corr": -0.41
+        },
+        {
+          "date": "2026-11-06",
+          "corr": -0.42
         }
       ],
       "regimes": [
@@ -49319,9 +49311,9 @@
           "regime": "negative",
           "startDate": "2026-06-17",
           "confirmedFrom": "2026-06-17",
-          "endDate": "2026-11-05",
-          "observations": 99,
-          "days": 142,
+          "endDate": "2026-11-06",
+          "observations": 100,
+          "days": 143,
           "meanCorr": -0.52
         }
       ]
