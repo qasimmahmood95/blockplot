@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-11-06T19:13:18.546Z",
-  "asOf": "2026-11-06",
+  "fetchedAt": "2026-11-07T05:38:57.316Z",
+  "asOf": "2026-11-07",
   "thresholds": {
     "volWindowDays": 90,
     "volLowPct": 35,
@@ -22,13 +22,13 @@
   "vol": {
     "state": "normal",
     "since": "2026-08-20",
-    "observations": 75,
+    "observations": 79,
     "pending": null,
     "history": [
       {
         "state": "normal",
-        "since": "2025-11-07",
-        "observations": 152
+        "since": "2025-11-08",
+        "observations": 151
       },
       {
         "state": "high",
@@ -48,20 +48,20 @@
       {
         "state": "normal",
         "since": "2026-08-20",
-        "observations": 75
+        "observations": 79
       }
     ]
   },
   "drawdown": {
     "state": "-20",
     "since": "2026-08-22",
-    "observations": 77,
+    "observations": 78,
     "pending": null,
     "history": [
       {
         "state": "-10",
-        "since": "2025-11-07",
-        "observations": 90
+        "since": "2025-11-08",
+        "observations": 89
       },
       {
         "state": "-30",
@@ -81,32 +81,32 @@
       {
         "state": "-20",
         "since": "2026-08-22",
-        "observations": 77
+        "observations": 78
       }
     ]
   },
   "ath": {
     "date": "2025-10-07",
     "price": 124776.68,
-    "latestDate": "2026-11-02",
-    "latestPrice": 78242.98,
-    "fromAthPct": -37.29,
-    "daysSince": 391,
+    "latestDate": "2026-11-06",
+    "latestPrice": 75988.3,
+    "fromAthPct": -39.1,
+    "daysSince": 395,
     "isNew": false
   },
   "cycle": {
     "halvingDate": "2024-04-20",
     "peakMultiple": 1.955,
     "peakDay": 535,
-    "latestMultiple": 1.2259,
-    "latestDay": 926,
+    "latestMultiple": 1.1906,
+    "latestDay": 930,
     "isNew": false
   },
   "dominance": {
-    "latestPct": 59.17,
-    "latestDate": "2026-11-06",
-    "changePp": 0.4,
+    "latestPct": 59.28,
+    "latestDate": "2026-11-07",
+    "changePp": 0.23,
     "overDays": 30,
-    "fromDate": "2026-10-07"
+    "fromDate": "2026-10-08"
   }
 }
