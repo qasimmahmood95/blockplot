@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-11-07T21:41:17.033Z",
+  "fetchedAt": "2026-11-08T05:41:22.294Z",
   "keepDays": 460,
   "ethQuoteDivergence": {
     "days": 3284,
@@ -3864,10 +3864,6 @@
       "sourceSeries": "ETH-GBP",
       "series": [
         {
-          "date": "2025-08-05",
-          "close": 2716.05078125
-        },
-        {
           "date": "2025-08-06",
           "close": 2757.91552734375
         },
@@ -5700,8 +5696,8 @@
           "close": 1673.18994140625
         },
         {
-          "date": "2026-11-07",
-          "close": 1668.02001953125
+          "date": "2026-11-08",
+          "close": 1673.800048828125
         }
       ]
     }
