@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "source": "blockchain.info",
   "currency": "usd",
-  "fetchedAt": "2026-11-11T05:47:16.468Z",
+  "fetchedAt": "2026-11-11T13:58:08.106Z",
   "series": [
     {
       "date": "2010-08-18",
@@ -23719,6 +23719,10 @@
     {
       "date": "2026-11-10",
       "price": 75215.41
+    },
+    {
+      "date": "2026-11-11",
+      "price": 73722.16
     }
   ]
 }
