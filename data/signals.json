@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-11-12T23:27:11.672Z",
-  "asOf": "2026-11-12",
+  "fetchedAt": "2026-11-13T06:12:45.746Z",
+  "asOf": "2026-11-13",
   "thresholds": {
     "volWindowDays": 90,
     "volLowPct": 35,
@@ -17,7 +17,7 @@
   },
   "rawSpans": {
     "vol": 9,
-    "drawdown": 31
+    "drawdown": 40
   },
   "vol": {
     "state": "normal",
@@ -27,8 +27,8 @@
     "history": [
       {
         "state": "normal",
-        "since": "2025-11-13",
-        "observations": 146
+        "since": "2025-11-14",
+        "observations": 145
       },
       {
         "state": "high",
@@ -53,45 +53,64 @@
     ]
   },
   "drawdown": {
-    "state": "-20",
-    "since": "2026-10-24",
-    "observations": 20,
-    "pending": null,
+    "state": "-10",
+    "since": "2026-09-19",
+    "observations": 56,
+    "pending": {
+      "state": "-30",
+      "since": "2026-11-13",
+      "observations": 1
+    },
     "history": [
       {
         "state": "-10",
-        "since": "2025-11-13",
-        "observations": 85
+        "since": "2025-11-14",
+        "observations": 50
+      },
+      {
+        "state": "0",
+        "since": "2026-01-03",
+        "observations": 18
+      },
+      {
+        "state": "-10",
+        "since": "2026-01-21",
+        "observations": 26
       },
       {
         "state": "-30",
-        "since": "2026-02-06",
-        "observations": 67
+        "since": "2026-02-16",
+        "observations": 23
       },
       {
         "state": "-20",
-        "since": "2026-04-14",
-        "observations": 50
+        "since": "2026-03-11",
+        "observations": 16
+      },
+      {
+        "state": "-30",
+        "since": "2026-03-27",
+        "observations": 12
+      },
+      {
+        "state": "-20",
+        "since": "2026-04-08",
+        "observations": 56
       },
       {
         "state": "-30",
         "since": "2026-06-03",
-        "observations": 79
+        "observations": 97
       },
       {
         "state": "-20",
-        "since": "2026-08-21",
-        "observations": 32
+        "since": "2026-09-08",
+        "observations": 11
       },
       {
         "state": "-10",
-        "since": "2026-09-22",
-        "observations": 32
-      },
-      {
-        "state": "-20",
-        "since": "2026-10-24",
-        "observations": 20
+        "since": "2026-09-19",
+        "observations": 56
       }
     ]
   },
@@ -113,10 +132,10 @@
     "isNew": false
   },
   "dominance": {
-    "latestPct": 59.44,
-    "latestDate": "2026-11-12",
-    "changePp": 0.16,
+    "latestPct": 59,
+    "latestDate": "2026-11-13",
+    "changePp": -0.34,
     "overDays": 30,
-    "fromDate": "2026-10-13"
+    "fromDate": "2026-10-14"
   }
 }
