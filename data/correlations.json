@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-11-14T22:13:55.530Z",
-  "asOf": "2026-11-14",
+  "fetchedAt": "2026-11-15T05:58:43.155Z",
+  "asOf": "2026-11-15",
   "windowDays": 90,
   "minObs": 40,
   "regimeThreshold": 0.25,
@@ -23098,10 +23098,6 @@
       "b": "gold",
       "series": [
         {
-          "date": "2017-01-12",
-          "corr": -0.04
-        },
-        {
           "date": "2017-01-13",
           "corr": -0.05
         },
@@ -23143,11 +23139,11 @@
         },
         {
           "date": "2017-01-30",
-          "corr": 0.04
+          "corr": 0.03
         },
         {
           "date": "2017-01-31",
-          "corr": 0.07
+          "corr": 0.06
         },
         {
           "date": "2017-02-01",
@@ -33005,11 +33001,11 @@
       "regimes": [
         {
           "regime": "neutral",
-          "startDate": "2017-01-12",
-          "confirmedFrom": "2017-01-12",
+          "startDate": "2017-01-13",
+          "confirmedFrom": "2017-01-13",
           "endDate": "2018-09-24",
-          "observations": 427,
-          "days": 621,
+          "observations": 426,
+          "days": 620,
           "meanCorr": 0
         },
         {
@@ -33191,10 +33187,6 @@
       "b": "dxy",
       "series": [
         {
-          "date": "2017-01-12",
-          "corr": 0.14
-        },
-        {
           "date": "2017-01-13",
           "corr": 0.13
         },
@@ -33228,7 +33220,7 @@
         },
         {
           "date": "2017-01-26",
-          "corr": 0.01
+          "corr": 0
         },
         {
           "date": "2017-01-27",
@@ -33236,7 +33228,7 @@
         },
         {
           "date": "2017-01-30",
-          "corr": 0.01
+          "corr": 0
         },
         {
           "date": "2017-01-31",
@@ -43098,12 +43090,12 @@
       "regimes": [
         {
           "regime": "neutral",
-          "startDate": "2017-01-12",
-          "confirmedFrom": "2017-01-12",
+          "startDate": "2017-01-13",
+          "confirmedFrom": "2017-01-13",
           "endDate": "2019-02-11",
-          "observations": 523,
-          "days": 761,
-          "meanCorr": 0.04
+          "observations": 522,
+          "days": 760,
+          "meanCorr": 0.03
         },
         {
           "regime": "negative",
