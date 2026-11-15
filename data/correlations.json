@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-11-15T13:51:17.065Z",
+  "fetchedAt": "2026-11-15T22:42:12.105Z",
   "asOf": "2026-11-15",
   "windowDays": 90,
   "minObs": 40,
@@ -45306,10 +45306,6 @@
       "b": "dxy",
       "series": [
         {
-          "date": "2025-11-14",
-          "corr": -0.22
-        },
-        {
           "date": "2025-11-17",
           "corr": -0.22
         },
@@ -46308,6 +46304,10 @@
         {
           "date": "2026-11-13",
           "corr": -0.35
+        },
+        {
+          "date": "2026-11-15",
+          "corr": -0.34
         }
       ],
       "regimes": [
@@ -46342,9 +46342,9 @@
           "regime": "negative",
           "startDate": "2026-06-01",
           "confirmedFrom": "2026-06-01",
-          "endDate": "2026-11-13",
-          "observations": 117,
-          "days": 166,
+          "endDate": "2026-11-15",
+          "observations": 118,
+          "days": 168,
           "meanCorr": -0.4
         }
       ]
