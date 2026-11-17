@@ -2,21 +2,17 @@
   "schemaVersion": 1,
   "source": "coingecko",
   "currency": "usd",
-  "fetchedAt": "2026-11-16T15:33:30.847Z",
+  "fetchedAt": "2026-11-17T01:49:09.356Z",
   "rangeDays": "365",
   "stats": {
-    "latestDate": "2026-11-16",
-    "latestPrice": 64311.52496400735,
-    "change7dPct": -13.95,
-    "change30dPct": -21.11,
+    "latestDate": "2026-11-17",
+    "latestPrice": 64750.58524605067,
+    "change7dPct": -13.97,
+    "change30dPct": -20.46,
     "rangeHigh": 96898.76071081961,
     "rangeHighDate": "2026-01-15"
   },
   "series": [
-    {
-      "date": "2025-11-17",
-      "price": 94188.27668924726
-    },
     {
       "date": "2025-11-18",
       "price": 92100.36452360668
@@ -1471,7 +1467,11 @@
     },
     {
       "date": "2026-11-16",
-      "price": 64311.52496400735
+      "price": 65305.28100747828
+    },
+    {
+      "date": "2026-11-17",
+      "price": 64750.58524605067
     }
   ]
 }
