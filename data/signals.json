@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-11-19T15:36:05.122Z",
-  "asOf": "2026-11-19",
+  "fetchedAt": "2026-11-20T00:31:39.376Z",
+  "asOf": "2026-11-20",
   "thresholds": {
     "volWindowDays": 90,
     "volLowPct": 35,
@@ -22,13 +22,13 @@
   "vol": {
     "state": "normal",
     "since": "2026-08-20",
-    "observations": 91,
+    "observations": 92,
     "pending": null,
     "history": [
       {
         "state": "normal",
-        "since": "2025-11-20",
-        "observations": 139
+        "since": "2025-11-21",
+        "observations": 138
       },
       {
         "state": "high",
@@ -48,24 +48,24 @@
       {
         "state": "normal",
         "since": "2026-08-20",
-        "observations": 91
+        "observations": 92
       }
     ]
   },
   "drawdown": {
     "state": "-10",
     "since": "2026-09-19",
-    "observations": 62,
+    "observations": 63,
     "pending": {
       "state": "-30",
       "since": "2026-11-15",
-      "observations": 5
+      "observations": 6
     },
     "history": [
       {
         "state": "0",
-        "since": "2025-11-20",
-        "observations": 110
+        "since": "2025-11-21",
+        "observations": 109
       },
       {
         "state": "-20",
@@ -90,32 +90,32 @@
       {
         "state": "-10",
         "since": "2026-09-19",
-        "observations": 62
+        "observations": 63
       }
     ]
   },
   "ath": {
     "date": "2025-10-07",
     "price": 124776.68,
-    "latestDate": "2026-11-18",
-    "latestPrice": 64871.15,
-    "fromAthPct": -48.01,
-    "daysSince": 407,
+    "latestDate": "2026-11-19",
+    "latestPrice": 62984.54,
+    "fromAthPct": -49.52,
+    "daysSince": 408,
     "isNew": false
   },
   "cycle": {
     "halvingDate": "2024-04-20",
     "peakMultiple": 1.955,
     "peakDay": 535,
-    "latestMultiple": 1.0164,
-    "latestDay": 942,
+    "latestMultiple": 0.9869,
+    "latestDay": 943,
     "isNew": false
   },
   "dominance": {
-    "latestPct": 58.02,
-    "latestDate": "2026-11-19",
-    "changePp": -1.49,
+    "latestPct": 57.94,
+    "latestDate": "2026-11-20",
+    "changePp": -1.73,
     "overDays": 30,
-    "fromDate": "2026-10-20"
+    "fromDate": "2026-10-21"
   }
 }
