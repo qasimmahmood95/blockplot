@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currency": "usd",
-  "fetchedAt": "2026-11-20T00:31:39.376Z",
+  "fetchedAt": "2026-11-20T15:15:14.028Z",
   "asOf": "2026-11-20",
   "thresholds": {
     "volWindowDays": 90,
@@ -112,9 +112,9 @@
     "isNew": false
   },
   "dominance": {
-    "latestPct": 57.94,
+    "latestPct": 58.11,
     "latestDate": "2026-11-20",
-    "changePp": -1.73,
+    "changePp": -1.56,
     "overDays": 30,
     "fromDate": "2026-10-21"
   }
