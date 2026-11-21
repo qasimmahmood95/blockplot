@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "currency": "usd",
-  "fetchedAt": "2026-11-20T23:54:48.664Z",
-  "asOf": "2026-11-20",
+  "fetchedAt": "2026-11-21T06:46:54.379Z",
+  "asOf": "2026-11-21",
   "windowDays": 90,
   "minObs": 40,
   "regimeThreshold": 0.25,
@@ -44282,6 +44282,10 @@
       "b": "gold",
       "series": [
         {
+          "date": "2025-11-20",
+          "corr": 0.26
+        },
+        {
           "date": "2025-11-21",
           "corr": 0.26
         },
@@ -45280,10 +45284,6 @@
         {
           "date": "2026-11-19",
           "corr": 0.32
-        },
-        {
-          "date": "2026-11-20",
-          "corr": 0.39
         }
       ],
       "regimes": [
@@ -45309,9 +45309,9 @@
           "regime": "positive",
           "startDate": "2026-06-05",
           "confirmedFrom": "2026-06-05",
-          "endDate": "2026-11-20",
-          "observations": 118,
-          "days": 169,
+          "endDate": "2026-11-19",
+          "observations": 117,
+          "days": 168,
           "meanCorr": 0.44
         }
       ]
@@ -45321,6 +45321,10 @@
       "a": "eth",
       "b": "dxy",
       "series": [
+        {
+          "date": "2025-11-20",
+          "corr": -0.1
+        },
         {
           "date": "2025-11-21",
           "corr": -0.1
@@ -46320,10 +46324,6 @@
         {
           "date": "2026-11-19",
           "corr": -0.19
-        },
-        {
-          "date": "2026-11-20",
-          "corr": -0.16
         }
       ],
       "regimes": [
@@ -46358,9 +46358,9 @@
           "regime": "negative",
           "startDate": "2026-06-01",
           "confirmedFrom": "2026-06-01",
-          "endDate": "2026-11-20",
-          "observations": 122,
-          "days": 173,
+          "endDate": "2026-11-19",
+          "observations": 121,
+          "days": 172,
           "meanCorr": -0.4
         }
       ]
@@ -49443,7 +49443,7 @@
         },
         {
           "date": "2026-11-20",
-          "corr": -0.37
+          "corr": -0.36
         }
       ],
       "regimes": [
