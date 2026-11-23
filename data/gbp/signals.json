@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "currency": "gbp",
-  "fetchedAt": "2026-11-22T19:24:19.714Z",
-  "asOf": "2026-11-22",
+  "fetchedAt": "2026-11-23T07:08:24.428Z",
+  "asOf": "2026-11-23",
   "thresholds": {
     "volWindowDays": 90,
     "volLowPct": 35,
@@ -27,8 +27,8 @@
     "history": [
       {
         "state": "normal",
-        "since": "2025-11-23",
-        "observations": 237
+        "since": "2025-11-24",
+        "observations": 236
       },
       {
         "state": "low",
@@ -45,17 +45,17 @@
   "drawdown": {
     "state": "-10",
     "since": "2026-09-19",
-    "observations": 65,
+    "observations": 66,
     "pending": {
       "state": "-30",
       "since": "2026-11-15",
-      "observations": 8
+      "observations": 9
     },
     "history": [
       {
         "state": "0",
-        "since": "2025-11-23",
-        "observations": 87
+        "since": "2025-11-24",
+        "observations": 86
       },
       {
         "state": "-30",
@@ -85,7 +85,7 @@
       {
         "state": "-10",
         "since": "2026-09-19",
-        "observations": 65
+        "observations": 66
       }
     ]
   },
@@ -93,8 +93,8 @@
     "date": "2025-10-07",
     "price": 93082.19321148824,
     "latestDate": "2026-11-22",
-    "latestPrice": 45932.704567759945,
-    "fromAthPct": -50.65,
+    "latestPrice": 45781.56952380952,
+    "fromAthPct": -50.82,
     "daysSince": 411,
     "isNew": false
   },
@@ -102,15 +102,15 @@
     "halvingDate": "2024-04-20",
     "peakMultiple": 1.8146,
     "peakDay": 535,
-    "latestMultiple": 0.8954,
+    "latestMultiple": 0.8925,
     "latestDay": 946,
     "isNew": false
   },
   "dominance": {
-    "latestPct": 58.73,
-    "latestDate": "2026-11-22",
-    "changePp": -0.7,
+    "latestPct": 58.92,
+    "latestDate": "2026-11-23",
+    "changePp": -0.6,
     "overDays": 30,
-    "fromDate": "2026-10-23"
+    "fromDate": "2026-10-24"
   }
 }
