@@ -1,14 +1,10 @@
 {
   "schemaVersion": 1,
   "source": "defillama",
-  "fetchedAt": "2026-11-26T21:18:27.792Z",
+  "fetchedAt": "2026-11-27T07:55:22.015Z",
   "keepDays": 460,
-  "change30dPct": -5.75,
+  "change30dPct": -5.88,
   "series": [
-    {
-      "date": "2025-08-24",
-      "totalUsd": 272252734146
-    },
     {
       "date": "2025-08-25",
       "totalUsd": 272321528794
@@ -1843,7 +1839,11 @@
     },
     {
       "date": "2026-11-26",
-      "totalUsd": 282226059123
+      "totalUsd": 282227577069
+    },
+    {
+      "date": "2026-11-27",
+      "totalUsd": 281854276101
     }
   ]
 }
